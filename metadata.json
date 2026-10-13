@@ -1,0 +1,6 @@
+{
+  "name": "EduJournal SD - Jurnal Kelas Online Terpadu",
+  "description": "Aplikasi Jurnal Kelas Online Sekolah Dasar dengan 5 peran (Admin, Guru Kelas, Guru BK, Guru PAI, Orang Tua), jurnal harian, penilaian bintang, rekam kasus BK real-time, penilaian PAI, dan chat privat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

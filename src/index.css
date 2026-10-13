@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 15px;
+    line-height: 1.62;
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  p {
+    line-height: 1.65;
+  }
+
+  /* Increase readability for table cells and form controls */
+  table th {
+    font-size: 0.8125rem; /* ~13px */
+    letter-spacing: 0.025em;
+    font-weight: 700;
+  }
+
+  table td {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.5;
+  }
+
+  input, select, textarea {
+    font-size: 0.875rem; /* 14px */
+  }
+}
+
+/* Custom scrollbars for clean table horizontal scrolling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  /* Hide interactive web UI */
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  .role-switcher-banner,
+  button:not(.allow-print),
+  input:not([type="checkbox"]),
+  select {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1.5px dashed #475569 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #334155 !important;
+    padding: 6px 8px !important;
+    font-size: 9.5pt !important;
+    color: #000000 !important;
+  }
+
+  th {
+    background-color: #f1f5f9 !important;
+    font-weight: bold !important;
+  }
+}
