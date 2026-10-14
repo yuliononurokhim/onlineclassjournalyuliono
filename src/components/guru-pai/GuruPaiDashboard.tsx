@@ -220,7 +220,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
       )}
 
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold shadow-md shadow-teal-200">
             <Sparkles className="w-6 h-6" />
@@ -236,59 +236,6 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
               Format fleksibel: Nama Penilaian · Sub Indikator / Aspek · Ceklist Ketuntasan Siswa & Bintang Ibadah
             </p>
           </div>
-        </div>
-
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold scrollbar-thin">
-          <button
-            onClick={() => setActiveTab('penilaian')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'penilaian' ? 'bg-white text-teal-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <CheckSquare className="w-4 h-4" />
-            <span>Matriks Penilaian Fleksibel ({paiAssessments.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('nilai_internal')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'nilai_internal' ? 'bg-white text-teal-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Lock className="w-4 h-4 text-amber-500" />
-            <span>Buku Nilai Internal PAI</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('bintang')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'bintang' ? 'bg-white text-teal-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Star className="w-4 h-4 text-amber-500" />
-            <span>Apresiasi & Sanksi Ibadah</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('rekap')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'rekap' ? 'bg-white text-teal-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-emerald-600" />
-            <span>Rekap & Unduh Berkas PAI</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'chat' ? 'bg-white text-teal-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>Chat Wali Murid</span>
-          </button>
         </div>
       </div>
 

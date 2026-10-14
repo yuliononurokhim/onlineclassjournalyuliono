@@ -266,54 +266,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
         </div>
       </div>
 
-      {/* Main Tab Controls */}
-      <div className="flex items-center bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto text-xs font-semibold">
-        <button
-          onClick={() => setActiveTab('bintang')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'bintang' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-amber-300" />
-          <span>Bintang & Pelanggaran ({myStars.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('jurnal')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'jurnal' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Jurnal Harian Kelas ({journalEntries.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('bk')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'bk' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <HeartHandshake className="w-4 h-4 text-rose-400" />
-          <span>Laporan Khusus BK ({myReportedCases.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('pai')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'pai' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <CheckSquare className="w-4 h-4 text-teal-400" />
-          <span>Penilaian Ibadah PAI ({paiAssessments.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('chat')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'chat' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span>Chat Privat dengan Guru</span>
-        </button>
-      </div>
+
 
       {/* Tab 1: Apresiasi & Pengurangan Bintang Murid */}
       {activeTab === 'bintang' && (

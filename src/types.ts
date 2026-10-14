@@ -55,6 +55,9 @@ export interface SchoolProfile {
   principalName: string;
   principalNip: string;
   logoUrl?: string;
+  heroTagline?: string;
+  heroTitle?: string;
+  heroDescription?: string;
 }
 
 export interface Student {
@@ -67,8 +70,6 @@ export interface Student {
   parentUsername: string;
   parentPassword: string;
   avatarBgColor?: string;
-  classRole?: string; // e.g. 'Ketua Kelas', 'Wakil Ketua Kelas', 'Sekretaris 1', 'Bendahara 1', 'Seksi Kebersihan', dll.
-  classRoleDuty?: string; // Deskripsi tugas pokok & fungsi (Tupoksi)
 }
 
 export interface ClassJournalEntry {

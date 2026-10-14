@@ -86,22 +86,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     return 'EduJournal SD';
   };
 
-  const quickRoles: { role: UserRole; label: string; icon: React.ReactNode }[] = [
-    { role: 'admin', label: 'Admin', icon: <Shield className="w-3.5 h-3.5" /> },
-    { role: 'guru_kelas', label: 'Guru Kelas', icon: <BookOpen className="w-3.5 h-3.5" /> },
-    { role: 'guru_bk', label: 'Guru BK', icon: <HeartHandshake className="w-3.5 h-3.5" /> },
-    { role: 'guru_pai', label: 'Guru PAI', icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { role: 'orangtua', label: 'Orang Tua', icon: <Users className="w-3.5 h-3.5" /> },
-  ];
-
   return (
-    <header className="no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-3 transition-shadow">
+    <header className="lg:hidden no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-xs">
       <div className="flex items-center justify-between gap-3">
-        {/* Left: Mobile Menu Toggle & Breadcrumbs */}
+        {/* Left: Mobile Menu Toggle & Title */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors shrink-0"
+            className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors shrink-0"
             aria-label="Buka Menu Sidebar"
           >
             <Menu className="w-5 h-5" />
@@ -117,34 +109,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
 
         {/* Right: Quick Role Switcher Pills & User Controls */}
+        {/* Right: Firebase Live Status & User Controls */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Quick Role Switcher (Hidden on small mobile, visible on sm+) */}
-          <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
-            <span className="text-[10px] font-bold text-slate-500 uppercase px-2 tracking-wider">
-              Demo:
-            </span>
-            {quickRoles.map((r) => {
-              const isActive = currentUser?.role === r.role && activeView === 'dashboard';
-              return (
-                <button
-                  key={r.role}
-                  onClick={() => {
-                    switchRole(r.role);
-                    setActiveView('dashboard');
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                    isActive
-                      ? 'bg-white text-indigo-700 font-bold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                  }`}
-                  title={`Masuk sebagai ${r.label}`}
-                >
-                  {r.icon}
-                  <span>{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
 
           {/* Firebase Live Realtime Indicator */}
           <div

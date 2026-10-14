@@ -185,7 +185,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
       )}
 
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shadow-md shadow-rose-200">
             <HeartHandshake className="w-6 h-6" />
@@ -201,59 +201,6 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
               Catat perkembangan perilaku, solusi tindak lanjut, pelaporan langsung ke wali murid, dan bintang empati
             </p>
           </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold scrollbar-thin">
-          <button
-            onClick={() => setActiveTab('kasus')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'kasus' ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <AlertCircle className="w-4 h-4" />
-            <span>Jurnal Kasus & Bimbingan ({caseRecords.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('bintang')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'bintang' ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Apresiasi & Sanksi Sikap</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('penilaian')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'penilaian' ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Lock className="w-4 h-4 text-amber-500" />
-            <span>Nilai Internal BK (Asesmen Sikap)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('rekap')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'rekap' ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-emerald-600" />
-            <span>Rekap & Unduh Berkas BK</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'chat' ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>Konseling Chat Ortu</span>
-          </button>
         </div>
       </div>
 

@@ -22,10 +22,8 @@ import {
   Star,
   TrendingUp,
   BarChart3,
-  Award,
-  Crown
+  Award
 } from 'lucide-react';
-import { ClassOrganizationView } from './common/ClassOrganizationView';
 
 interface LandingPageProps {
   onLoginSuccess: () => void;
@@ -177,58 +175,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Col: Portal Highlights & Values */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Portal Jurnal Belajar & Karakter Siswa Real-Time</span>
-                </div>
-                <a
-                  href="#organisasi"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-200 text-xs font-semibold transition-colors"
-                >
-                  <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Bagan Struktur Organisasi Kelas 4-A &darr;</span>
-                </a>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>{schoolProfile.heroTagline || 'Portal Jurnal Belajar & Karakter Siswa Real-Time'}</span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight text-balance">
-                Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita
+                {schoolProfile.heroTitle || 'Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita'}
               </h2>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
-                Aplikasi digital terpadu {schoolProfile.classGrade} yang menghubungkan capaian harian siswa di kelas, bimbingan karakter konseling, penilaian ibadah PAI fleksibel, struktur kepemimpinan kelas, serta laporan khusus langsung ke wali murid secara transparan dan aman.
-              </p>
+              {/* Hero Description */}
+              <div className="space-y-2">
+                <p className="text-slate-200 text-sm sm:text-base leading-relaxed max-w-xl">
+                  {schoolProfile.heroDescription ||
+                    `Aplikasi digital terpadu ${schoolProfile.classGrade} yang menghubungkan capaian harian siswa di kelas, bimbingan karakter konseling, penilaian ibadah PAI fleksibel, serta laporan khusus langsung ke wali murid secara transparan dan aman.`}
+                </p>
+                <div className="flex items-center gap-2 text-[11px] text-indigo-300/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>Teks sambutan resmi dikelola oleh Admin SIM (dapat diubah di panel admin)</span>
+                </div>
+              </div>
 
-              {/* 4 Pillars Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4">
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center mb-2">
+              {/* 3 Pillars Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center mb-2.5">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Bintang Karakter</h4>
-                  <p className="text-[11px] text-slate-300 mt-1">Apresiasi & kedisiplinan murid dari guru kelas, BK & PAI.</p>
+                  <h4 className="text-sm font-bold text-white">Sistem Bintang Karakter</h4>
+                  <p className="text-xs text-slate-300 mt-1">Apresiasi disiplin, empati, dan keaktifan murid dari guru kelas, BK, dan PAI.</p>
                 </div>
-                <a href="#organisasi" className="bg-white/5 hover:bg-white/10 border border-amber-400/20 rounded-xl p-3.5 transition-colors block group">
-                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <Crown className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <h4 className="text-xs font-bold text-white flex items-center justify-between">
-                    <span>Struktur Kelas</span>
-                    <span className="text-amber-400 text-[10px]">&darr;</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mt-1">Amanah & peran kepemimpinan murid kelas {schoolProfile.classGrade}.</p>
-                </a>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
-                  <div className="w-8 h-8 rounded-lg bg-rose-400/20 text-rose-300 flex items-center justify-center mb-2">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="w-8 h-8 rounded-lg bg-rose-400/20 text-rose-300 flex items-center justify-center mb-2.5">
                     <HeartHandshake className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Laporan BK Cepat</h4>
-                  <p className="text-[11px] text-slate-300 mt-1">Pendampingan siswa terpantau langsung oleh wali murid.</p>
+                  <h4 className="text-sm font-bold text-white">Laporan BK Real-Time</h4>
+                  <p className="text-xs text-slate-300 mt-1">Pendampingan siswa terpantau langsung oleh wali murid bersangkutan tanpa keterlambatan.</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
-                  <div className="w-8 h-8 rounded-lg bg-teal-400/20 text-teal-300 flex items-center justify-center mb-2">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="w-8 h-8 rounded-lg bg-teal-400/20 text-teal-300 flex items-center justify-center mb-2.5">
                     <MessageCircle className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Chat Privat Guru</h4>
-                  <p className="text-[11px] text-slate-300 mt-1">Konsultasi langsung dua arah dengan guru pendamping.</p>
+                  <h4 className="text-sm font-bold text-white">Chat Privat & Aman</h4>
+                  <p className="text-xs text-slate-300 mt-1">Komunikasi dua arah langsung dengan guru pendamping untuk kemajuan anak.</p>
                 </div>
               </div>
             </div>
@@ -365,21 +352,88 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                     </div>
                   )}
 
+                  {/* Quick Fill Shortcuts */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Klik Cepat untuk Mengisi Form:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername('ortu_khadijah');
+                          setPassword('KHAD-2026');
+                        }}
+                        className="px-2 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors"
+                        title="Klik untuk mengisi akun murid urutan ke-2 (Siti Khadijah)"
+                      >
+                        ★ Murid #2 (Siti Khadijah)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername('ortu_adam');
+                          setPassword('ADAM-2026');
+                        }}
+                        className="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-900 font-medium border border-blue-200 transition-colors"
+                      >
+                        Murid #1 (Adam)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername('admin');
+                          setPassword('admin123');
+                        }}
+                        className="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium transition-colors"
+                      >
+                        Admin SIM
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Username / ID Pengguna
+                      Username / Nama Siswa / NISN
                     </label>
                     <div className="relative">
                       <input
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Contoh: admin, gurukelas, atau ortu_adam"
+                        placeholder="Contoh: ortu_khadijah, Siti Khadijah, atau 0142981002"
                         className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Bisa login dengan username (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">ortu_khadijah</code>), nama murid (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">Siti Khadijah</code>), atau NISN (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">0142981002</code>).
+                    </p>
                   </div>
+
+                  {/* Smart detection for student #2 */}
+                  {(username.toLowerCase().includes('khadijah') ||
+                    username.toLowerCase() === 'ortu_khadijah' ||
+                    username.toLowerCase().includes('siti') ||
+                    username === '0142981002' ||
+                    username === '2') && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                      <div>
+                        <span className="font-bold block">✓ Akun Murid #2: Siti Khadijah Azzahra</span>
+                        <span className="text-[11px] text-rose-700 font-mono">User: ortu_khadijah · Sandi: KHAD-2026</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername('ortu_khadijah');
+                          setPassword('KHAD-2026');
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] hover:bg-rose-700 shrink-0"
+                      >
+                        Gunakan Sandi Ini
+                      </button>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -390,7 +444,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Masukkan password akun Anda"
+                        placeholder="Contoh: KHAD-2026, ADAM-2026, admin123"
                         className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -398,7 +452,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Sandi default: cek akun demo</span>
+                    <span className="text-[11px] text-slate-500">
+                      Sandi murid ke-2: <strong className="font-mono text-rose-700 bg-rose-50 px-1 py-0.5 rounded">KHAD-2026</strong>
+                    </span>
                     <button
                       type="button"
                       onClick={() => setShowForgotModal(true)}
@@ -414,6 +470,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                   >
                     Masuk Sekarang
                   </button>
+
+                  {/* Quick Credentials Cheatsheet for Reviewer/Parent */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <details className="text-[11px] text-slate-600 group">
+                      <summary className="cursor-pointer font-bold text-indigo-700 hover:text-indigo-900 flex items-center justify-between py-1 select-none">
+                        <span>Lihat Daftar Akun & Password Resmi Siswa ({students.length})</span>
+                        <span className="text-xs group-open:rotate-180 transition-transform">▾</span>
+                      </summary>
+                      <div className="mt-2 max-h-44 overflow-y-auto space-y-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200/80 font-mono text-[10px]">
+                        {students.map((st, i) => (
+                          <div
+                            key={st.id}
+                            onClick={() => {
+                              setUsername(st.parentUsername);
+                              setPassword(st.parentPassword);
+                            }}
+                            className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-colors ${
+                              i === 1
+                                ? 'bg-rose-50 border-rose-300 hover:bg-rose-100 ring-1 ring-rose-300'
+                                : 'bg-white border-slate-200 hover:bg-indigo-50'
+                            }`}
+                            title="Klik untuk mengisi otomatis ke form login"
+                          >
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-sans font-bold text-slate-900 block">{i + 1}. {st.name}</span>
+                                {i === 1 && (
+                                  <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-sans font-bold">
+                                    Murid ke-2
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-slate-500 font-mono">User: {st.parentUsername} · NISN: {st.nisn}</span>
+                            </div>
+                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">
+                              {st.parentPassword}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
                 </form>
               )}
             </div>
@@ -645,12 +743,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
         </div>
       </section>
 
-      {/* Section 3: Struktur Organisasi Kepengurusan Kelas 4-A */}
-      <section id="organisasi" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 scroll-mt-20">
-        <ClassOrganizationView variant="embed" />
-      </section>
-
-      {/* Section 4: Companion Teachers Transparent Contact */}
+      {/* Section 3: Companion Teachers Transparent Contact */}
       <section id="kontak" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
         <div className="mb-6">
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Kontak Terbuka Guru Pendamping Kelas</h3>

@@ -69,6 +69,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [profileForm, setProfileForm] = useState<SchoolProfile>({ ...schoolProfile });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    setProfileForm({ ...schoolProfile });
+  }, [schoolProfile]);
+
   // Subject Modal / Form
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
   const [newSubjName, setNewSubjName] = useState('');
@@ -153,7 +157,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       )}
 
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md shadow-slate-200">
             <School className="w-6 h-6 text-slate-200" />
@@ -166,49 +170,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
               Personalisasi Sekolah & Manajemen Sistem
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kelola profil umum, kop surat, master kurikulum (CP & TP), dan bantuan lupa password seluruh akun
+              Kelola profil umum, kop surat, master kurikulum (CP & TP), teks landing page, dan bantuan reset password
             </p>
           </div>
-        </div>
-
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto scrollbar-thin">
-          <button
-            onClick={() => setActiveTab('profil')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'profil' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <School className="w-4 h-4" />
-            <span>Profil & Kop</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('kurikulum')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'kurikulum' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Kurikulum CP & TP</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('password')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'password' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <KeyRound className="w-4 h-4" />
-            <span>Bantuan Password ({users.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('laporan')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'laporan' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-emerald-600" />
-            <span>Rekap Eksekutif & Unduh Dokumen</span>
-          </button>
         </div>
       </div>
 
@@ -341,20 +305,76 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
                 />
               </div>
 
+              {/* Section: Pengaturan Paragraf & Teks Halaman Depan (Landing Page Hero) */}
+              <div className="pt-5 border-t border-slate-200 space-y-4">
+                <div className="bg-indigo-50/80 p-4 rounded-xl border border-indigo-200">
+                  <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs uppercase tracking-wider mb-1">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Sumber Paragraf & Sambutan Halaman Depan (Landing Page)</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Paragraf dan judul di bawah ini adalah teks utama yang tampil di bagian atas (Hero Banner) pada landing page portal. Anda dapat mengeditnya secara bebas kapan saja:
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Tagline Kecil Halaman Depan
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.heroTagline || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, heroTagline: e.target.value })}
+                    placeholder="Contoh: Portal Jurnal Belajar & Karakter Siswa Real-Time"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Judul Utama Sambutan (Hero Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.heroTitle || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, heroTitle: e.target.value })}
+                    placeholder="Contoh: Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Paragraf Sambutan & Deskripsi Sekolah (Hero Description)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={profileForm.heroDescription || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, heroDescription: e.target.value })}
+                    placeholder="Tuliskan keterangan lengkap aplikasi portal sekolah..."
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none leading-relaxed"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    *Paragraf ini langsung tersinkronisasi ke tampilan awal landing page dan database Firebase.
+                  </p>
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button
                   type="submit"
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-colors"
                 >
                   <Save className="w-4 h-4 text-emerald-400" />
-                  <span>Simpan Perubahan ke Database</span>
+                  <span>Simpan Seluruh Perubahan ke Database</span>
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Right Col: Live Preview Kop Surat */}
+          {/* Right Col: Live Preview Kop Surat & Live Preview Banner */}
           <div className="lg:col-span-5 space-y-4">
+            {/* Live Preview Kop Surat */}
             <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                 LIVE PREVIEW KOP SURAT RESMI
@@ -387,13 +407,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
               </div>
             </div>
 
+            {/* Live Preview Teks Banner Landing Page */}
+            <div className="bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-5 border border-indigo-800 shadow-md">
+              <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block mb-2">
+                LIVE PREVIEW BANNER HALAMAN DEPAN
+              </span>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-[10px] font-semibold">
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <span>{profileForm.heroTagline || 'Portal Jurnal Belajar & Karakter Siswa Real-Time'}</span>
+                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  {profileForm.heroTitle || 'Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita'}
+                </h4>
+                <p className="text-slate-300 text-xs leading-relaxed line-clamp-4">
+                  {profileForm.heroDescription ||
+                    `Aplikasi digital terpadu ${profileForm.classGrade} yang menghubungkan capaian harian siswa di kelas, bimbingan karakter konseling, penilaian ibadah PAI fleksibel, serta laporan khusus langsung ke wali murid secara transparan dan aman.`}
+                </p>
+              </div>
+            </div>
+
             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 text-xs text-indigo-950 space-y-2">
               <h4 className="font-bold text-indigo-900 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                 <span>Penyimpanan Terpusat & Real-Time</span>
               </h4>
               <p className="text-indigo-800 leading-relaxed">
-                Setiap kali Admin memperbarui data di formulir ini, seluruh modul (Guru Kelas, Guru BK, Guru PAI, dan Kartu Cetak Orang Tua) akan membaca nama sekolah dan kurikulum terbaru secara otomatis.
+                Setiap kali Admin memperbarui data di formulir ini, seluruh modul (Guru Kelas, Guru BK, Guru PAI, Landing Page, dan Kartu Cetak Orang Tua) akan membaca nama sekolah dan kurikulum terbaru secara otomatis.
               </p>
             </div>
           </div>
