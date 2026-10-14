@@ -28,6 +28,11 @@ import {
   INITIAL_ANNOUNCEMENTS,
   INITIAL_INTERNAL_GRADES,
 } from './mockData';
+import {
+  initFirebaseSync,
+  writeFirestoreDoc,
+  deleteFirestoreDoc,
+} from './firebase';
 
 const STORAGE_KEY_PREFIX = 'edujournal_sd_v1_';
 
@@ -56,6 +61,9 @@ export function useEduStore() {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
+    // Start two-way real-time Firestore sync
+    initFirebaseSync();
+
     const handleStorageChange = () => {
       setVersion((v) => v + 1);
     };
@@ -69,17 +77,7 @@ export function useEduStore() {
   const schoolProfile = getStoredItem<SchoolProfile>('school_profile', INITIAL_SCHOOL_PROFILE);
   const subjects = getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS);
   const learningObjectives = getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES);
-  const rawStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
-  const students = rawStudents.map((s) => {
-    if (!s.classRole) {
-      const match = INITIAL_STUDENTS.find((init) => init.id === s.id);
-      if (match && match.classRole) {
-        return { ...s, classRole: match.classRole, classRoleDuty: match.classRoleDuty };
-      }
-      return { ...s, classRole: 'Anggota Kelas', classRoleDuty: 'Aktif belajar dan bergotong royong di kelas.' };
-    }
-    return s;
-  });
+  const students = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
   const users = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
   const currentUser = getStoredItem<UserAccount | null>('current_user', null);
   const journalEntries = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
@@ -122,6 +120,7 @@ export function useEduStore() {
   // School Profile Actions
   const updateSchoolProfile = useCallback((profile: SchoolProfile) => {
     setStoredItem('school_profile', profile);
+    writeFirestoreDoc('settings', 'school_profile', profile);
   }, []);
 
   // Subjects & Learning Objectives Actions
@@ -132,19 +131,26 @@ export function useEduStore() {
       id: 'subj-' + Date.now(),
     };
     setStoredItem('subjects', [...current, newItem]);
+    writeFirestoreDoc('subjects', newItem.id, newItem);
   }, []);
 
   const updateSubject = useCallback((id: string, updated: Partial<SubjectItem>) => {
     const current = getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS);
-    setStoredItem(
-      'subjects',
-      current.map((s) => (s.id === id ? { ...s, ...updated } : s))
-    );
+    const item = current.find((s) => s.id === id);
+    if (item) {
+      const merged = { ...item, ...updated };
+      setStoredItem(
+        'subjects',
+        current.map((s) => (s.id === id ? merged : s))
+      );
+      writeFirestoreDoc('subjects', id, merged);
+    }
   }, []);
 
   const deleteSubject = useCallback((id: string) => {
     const current = getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS);
     setStoredItem('subjects', current.filter((s) => s.id !== id));
+    deleteFirestoreDoc('subjects', id);
   }, []);
 
   const addLearningObjective = useCallback((lo: Omit<LearningObjective, 'id'>) => {
@@ -154,19 +160,26 @@ export function useEduStore() {
       id: 'lo-' + Date.now(),
     };
     setStoredItem('learning_objectives', [...current, newItem]);
+    writeFirestoreDoc('learning_objectives', newItem.id, newItem);
   }, []);
 
   const updateLearningObjective = useCallback((id: string, updated: Partial<LearningObjective>) => {
     const current = getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES);
-    setStoredItem(
-      'learning_objectives',
-      current.map((l) => (l.id === id ? { ...l, ...updated } : l))
-    );
+    const item = current.find((l) => l.id === id);
+    if (item) {
+      const merged = { ...item, ...updated };
+      setStoredItem(
+        'learning_objectives',
+        current.map((l) => (l.id === id ? merged : l))
+      );
+      writeFirestoreDoc('learning_objectives', id, merged);
+    }
   }, []);
 
   const deleteLearningObjective = useCallback((id: string) => {
     const current = getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES);
     setStoredItem('learning_objectives', current.filter((l) => l.id !== id));
+    deleteFirestoreDoc('learning_objectives', id);
   }, []);
 
   // Student Actions
@@ -203,6 +216,9 @@ export function useEduStore() {
 
     setStoredItem('students', [...currentStudents, newStudent]);
     setStoredItem('users', [...currentUsers, newParentAccount]);
+
+    writeFirestoreDoc('students', newStudent.id, newStudent);
+    writeFirestoreDoc('users', newParentAccount.id, newParentAccount);
   }, []);
 
   const importStudents = useCallback((newList: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[]) => {
@@ -228,7 +244,7 @@ export function useEduStore() {
       };
       generatedStudents.push(s);
 
-      generatedParents.push({
+      const p: UserAccount = {
         id: `usr-parent-${Date.now()}-${index}`,
         username: parentUsername,
         password: parentPassword,
@@ -237,7 +253,11 @@ export function useEduStore() {
         title: `Orang Tua dari ${item.name}`,
         studentId: studentId,
         phone: item.parentPhone,
-      });
+      };
+      generatedParents.push(p);
+
+      writeFirestoreDoc('students', s.id, s);
+      writeFirestoreDoc('users', p.id, p);
     });
 
     setStoredItem('students', [...currentStudents, ...generatedStudents]);
@@ -248,26 +268,31 @@ export function useEduStore() {
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
 
-    setStoredItem(
-      'students',
-      currentStudents.map((s) => (s.id === id ? { ...s, ...updated } : s))
-    );
+    const targetStudent = currentStudents.find((s) => s.id === id);
+    if (targetStudent) {
+      const merged = { ...targetStudent, ...updated };
+      setStoredItem(
+        'students',
+        currentStudents.map((s) => (s.id === id ? merged : s))
+      );
+      writeFirestoreDoc('students', id, merged);
+    }
 
     // Sync parent user account name/phone if changed
     if (updated.parentName || updated.parentPhone) {
-      setStoredItem(
-        'users',
-        currentUsers.map((u) => {
-          if (u.studentId === id) {
-            return {
-              ...u,
-              name: updated.parentName ? `${updated.parentName} (Wali)` : u.name,
-              phone: updated.parentPhone || u.phone,
-            };
-          }
-          return u;
-        })
-      );
+      const updatedUsers = currentUsers.map((u) => {
+        if (u.studentId === id) {
+          const mergedUser = {
+            ...u,
+            name: updated.parentName ? `${updated.parentName} (Wali)` : u.name,
+            phone: updated.parentPhone || u.phone,
+          };
+          writeFirestoreDoc('users', u.id, mergedUser);
+          return mergedUser;
+        }
+        return u;
+      });
+      setStoredItem('users', updatedUsers);
     }
   }, []);
 
@@ -275,7 +300,13 @@ export function useEduStore() {
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     setStoredItem('students', currentStudents.filter((s) => s.id !== id));
-    setStoredItem('users', currentUsers.filter((u) => u.studentId !== id));
+    deleteFirestoreDoc('students', id);
+
+    const parentUser = currentUsers.find((u) => u.studentId === id);
+    if (parentUser) {
+      setStoredItem('users', currentUsers.filter((u) => u.studentId !== id));
+      deleteFirestoreDoc('users', parentUser.id);
+    }
   }, []);
 
   // Admin User & Password Assistance Actions
@@ -289,7 +320,9 @@ export function useEduStore() {
     const updatedUsers = currentUsers.map((u) => {
       if (u.id === userId) {
         targetStudentId = u.studentId;
-        return { ...u, password: generated };
+        const updated = { ...u, password: generated };
+        writeFirestoreDoc('users', u.id, updated);
+        return updated;
       }
       return u;
     });
@@ -298,10 +331,15 @@ export function useEduStore() {
 
     // If it's a parent user, update student's parentPassword too for consistency in credential cards
     if (targetStudentId) {
-      setStoredItem(
-        'students',
-        currentStudents.map((s) => (s.id === targetStudentId ? { ...s, parentPassword: generated } : s))
-      );
+      const updatedStudents = currentStudents.map((s) => {
+        if (s.id === targetStudentId) {
+          const updated = { ...s, parentPassword: generated };
+          writeFirestoreDoc('students', s.id, updated);
+          return updated;
+        }
+        return s;
+      });
+      setStoredItem('students', updatedStudents);
     }
 
     return generated;
@@ -315,11 +353,13 @@ export function useEduStore() {
       id: 'jrn-' + Date.now(),
     };
     setStoredItem('journal_entries', [newItem, ...current]);
+    writeFirestoreDoc('journal_entries', newItem.id, newItem);
   }, []);
 
   const deleteJournalEntry = useCallback((id: string) => {
     const current = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
     setStoredItem('journal_entries', current.filter((j) => j.id !== id));
+    deleteFirestoreDoc('journal_entries', id);
   }, []);
 
   // Star Rewards Actions
@@ -331,11 +371,13 @@ export function useEduStore() {
       timestamp: Date.now(),
     };
     setStoredItem('star_awards', [newItem, ...current]);
+    writeFirestoreDoc('star_awards', newItem.id, newItem);
   }, []);
 
   const deleteStarAward = useCallback((id: string) => {
     const current = getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS);
     setStoredItem('star_awards', current.filter((s) => s.id !== id));
+    deleteFirestoreDoc('star_awards', id);
   }, []);
 
   // BK Case Records Actions
@@ -347,19 +389,26 @@ export function useEduStore() {
       timestamp: Date.now(),
     };
     setStoredItem('case_records', [newItem, ...current]);
+    writeFirestoreDoc('case_records', newItem.id, newItem);
   }, []);
 
   const updateCaseRecord = useCallback((id: string, updated: Partial<CaseRecord>) => {
     const current = getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS);
-    setStoredItem(
-      'case_records',
-      current.map((c) => (c.id === id ? { ...c, ...updated } : c))
-    );
+    const item = current.find((c) => c.id === id);
+    if (item) {
+      const merged = { ...item, ...updated };
+      setStoredItem(
+        'case_records',
+        current.map((c) => (c.id === id ? merged : c))
+      );
+      writeFirestoreDoc('case_records', id, merged);
+    }
   }, []);
 
   const deleteCaseRecord = useCallback((id: string) => {
     const current = getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS);
     setStoredItem('case_records', current.filter((c) => c.id !== id));
+    deleteFirestoreDoc('case_records', id);
   }, []);
 
   // PAI Assessment Actions
@@ -370,23 +419,31 @@ export function useEduStore() {
       id: 'pai-ass-' + Date.now(),
     };
     setStoredItem('pai_assessments', [newItem, ...current]);
+    writeFirestoreDoc('pai_assessments', newItem.id, newItem);
   }, []);
 
   const updatePaiAssessment = useCallback((id: string, updated: Partial<PaiAssessment>) => {
     const current = getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS);
-    setStoredItem(
-      'pai_assessments',
-      current.map((p) => (p.id === id ? { ...p, ...updated } : p))
-    );
+    const item = current.find((p) => p.id === id);
+    if (item) {
+      const merged = { ...item, ...updated };
+      setStoredItem(
+        'pai_assessments',
+        current.map((p) => (p.id === id ? merged : p))
+      );
+      writeFirestoreDoc('pai_assessments', id, merged);
+    }
   }, []);
 
   const deletePaiAssessment = useCallback((id: string) => {
     const current = getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS);
     setStoredItem('pai_assessments', current.filter((p) => p.id !== id));
+    deleteFirestoreDoc('pai_assessments', id);
   }, []);
 
   const updatePaiStudentResult = useCallback((assessmentId: string, studentId: string, indicatorId: string, completed: boolean, notes?: string) => {
     const current = getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS);
+    let targetAssessment: PaiAssessment | null = null;
     const updated = current.map((p) => {
       if (p.id !== assessmentId) return p;
       const existingStudent = p.results[studentId] || { completedIndicators: {} };
@@ -394,7 +451,7 @@ export function useEduStore() {
         ...existingStudent.completedIndicators,
         [indicatorId]: completed,
       };
-      return {
+      targetAssessment = {
         ...p,
         results: {
           ...p.results,
@@ -406,8 +463,12 @@ export function useEduStore() {
           },
         },
       };
+      return targetAssessment;
     });
     setStoredItem('pai_assessments', updated);
+    if (targetAssessment) {
+      writeFirestoreDoc('pai_assessments', assessmentId, targetAssessment);
+    }
   }, []);
 
   // Chat Actions
@@ -420,19 +481,20 @@ export function useEduStore() {
       isRead: false,
     };
     setStoredItem('messages', [...current, newMsg]);
+    writeFirestoreDoc('messages', newMsg.id, newMsg);
   }, []);
 
   const markMessagesAsRead = useCallback((recipientId: string, senderId: string) => {
     const current = getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES);
-    setStoredItem(
-      'messages',
-      current.map((m) => {
-        if (m.recipientId === recipientId && m.senderId === senderId) {
-          return { ...m, isRead: true };
-        }
-        return m;
-      })
-    );
+    const updated = current.map((m) => {
+      if (m.recipientId === recipientId && m.senderId === senderId) {
+        const readMsg = { ...m, isRead: true };
+        writeFirestoreDoc('messages', m.id, readMsg);
+        return readMsg;
+      }
+      return m;
+    });
+    setStoredItem('messages', updated);
   }, []);
 
   // Announcements
@@ -443,11 +505,13 @@ export function useEduStore() {
       id: 'ann-' + Date.now(),
     };
     setStoredItem('announcements', [newItem, ...current]);
+    writeFirestoreDoc('announcements', newItem.id, newItem);
   }, []);
 
   const deleteAnnouncement = useCallback((id: string) => {
     const current = getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS);
     setStoredItem('announcements', current.filter((a) => a.id !== id));
+    deleteFirestoreDoc('announcements', id);
   }, []);
 
   // Internal Grade Records Actions (Internal Teacher Only - Hidden from Parents)
@@ -460,19 +524,26 @@ export function useEduStore() {
       isInternalOnly: true,
     };
     setStoredItem('internal_grades', [newGrade, ...current]);
+    writeFirestoreDoc('internal_grades', newGrade.id, newGrade);
   }, []);
 
   const updateInternalGrade = useCallback((id: string, updated: Partial<InternalGradeRecord>) => {
     const current = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);
-    setStoredItem(
-      'internal_grades',
-      current.map((g) => (g.id === id ? { ...g, ...updated } : g))
-    );
+    const item = current.find((g) => g.id === id);
+    if (item) {
+      const merged = { ...item, ...updated };
+      setStoredItem(
+        'internal_grades',
+        current.map((g) => (g.id === id ? merged : g))
+      );
+      writeFirestoreDoc('internal_grades', id, merged);
+    }
   }, []);
 
   const deleteInternalGrade = useCallback((id: string) => {
     const current = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);
     setStoredItem('internal_grades', current.filter((g) => g.id !== id));
+    deleteFirestoreDoc('internal_grades', id);
   }, []);
 
   const updateInternalStudentScore = useCallback((
@@ -483,9 +554,10 @@ export function useEduStore() {
     notes?: string
   ) => {
     const current = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);
+    let targetGrade: InternalGradeRecord | null = null;
     const updated = current.map((g) => {
       if (g.id !== gradeId) return g;
-      return {
+      targetGrade = {
         ...g,
         scores: {
           ...g.scores,
@@ -496,11 +568,15 @@ export function useEduStore() {
           },
         },
       };
+      return targetGrade;
     });
     setStoredItem('internal_grades', updated);
+    if (targetGrade) {
+      writeFirestoreDoc('internal_grades', gradeId, targetGrade);
+    }
   }, []);
 
-  // System Reset & Export/Import
+  // System Reset
   const resetToDefaultData = useCallback(() => {
     setStoredItem('school_profile', INITIAL_SCHOOL_PROFILE);
     setStoredItem('subjects', INITIAL_SUBJECTS);
@@ -515,6 +591,17 @@ export function useEduStore() {
     setStoredItem('messages', INITIAL_MESSAGES);
     setStoredItem('announcements', INITIAL_ANNOUNCEMENTS);
     setStoredItem('current_user', null);
+
+    // Sync seed to Firestore
+    writeFirestoreDoc('settings', 'school_profile', INITIAL_SCHOOL_PROFILE);
+    INITIAL_STUDENTS.forEach((s) => writeFirestoreDoc('students', s.id, s));
+    INITIAL_USERS.forEach((u) => writeFirestoreDoc('users', u.id, u));
+    INITIAL_JOURNAL_ENTRIES.forEach((j) => writeFirestoreDoc('journal_entries', j.id, j));
+    INITIAL_INTERNAL_GRADES.forEach((g) => writeFirestoreDoc('internal_grades', g.id, g));
+    INITIAL_STAR_AWARDS.forEach((st) => writeFirestoreDoc('star_awards', st.id, st));
+    INITIAL_CASE_RECORDS.forEach((c) => writeFirestoreDoc('case_records', c.id, c));
+    INITIAL_PAI_ASSESSMENTS.forEach((p) => writeFirestoreDoc('pai_assessments', p.id, p));
+    INITIAL_MESSAGES.forEach((m) => writeFirestoreDoc('messages', m.id, m));
   }, []);
 
   return {

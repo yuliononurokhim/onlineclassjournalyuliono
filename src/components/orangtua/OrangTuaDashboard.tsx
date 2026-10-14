@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { UserRole } from '../../types';
 import {
@@ -22,13 +22,15 @@ import {
   MinusCircle,
   TrendingDown,
   TrendingUp,
-  Info,
-  Crown,
-  ArrowRight
+  Info
 } from 'lucide-react';
-import { ClassOrganizationView } from '../common/ClassOrganizationView';
 
-export const OrangTuaDashboard: React.FC = () => {
+interface OrangTuaDashboardProps {
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     schoolProfile,
     currentUser,
@@ -41,7 +43,19 @@ export const OrangTuaDashboard: React.FC = () => {
     sendMessage,
   } = useEduStore();
 
-  const [activeTab, setActiveTab] = useState<'bintang' | 'organisasi' | 'jurnal' | 'bk' | 'pai' | 'chat'>('bintang');
+  const [activeTab, setActiveTabState] = useState<'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat'>((currentTab as any) || 'bintang');
+
+  useEffect(() => {
+    if (currentTab && ['bintang', 'jurnal', 'bk', 'pai', 'chat'].includes(currentTab)) {
+      setActiveTabState(currentTab as any);
+    }
+  }, [currentTab]);
+
+  const setActiveTab = (tab: 'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat') => {
+    setActiveTabState(tab);
+    if (onTabChange) onTabChange(tab);
+  };
+
   const [selectedTeacherRole, setSelectedTeacherRole] = useState<'guru_kelas' | 'guru_bk' | 'guru_pai'>('guru_kelas');
   const [chatInputText, setChatInputText] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -187,21 +201,6 @@ export const OrangTuaDashboard: React.FC = () => {
               <p className="text-xs text-indigo-200 mt-1">
                 {schoolProfile.name} · {schoolProfile.classGrade} · Wali: {student.parentName}
               </p>
-
-              {/* Class Role Badge for the Child */}
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shadow-md border border-amber-300">
-                  <Crown className="w-3.5 h-3.5 fill-amber-950 text-amber-950" />
-                  <span>Jabatan di Kelas: {student.classRole || 'Anggota Kelas'}</span>
-                </div>
-                <button
-                  onClick={() => setActiveTab('organisasi')}
-                  className="inline-flex items-center gap-1 text-[11px] bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-xl text-white font-semibold transition-colors border border-white/20"
-                >
-                  <span>Bagan Organisasi Kelas</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
             </div>
           </div>
 
@@ -277,15 +276,6 @@ export const OrangTuaDashboard: React.FC = () => {
         >
           <Sparkles className="w-4 h-4 text-amber-300" />
           <span>Bintang & Pelanggaran ({myStars.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('organisasi')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'organisasi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Crown className="w-4 h-4 text-amber-400" />
-          <span>Struktur Organisasi & Jabatan Ananda</span>
         </button>
         <button
           onClick={() => setActiveTab('jurnal')}

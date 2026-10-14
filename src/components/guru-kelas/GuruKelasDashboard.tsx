@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { Student, ClassJournalEntry, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
@@ -32,7 +32,12 @@ import {
   FileText
 } from 'lucide-react';
 
-export const GuruKelasDashboard: React.FC = () => {
+interface GuruKelasDashboardProps {
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     schoolProfile,
     subjects,
@@ -54,7 +59,21 @@ export const GuruKelasDashboard: React.FC = () => {
     internalGrades,
   } = useEduStore();
 
-  const [activeTab, setActiveTab] = useState<'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'chat'>('murid');
+  const [activeTab, setActiveTabState] = useState<'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'chat'>(
+    (currentTab as any) || 'murid'
+  );
+
+  useEffect(() => {
+    if (currentTab && ['murid', 'kartu', 'jurnal', 'penilaian', 'bintang', 'rekap', 'chat'].includes(currentTab)) {
+      setActiveTabState(currentTab as any);
+    }
+  }, [currentTab]);
+
+  const setActiveTab = (tab: 'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'chat') => {
+    setActiveTabState(tab);
+    if (onTabChange) onTabChange(tab);
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Student Search

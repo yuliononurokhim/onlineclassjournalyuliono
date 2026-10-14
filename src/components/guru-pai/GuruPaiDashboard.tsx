@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { PaiAssessment, PaiSubIndicator, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
@@ -26,7 +26,12 @@ import {
   FileText
 } from 'lucide-react';
 
-export const GuruPaiDashboard: React.FC = () => {
+interface GuruPaiDashboardProps {
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     students,
     paiAssessments,
@@ -42,7 +47,21 @@ export const GuruPaiDashboard: React.FC = () => {
     currentUser,
   } = useEduStore();
 
-  const [activeTab, setActiveTab] = useState<'penilaian' | 'nilai_internal' | 'bintang' | 'rekap' | 'chat'>('penilaian');
+  const [activeTab, setActiveTabState] = useState<'penilaian' | 'nilai_internal' | 'bintang' | 'rekap' | 'chat'>(
+    (currentTab as any) || 'penilaian'
+  );
+
+  useEffect(() => {
+    if (currentTab && ['penilaian', 'nilai_internal', 'bintang', 'rekap', 'chat'].includes(currentTab)) {
+      setActiveTabState(currentTab as any);
+    }
+  }, [currentTab]);
+
+  const setActiveTab = (tab: 'penilaian' | 'nilai_internal' | 'bintang' | 'rekap' | 'chat') => {
+    setActiveTabState(tab);
+    if (onTabChange) onTabChange(tab);
+  };
+
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>(paiAssessments[0]?.id || '');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { SchoolProfile, SubjectItem, LearningObjective } from '../../types';
 import {
@@ -26,7 +26,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     schoolProfile,
     updateSchoolProfile,
@@ -46,7 +51,21 @@ export const AdminDashboard: React.FC = () => {
     starAwards,
   } = useEduStore();
 
-  const [activeTab, setActiveTab] = useState<'profil' | 'kurikulum' | 'password' | 'laporan'>('profil');
+  const [activeTab, setActiveTabState] = useState<'profil' | 'kurikulum' | 'password' | 'laporan'>(
+    (currentTab as any) || 'profil'
+  );
+
+  useEffect(() => {
+    if (currentTab && ['profil', 'kurikulum', 'password', 'laporan'].includes(currentTab)) {
+      setActiveTabState(currentTab as any);
+    }
+  }, [currentTab]);
+
+  const setActiveTab = (tab: 'profil' | 'kurikulum' | 'password' | 'laporan') => {
+    setActiveTabState(tab);
+    if (onTabChange) onTabChange(tab);
+  };
+
   const [profileForm, setProfileForm] = useState<SchoolProfile>({ ...schoolProfile });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 

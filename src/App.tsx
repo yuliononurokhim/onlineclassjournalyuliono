@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from './services/store';
-import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { TopHeader } from './components/TopHeader';
 import { LandingPage } from './components/LandingPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { GuruKelasDashboard } from './components/guru-kelas/GuruKelasDashboard';
 import { GuruBkDashboard } from './components/guru-bk/GuruBkDashboard';
 import { GuruPaiDashboard } from './components/guru-pai/GuruPaiDashboard';
 import { OrangTuaDashboard } from './components/orangtua/OrangTuaDashboard';
-import { School, Heart, Shield, BookOpen, Sparkles, Users } from 'lucide-react';
+import { School } from 'lucide-react';
 
 export default function App() {
   const { currentUser, schoolProfile } = useEduStore();
   const [activeView, setActiveView] = useState<string>('landing');
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [activeSubTab, setActiveSubTab] = useState<string>('murid');
+
+  // Responsive Sidebar States
+  const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState<boolean>(false);
+
+  // Synchronize default sub-tab when currentUser role changes
+  useEffect(() => {
+    if (currentUser?.role) {
+      switch (currentUser.role) {
+        case 'admin':
+          setActiveSubTab('profil');
+          break;
+        case 'guru_kelas':
+          setActiveSubTab('murid');
+          break;
+        case 'guru_bk':
+          setActiveSubTab('kasus');
+          break;
+        case 'guru_pai':
+          setActiveSubTab('penilaian');
+          break;
+        case 'orangtua':
+          setActiveSubTab('bintang');
+          break;
+      }
+    }
+  }, [currentUser?.role]);
 
   const handleLoginSuccess = () => {
     setActiveView('dashboard');
-    setShowLoginModal(false);
+  };
+
+  const handleOpenLogin = () => {
+    setActiveView('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Determine which dashboard to render based on user role
@@ -27,58 +59,102 @@ export default function App() {
 
     switch (currentUser.role) {
       case 'admin':
-        return <AdminDashboard />;
+        return (
+          <AdminDashboard
+            currentTab={activeSubTab}
+            onTabChange={(tab) => setActiveSubTab(tab)}
+          />
+        );
       case 'guru_kelas':
-        return <GuruKelasDashboard />;
+        return (
+          <GuruKelasDashboard
+            currentTab={activeSubTab}
+            onTabChange={(tab) => setActiveSubTab(tab)}
+          />
+        );
       case 'guru_bk':
-        return <GuruBkDashboard />;
+        return (
+          <GuruBkDashboard
+            currentTab={activeSubTab}
+            onTabChange={(tab) => setActiveSubTab(tab)}
+          />
+        );
       case 'guru_pai':
-        return <GuruPaiDashboard />;
+        return (
+          <GuruPaiDashboard
+            currentTab={activeSubTab}
+            onTabChange={(tab) => setActiveSubTab(tab)}
+          />
+        );
       case 'orangtua':
-        return <OrangTuaDashboard />;
+        return (
+          <OrangTuaDashboard
+            currentTab={activeSubTab}
+            onTabChange={(tab) => setActiveSubTab(tab)}
+          />
+        );
       default:
         return <LandingPage onLoginSuccess={handleLoginSuccess} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Top Navbar */}
-      <Navbar
-        onOpenLoginModal={() => {
-          setActiveView('landing');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans selection:bg-indigo-500 selection:text-white antialiased">
+      {/* 1. Left Vertical Sidebar (Desktop Fixed & Mobile Drawer) */}
+      <Sidebar
+        isOpenMobile={isOpenMobile}
+        onCloseMobile={() => setIsOpenMobile(false)}
+        isCollapsedDesktop={isCollapsedDesktop}
+        onToggleCollapseDesktop={() => setIsCollapsedDesktop(!isCollapsedDesktop)}
         activeView={activeView}
         setActiveView={setActiveView}
+        activeSubTab={activeSubTab}
+        setActiveSubTab={setActiveSubTab}
+        onOpenLoginModal={handleOpenLogin}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1">
-        {activeView === 'landing' || activeView === 'pengumuman' || activeView === 'kontak' ? (
-          <LandingPage onLoginSuccess={handleLoginSuccess} />
-        ) : (
-          renderDashboard()
-        )}
-      </main>
+      {/* 2. Main Content Layout (Offset for desktop sidebar) */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ease-in-out ${
+          isCollapsedDesktop ? 'lg:pl-20' : 'lg:pl-72'
+        }`}
+      >
+        {/* Top Header Bar */}
+        <TopHeader
+          onToggleMobileMenu={() => setIsOpenMobile(!isOpenMobile)}
+          activeView={activeView}
+          setActiveView={setActiveView}
+          activeSubTab={activeSubTab}
+          onOpenLoginModal={handleOpenLogin}
+        />
 
-      {/* Footer */}
-      <footer className="no-print bg-white border-t border-slate-200 py-8 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <School className="w-4 h-4 text-indigo-600" />
-            <span className="font-bold text-slate-900">{schoolProfile.name}</span>
-            <span>·</span>
-            <span>SIM Jurnal Kelas Online {schoolProfile.classGrade}</span>
-          </div>
+        {/* Dynamic View Body */}
+        <main className="flex-1">
+          {activeView === 'landing' || activeView === 'pengumuman' || activeView === 'kontak' ? (
+            <LandingPage onLoginSuccess={handleLoginSuccess} />
+          ) : (
+            renderDashboard()
+          )}
+        </main>
 
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>TA {schoolProfile.academicYear} ({schoolProfile.semester})</span>
-            <span>·</span>
-            <span>NPSN {schoolProfile.npsn}</span>
+        {/* School Footer */}
+        <footer className="no-print bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mt-auto">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <School className="w-4 h-4 text-indigo-600" />
+              <span className="font-bold text-slate-900">{schoolProfile.name}</span>
+              <span aria-hidden="true">·</span>
+              <span>SIM Jurnal Kelas Online {schoolProfile.classGrade}</span>
+            </div>
+
+            <div className="flex items-center gap-4 text-slate-500 font-medium">
+              <span>TA {schoolProfile.academicYear} ({schoolProfile.semester})</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-mono">NPSN {schoolProfile.npsn}</span>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

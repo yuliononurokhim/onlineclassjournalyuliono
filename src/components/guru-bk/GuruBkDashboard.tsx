@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { CaseRecord, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
@@ -25,7 +25,12 @@ import {
   FileText
 } from 'lucide-react';
 
-export const GuruBkDashboard: React.FC = () => {
+interface GuruBkDashboardProps {
+  currentTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     students,
     caseRecords,
@@ -40,7 +45,21 @@ export const GuruBkDashboard: React.FC = () => {
     currentUser,
   } = useEduStore();
 
-  const [activeTab, setActiveTab] = useState<'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'chat'>('kasus');
+  const [activeTab, setActiveTabState] = useState<'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'chat'>(
+    (currentTab as any) || 'kasus'
+  );
+
+  useEffect(() => {
+    if (currentTab && ['kasus', 'bintang', 'penilaian', 'rekap', 'chat'].includes(currentTab)) {
+      setActiveTabState(currentTab as any);
+    }
+  }, [currentTab]);
+
+  const setActiveTab = (tab: 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'chat') => {
+    setActiveTabState(tab);
+    if (onTabChange) onTabChange(tab);
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // New Case Form

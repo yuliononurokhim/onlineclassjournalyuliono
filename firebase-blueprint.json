@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "students": {
+      "title": "Student",
+      "description": "Data profil siswa dan kredensial akses orang tua",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "nisn": { "type": "string" },
+        "parentName": { "type": "string" }
+      },
+      "required": ["id", "name", "nisn"]
+    },
+    "journal_entries": {
+      "title": "ClassJournalEntry",
+      "description": "Jurnal harian mengajar guru kelas dan presensi",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "subjectName": { "type": "string" },
+        "teacherName": { "type": "string" }
+      },
+      "required": ["id", "date", "subjectName", "teacherName"]
+    },
+    "internal_grades": {
+      "title": "InternalGradeRecord",
+      "description": "Buku nilai internal guru kelas, BK, dan PAI",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subjectName": { "type": "string" },
+        "assessmentType": { "type": "string" }
+      },
+      "required": ["id", "subjectName"]
+    },
+    "case_records": {
+      "title": "CaseRecord",
+      "description": "Catatan kasus dan bimbingan konseling BK",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentName": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "studentName"]
+    },
+    "pai_assessments": {
+      "title": "PaiAssessment",
+      "description": "Matriks fleksibel penilaian harian dan ibadah PAI",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "aspectCategory": { "type": "string" }
+      },
+      "required": ["id", "title"]
+    },
+    "star_awards": {
+      "title": "StarAward",
+      "description": "Apresiasi bintang karakter dan sanksi sikap",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "points": { "type": "number" }
+      },
+      "required": ["id", "studentId"]
+    },
+    "messages": {
+      "title": "ChatMessage",
+      "description": "Pesan konsultasi dua arah antara guru dan wali murid",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "content": { "type": "string" }
+      },
+      "required": ["id", "senderId", "recipientId", "content"]
+    }
+  }
+}
