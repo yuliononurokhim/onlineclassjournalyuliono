@@ -70,6 +70,8 @@ export interface Student {
   parentUsername: string;
   parentPassword: string;
   avatarBgColor?: string;
+  classRole?: string;
+  classRoleDuty?: string;
 }
 
 export interface ClassJournalEntry {

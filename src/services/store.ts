@@ -205,9 +205,20 @@ export function useEduStore() {
     return false;
   }, []);
 
-  const switchRole = useCallback((role: UserRole) => {
+  const switchRole = useCallback((role: UserRole, studentIdOrUserId?: string) => {
     const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
-    const targetUser = allUsers.find((u) => u.role === role);
+    let targetUser: UserAccount | undefined;
+    if (studentIdOrUserId) {
+      targetUser = allUsers.find(
+        (u) =>
+          u.id === studentIdOrUserId ||
+          u.studentId === studentIdOrUserId ||
+          u.username === studentIdOrUserId
+      );
+    }
+    if (!targetUser) {
+      targetUser = allUsers.find((u) => u.role === role);
+    }
     if (targetUser) {
       setStoredItem('current_user', targetUser);
     }

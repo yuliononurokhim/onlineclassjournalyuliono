@@ -309,9 +309,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  // Identify linked student and stars if role is orangtua
+  const linkedStudent =
+    currentUser?.role === 'orangtua'
+      ? students.find((s) => s.id === currentUser.studentId) ||
+        students.find((s) => s.parentUsername === currentUser.username) ||
+        students[0]
+      : null;
+
+  const studentStars = linkedStudent
+    ? starAwards.filter((s) => s.studentId === linkedStudent.id)
+    : [];
+  const totalRewards = studentStars
+    .filter((s) => s.type !== 'penalty')
+    .reduce((sum, s) => sum + s.starsCount, 0);
+  const totalPenalties = studentStars
+    .filter((s) => s.type === 'penalty')
+    .reduce((sum, s) => sum + s.starsCount, 0);
+  const netStars = Math.max(0, totalRewards - totalPenalties);
+
   const handleSubItemClick = (role: UserRole, subItemId: string) => {
-    // If not logged in as this role, switch demo role so the user immediately sees the requested view
-    if (currentUser?.role !== role) {
+    // Only switch role if admin is testing demo roles
+    if (currentUser?.role === 'admin' && role !== 'admin') {
       switchRole(role);
     }
     setActiveView('dashboard');
@@ -333,6 +352,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { role: 'guru_pai', label: 'Guru PAI', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { role: 'orangtua', label: 'Orang Tua', icon: <Users className="w-3.5 h-3.5" /> },
   ];
+
+  // Find current user's menu group
+  const currentUserGroup = currentUser
+    ? roleMenuGroups.find((g) => g.role === currentUser.role)
+    : null;
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white text-slate-800 border-r border-slate-200 select-none">
@@ -378,14 +402,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* 2. Active User & Role Switcher Bar */}
+      {/* 2. Active User & Role Display Bar */}
       {!isCollapsedDesktop && (
         <div className="p-3 mx-3 my-2 bg-slate-50 rounded-xl border border-slate-200/90">
           {currentUser ? (
             <div className="relative">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                      currentUser.role === 'orangtua'
+                        ? 'bg-amber-500 text-white'
+                        : currentUser.role === 'admin'
+                        ? 'bg-slate-800 text-white'
+                        : currentUser.role === 'guru_kelas'
+                        ? 'bg-indigo-600 text-white'
+                        : currentUser.role === 'guru_bk'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-teal-600 text-white'
+                    }`}
+                  >
                     {currentUser.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
@@ -393,25 +429,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {currentUser.name}
                     </p>
                     <p className="text-[11px] text-indigo-700 font-medium truncate mt-0.5">
-                      {currentUser.title}
+                      {currentUser.role === 'orangtua' && linkedStudent
+                        ? `Wali ${linkedStudent.name.split(' ')[0]}`
+                        : currentUser.title}
                     </p>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setShowRoleSwitcherDropdown(!showRoleSwitcherDropdown)}
-                  className="px-2 py-1 rounded-md text-[11px] font-bold bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 hover:text-indigo-700 transition-colors shrink-0"
-                  title="Ganti Peran Pengguna"
-                >
-                  Ganti
-                </button>
+                {/* Only Admin gets the Demo Role Switcher button */}
+                {currentUser.role === 'admin' && (
+                  <button
+                    onClick={() => setShowRoleSwitcherDropdown(!showRoleSwitcherDropdown)}
+                    className="px-2 py-1 rounded-md text-[11px] font-bold bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 hover:text-indigo-700 transition-colors shrink-0"
+                    title="Ganti Peran Demo (Admin)"
+                  >
+                    Ganti
+                  </button>
+                )}
               </div>
 
-              {/* Quick Switch Dropdown */}
-              {showRoleSwitcherDropdown && (
+              {/* Quick Switch Dropdown - Strictly for Admin */}
+              {showRoleSwitcherDropdown && currentUser.role === 'admin' && (
                 <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in slide-in-from-top-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    Ganti Peran Demo
+                    Ganti Peran Demo (Admin)
                   </p>
                   <div className="space-y-1">
                     {rolesDemoList.map((r) => {
@@ -454,7 +495,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* 3. Navigation Links & Role Accordions */}
+      {/* 3. Navigation Links & Strict Role-Based Portal */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4 scrollbar-thin">
         {/* Main General Section */}
         <div>
@@ -505,120 +546,235 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Role-Based Accordions */}
-        <div>
-          {!isCollapsedDesktop && (
-            <div className="px-3 flex items-center justify-between mb-1.5">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Modul Peran Pengguna
-              </p>
-              <span className="text-[10px] text-slate-400 font-medium">Dropdown</span>
-            </div>
-          )}
+        {/* ROLE CASE 1: ORANG TUA -> ONLY SHOWS THIS STUDENT'S PORTAL */}
+        {currentUser?.role === 'orangtua' && linkedStudent && (
+          <div className="space-y-2.5">
+            {!isCollapsedDesktop && (
+              <div className="px-3 flex items-center justify-between mb-1">
+                <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                  Portal Siswa & Wali Murid
+                </p>
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                  Kelas {schoolProfile.classGrade}
+                </span>
+              </div>
+            )}
 
-          <div className="space-y-2">
-            {roleMenuGroups.map((group) => {
-              const isRoleActive = currentUser?.role === group.role;
-              const isOpen = openAccordions[group.role] ?? false;
-
-              return (
-                <div
-                  key={group.role}
-                  className={`rounded-xl border transition-colors ${
-                    isRoleActive
-                      ? 'border-indigo-200 bg-white shadow-2xs'
-                      : 'border-slate-200/80 bg-slate-50/40'
-                  }`}
-                >
-                  {/* Accordion Header / Role Parent Button */}
-                  <button
-                    onClick={() => {
-                      if (isCollapsedDesktop) {
-                        onToggleCollapseDesktop();
-                      }
-                      toggleAccordion(group.role);
-                    }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-colors ${
-                      isRoleActive ? 'text-indigo-950 font-bold' : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`p-1.5 rounded-lg ${isRoleActive ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200/70 text-slate-700'}`}>
-                        {group.icon}
-                      </div>
-                      {!isCollapsedDesktop && (
-                        <div className="min-w-0">
-                          <span className="text-xs font-bold block truncate leading-snug">
-                            {group.title}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-normal">
-                            {group.roleBadge}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isCollapsedDesktop && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isRoleActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Peran Aktif Saat Ini" />
-                        )}
-                        {isOpen ? (
-                          <ChevronDown className="w-4 h-4 text-slate-400" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-slate-400" />
-                        )}
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Sub-menu Items (Dropdown/Accordion Content) */}
-                  {!isCollapsedDesktop && isOpen && (
-                    <div className="px-2 pb-2 pt-1 border-t border-slate-100 space-y-0.5 animate-in fade-in slide-in-from-top-1">
-                      {group.subItems.map((sub) => {
-                        const isSubActive =
-                          activeView === 'dashboard' &&
-                          currentUser?.role === group.role &&
-                          activeSubTab === sub.id;
-
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => handleSubItemClick(group.role, sub.id)}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              isSubActive
-                                ? 'bg-indigo-600 text-white font-bold shadow-2xs'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <span className={isSubActive ? 'text-white' : 'text-slate-400'}>
-                                {sub.icon}
-                              </span>
-                              <span className="truncate">{sub.label}</span>
-                            </div>
-
-                            {sub.badge !== undefined && (
-                              <span
-                                className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
-                                  isSubActive
-                                    ? 'bg-indigo-800 text-indigo-100'
-                                    : 'bg-slate-200/70 text-slate-600'
-                                }`}
-                              >
-                                {sub.badge}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+            {/* Child Profile Highlight Card */}
+            {!isCollapsedDesktop && (
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white border border-amber-200/90 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-base shadow-sm shrink-0">
+                    {linkedStudent.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black text-slate-900 truncate">
+                      {linkedStudent.name}
+                    </p>
+                    <p className="text-[10px] font-mono text-slate-500 mt-0.5">
+                      NISN: <span className="font-bold text-slate-700">{linkedStudent.nisn}</span>
+                    </p>
+                  </div>
                 </div>
-              );
-            })}
+
+                <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-600 font-medium">Bintang Karakter:</span>
+                  <div className="flex items-center gap-1 font-bold text-amber-900">
+                    <Award className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{netStars} Bintang</span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      (+{totalRewards}/-{totalPenalties})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Student Navigation Items (No Admin, No Guru menus!) */}
+            <div className="space-y-1">
+              {roleMenuGroups
+                .find((g) => g.role === 'orangtua')
+                ?.subItems.map((sub) => {
+                  const isSubActive =
+                    activeView === 'dashboard' && activeSubTab === sub.id;
+
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => handleSubItemClick('orangtua', sub.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        isSubActive
+                          ? 'bg-amber-500 text-white font-bold shadow-xs'
+                          : 'text-slate-700 hover:bg-amber-50/80 hover:text-amber-900'
+                      }`}
+                      title={sub.label}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className={isSubActive ? 'text-white' : 'text-amber-600'}>
+                          {sub.icon}
+                        </span>
+                        {!isCollapsedDesktop && <span className="truncate">{sub.label}</span>}
+                      </div>
+
+                      {sub.badge !== undefined && !isCollapsedDesktop && (
+                        <span
+                          className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
+                            isSubActive
+                              ? 'bg-amber-700 text-white'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {sub.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ROLE CASE 2: TEACHERS & ADMIN (GURU KELAS, GURU BK, GURU PAI, ADMIN) -> STRICTLY THEIR OWN MODULE */}
+        {currentUser && currentUser.role !== 'orangtua' && currentUserGroup && (
+          <div className="space-y-2">
+            {!isCollapsedDesktop && (
+              <div className="px-3 flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  {currentUserGroup.title.toUpperCase()}
+                </p>
+                <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                  {currentUserGroup.roleBadge}
+                </span>
+              </div>
+            )}
+
+            <div className="rounded-xl border border-indigo-200/90 bg-white shadow-2xs overflow-hidden">
+              <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
+                  {currentUserGroup.icon}
+                </div>
+                {!isCollapsedDesktop && (
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold block text-slate-900 truncate">
+                      Modul {currentUserGroup.title}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Akses Resmi {currentUserGroup.roleBadge}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Sub-menu Items */}
+              <div className="p-1.5 space-y-0.5">
+                {currentUserGroup.subItems.map((sub) => {
+                  const isSubActive =
+                    activeView === 'dashboard' && activeSubTab === sub.id;
+
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => handleSubItemClick(currentUserGroup.role, sub.id)}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                        isSubActive
+                          ? 'bg-indigo-600 text-white font-bold shadow-2xs'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                      title={sub.label}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className={isSubActive ? 'text-white' : 'text-slate-400'}>
+                          {sub.icon}
+                        </span>
+                        {!isCollapsedDesktop && <span className="truncate">{sub.label}</span>}
+                      </div>
+
+                      {sub.badge !== undefined && !isCollapsedDesktop && (
+                        <span
+                          className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
+                            isSubActive
+                              ? 'bg-indigo-800 text-indigo-100'
+                              : 'bg-slate-200/70 text-slate-600'
+                          }`}
+                        >
+                          {sub.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Admin-Only Supervisory Accordion (Only for Admin to audit other roles) */}
+            {currentUser.role === 'admin' && !isCollapsedDesktop && (
+              <div className="pt-2 border-t border-slate-200/70">
+                <button
+                  onClick={() => toggleAccordion('supervisi_admin')}
+                  className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-800"
+                >
+                  <span>Supervisi & Pratinjau Peran</span>
+                  {openAccordions['supervisi_admin'] ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
+                {openAccordions['supervisi_admin'] && (
+                  <div className="space-y-1 mt-1 p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    <p className="text-[10px] text-slate-400 px-2 py-1">
+                      Mode khusus Administrator untuk menginspeksi modul peran lain:
+                    </p>
+                    {roleMenuGroups
+                      .filter((g) => g.role !== 'admin')
+                      .map((g) => (
+                        <button
+                          key={g.role}
+                          onClick={() => {
+                            switchRole(g.role);
+                            setActiveView('dashboard');
+                          }}
+                          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-white hover:text-indigo-700 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            {g.icon}
+                            <span>{g.title}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">Pratinjau</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ROLE CASE 3: GUEST / NOT LOGGED IN -> CLEAN ENTRY CARD */}
+        {!currentUser && (
+          <div className="space-y-2">
+            {!isCollapsedDesktop && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 text-center space-y-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-sm">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Pintu Masuk Portal</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                    Silakan masuk menggunakan akun Guru, Admin, atau Kartu Akses Orang Tua (NISN).
+                  </p>
+                </div>
+                <button
+                  onClick={onOpenLoginModal}
+                  className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors"
+                >
+                  Masuk ke Aplikasi
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 4. Bottom Footer & Session Controls */}
