@@ -47,7 +47,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
   useEffect(() => {
     if (currentTab && ['bintang', 'jurnal', 'bk', 'pai', 'chat'].includes(currentTab)) {
-      setActiveTabState(currentTab as any);
+      setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 

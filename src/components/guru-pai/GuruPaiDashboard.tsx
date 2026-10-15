@@ -53,7 +53,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
 
   useEffect(() => {
     if (currentTab && ['penilaian', 'nilai_internal', 'bintang', 'rekap', 'chat'].includes(currentTab)) {
-      setActiveTabState(currentTab as any);
+      setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 

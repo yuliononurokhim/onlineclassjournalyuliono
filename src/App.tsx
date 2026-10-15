@@ -22,22 +22,16 @@ export default function App() {
   // Synchronize default sub-tab when currentUser role changes
   useEffect(() => {
     if (currentUser?.role) {
-      switch (currentUser.role) {
-        case 'admin':
-          setActiveSubTab('profil');
-          break;
-        case 'guru_kelas':
-          setActiveSubTab('murid');
-          break;
-        case 'guru_bk':
-          setActiveSubTab('kasus');
-          break;
-        case 'guru_pai':
-          setActiveSubTab('penilaian');
-          break;
-        case 'orangtua':
-          setActiveSubTab('bintang');
-          break;
+      const defaultTabs: Record<string, string> = {
+        admin: 'profil',
+        guru_kelas: 'murid',
+        guru_bk: 'kasus',
+        guru_pai: 'penilaian',
+        orangtua: 'bintang',
+      };
+      const target = defaultTabs[currentUser.role];
+      if (target) {
+        setActiveSubTab((prev) => (prev !== target ? target : prev));
       }
     }
   }, [currentUser?.role]);
@@ -99,7 +93,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans selection:bg-indigo-500 selection:text-white antialiased">
+    <div className="min-h-screen bg-[#faf8f5] text-[#1e293b] flex font-sans selection:bg-indigo-600 selection:text-white antialiased">
       {/* 1. Left Vertical Sidebar (Desktop Fixed & Mobile Drawer) */}
       <Sidebar
         isOpenMobile={isOpenMobile}

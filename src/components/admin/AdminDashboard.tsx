@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEduStore } from '../../services/store';
 import { SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
 import {
@@ -81,11 +81,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
 
   useEffect(() => {
     if (currentTab && ['profil', 'kurikulum', 'guru', 'password', 'laporan'].includes(currentTab)) {
-      setActiveTabState(currentTab as any);
+      setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
-        setTeacherSubTab('password');
+        setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
       } else if (currentTab === 'guru') {
-        setTeacherSubTab('guru');
+        setTeacherSubTab((prev) => (prev !== 'guru' ? 'guru' : prev));
       }
     }
   }, [currentTab]);
@@ -95,14 +95,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     if (onTabChange) onTabChange(tab);
   };
 
-  const [profileForm, setProfileForm] = useState<SchoolProfile>({ ...schoolProfile });
+  const [profileForm, setProfileForm] = useState<SchoolProfile>(() => ({ ...schoolProfile }));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const isProfileDirtyRef = useRef(false);
+  const lastProfileJsonRef = useRef(JSON.stringify(schoolProfile));
 
-  // Sync profileForm only when version changes (after a save or external update),
-  // preventing inputs from snapping back or being wiped on every keystroke!
+  // Sync profileForm only when schoolProfile is externally updated AND form is not dirty
   useEffect(() => {
-    setProfileForm({ ...schoolProfile });
-  }, [version]);
+    const currentJson = JSON.stringify(schoolProfile);
+    if (currentJson !== lastProfileJsonRef.current) {
+      lastProfileJsonRef.current = currentJson;
+      if (!isProfileDirtyRef.current) {
+        setProfileForm({ ...schoolProfile });
+      }
+    }
+  }, [schoolProfile]);
 
   // Subject Modal / Form
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
@@ -183,7 +190,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     updateSchoolProfile(profileForm);
+    isProfileDirtyRef.current = false;
+    lastProfileJsonRef.current = JSON.stringify(profileForm);
     showToast('Identitas dan Kop Surat Sekolah berhasil disimpan ke database!');
+  };
+
+  const handleDiscardProfileEdits = () => {
+    isProfileDirtyRef.current = false;
+    setProfileForm({ ...schoolProfile });
+    showToast('Perubahan formulir dibatalkan.');
+  };
+
+  const handleProfileFieldChange = <K extends keyof SchoolProfile>(field: K, value: SchoolProfile[K]) => {
+    isProfileDirtyRef.current = true;
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreateSubject = (e: React.FormEvent) => {
@@ -809,7 +829,14 @@ Terima kasih.`;
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end">
+              <div className="pt-4 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleDiscardProfileEdits}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors"
+                >
+                  Reset Formulir
+                </button>
                 <button
                   type="submit"
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm"

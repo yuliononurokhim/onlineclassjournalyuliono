@@ -110,10 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Whenever currentUser changes, ensure their role accordion is open
   useEffect(() => {
     if (currentUser?.role) {
-      setOpenAccordions((prev) => ({
-        ...prev,
-        [currentUser.role]: true,
-      }));
+      setOpenAccordions((prev) => {
+        if (prev[currentUser.role]) return prev;
+        return {
+          ...prev,
+          [currentUser.role]: true,
+        };
+      });
     }
   }, [currentUser?.role]);
 

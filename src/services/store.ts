@@ -47,11 +47,24 @@ function getStoredItem<T>(key: string, defaultValue: T): T {
   }
 }
 
+let storeDispatchTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleStoreDispatch() {
+  if (storeDispatchTimer) return;
+  storeDispatchTimer = setTimeout(() => {
+    storeDispatchTimer = null;
+    window.dispatchEvent(new Event('edujournal_storage_change'));
+  }, 25);
+}
+
 function setStoredItem<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + key, JSON.stringify(value));
-    // Trigger custom window event so all components react immediately
-    window.dispatchEvent(new Event('edujournal_storage_change'));
+    const serialized = JSON.stringify(value);
+    const existing = localStorage.getItem(STORAGE_KEY_PREFIX + key);
+    if (existing === serialized) {
+      return; // No change in payload
+    }
+    localStorage.setItem(STORAGE_KEY_PREFIX + key, serialized);
+    scheduleStoreDispatch();
   } catch (e) {
     console.error('Error saving localStorage for key', key, e);
   }
@@ -64,11 +77,16 @@ export function useEduStore() {
     // Start two-way real-time Firestore sync
     initFirebaseSync();
 
+    let rafId: number | null = null;
     const handleStorageChange = () => {
-      setVersion((v) => v + 1);
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setVersion((v) => v + 1);
+      });
     };
     window.addEventListener('edujournal_storage_change', handleStorageChange);
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('edujournal_storage_change', handleStorageChange);
     };
   }, []);

@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --bg-warm: #faf8f5;
+    --surface-warm: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --border-warm: #e2e8f0;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    color: #0f172a;
-    background-color: #f8fafc;
+    color: #1e293b;
+    background-color: #faf8f5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 15px;
@@ -12,8 +20,13 @@
     letter-spacing: -0.011em;
   }
 
+  /* Smooth UI Transitions across interactive controls to prevent abrupt flashes */
+  button, a, input, select, textarea {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+  }
+
   h1, h2, h3, h4, h5, h6 {
-    color: #0f172a;
+    color: #1e293b;
     letter-spacing: -0.02em;
     font-weight: 700;
   }
@@ -22,7 +35,7 @@
     line-height: 1.65;
   }
 
-  /* Increase readability for table cells and form controls */
+  /* High-readability table cells and form controls matching AA/AAA contrast standards */
   table th {
     font-size: 0.8125rem; /* ~13px */
     letter-spacing: 0.025em;

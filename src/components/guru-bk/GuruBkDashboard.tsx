@@ -51,7 +51,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
 
   useEffect(() => {
     if (currentTab && ['kasus', 'bintang', 'penilaian', 'rekap', 'chat'].includes(currentTab)) {
-      setActiveTabState(currentTab as any);
+      setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 

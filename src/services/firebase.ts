@@ -8,6 +8,7 @@ import {
   onSnapshot,
   getDocs,
   enableIndexedDbPersistence,
+  writeBatch,
 } from 'firebase/firestore';
 import {
   SchoolProfile,
@@ -81,18 +82,39 @@ export function subscribeFirebaseStatus(listener: (state: FirebaseSyncState) => 
   };
 }
 
+let syncStateTimeout: ReturnType<typeof setTimeout> | null = null;
 function updateSyncStatus(partial: Partial<FirebaseSyncState>) {
   syncState = { ...syncState, ...partial };
-  listeners.forEach((l) => l(syncState));
+  if (!syncStateTimeout) {
+    syncStateTimeout = setTimeout(() => {
+      syncStateTimeout = null;
+      listeners.forEach((l) => l(syncState));
+    }, 60);
+  }
 }
 
 // LocalStorage helpers to coordinate with store.ts
 const STORAGE_PREFIX = 'edujournal_sd_v1_';
 
+let storageDispatchTimeout: ReturnType<typeof setTimeout> | null = null;
+function scheduleStorageDispatch() {
+  if (storageDispatchTimeout) return;
+  storageDispatchTimeout = setTimeout(() => {
+    storageDispatchTimeout = null;
+    window.dispatchEvent(new Event('edujournal_storage_change'));
+  }, 40);
+}
+
 function saveLocal<T>(key: string, data: T) {
   try {
-    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(data));
-    window.dispatchEvent(new Event('edujournal_storage_change'));
+    const serialized = JSON.stringify(data);
+    const existing = localStorage.getItem(STORAGE_PREFIX + key);
+    if (existing === serialized) {
+      // Data is unchanged; skip writing and dispatching to avoid redundant re-renders
+      return;
+    }
+    localStorage.setItem(STORAGE_PREFIX + key, serialized);
+    scheduleStorageDispatch();
   } catch (err) {
     console.error('Failed saving to localStorage', key, err);
   }
@@ -145,6 +167,7 @@ export function initFirebaseSync() {
       initialData: T[]
     ) {
       const colRef = collection(db, collectionName);
+      let hasAttemptedSeed = false;
       onSnapshot(
         colRef,
         (snapshot) => {
@@ -161,13 +184,19 @@ export function initFirebaseSync() {
               isConnected: true,
               syncedCollectionsCount: syncState.syncedCollectionsCount + 1,
             });
-          } else {
-            // Seed collection if empty
-            initialData.forEach((item) => {
-              setDoc(doc(db, collectionName, item.id), item, { merge: true }).catch((e) =>
-                console.warn(`Seed ${collectionName}/${item.id} error:`, e)
+          } else if (!hasAttemptedSeed) {
+            hasAttemptedSeed = true;
+            try {
+              const batch = writeBatch(db);
+              initialData.forEach((item) => {
+                batch.set(doc(db, collectionName, item.id), item, { merge: true });
+              });
+              batch.commit().catch((e) =>
+                console.warn(`Seed batch for ${collectionName} error:`, e)
               );
-            });
+            } catch (seedErr) {
+              console.warn(`Seed batch error for ${collectionName}:`, seedErr);
+            }
           }
         },
         (err) => {
