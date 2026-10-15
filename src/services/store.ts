@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   SchoolProfile,
   SubjectItem,
@@ -73,20 +73,20 @@ export function useEduStore() {
     };
   }, []);
 
-  // Data Getters
-  const schoolProfile = getStoredItem<SchoolProfile>('school_profile', INITIAL_SCHOOL_PROFILE);
-  const subjects = getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS);
-  const learningObjectives = getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES);
-  const students = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
-  const users = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
-  const currentUser = getStoredItem<UserAccount | null>('current_user', null);
-  const journalEntries = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
-  const starAwards = getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS);
-  const caseRecords = getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS);
-  const paiAssessments = getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS);
-  const messages = getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES);
-  const announcements = getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS);
-  const internalGrades = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);
+  // Data Getters (Memoized with version so references are stable across re-renders)
+  const schoolProfile = useMemo(() => getStoredItem<SchoolProfile>('school_profile', INITIAL_SCHOOL_PROFILE), [version]);
+  const subjects = useMemo(() => getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS), [version]);
+  const learningObjectives = useMemo(() => getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES), [version]);
+  const students = useMemo(() => getStoredItem<Student[]>('students', INITIAL_STUDENTS), [version]);
+  const users = useMemo(() => getStoredItem<UserAccount[]>('users', INITIAL_USERS), [version]);
+  const currentUser = useMemo(() => getStoredItem<UserAccount | null>('current_user', null), [version]);
+  const journalEntries = useMemo(() => getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES), [version]);
+  const starAwards = useMemo(() => getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS), [version]);
+  const caseRecords = useMemo(() => getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS), [version]);
+  const paiAssessments = useMemo(() => getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS), [version]);
+  const messages = useMemo(() => getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES), [version]);
+  const announcements = useMemo(() => getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS), [version]);
+  const internalGrades = useMemo(() => getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES), [version]);
 
   // Authentication & Role Switcher
   const login = useCallback((identifier: string, password?: string): boolean => {
@@ -420,11 +420,51 @@ export function useEduStore() {
     }
   }, []);
 
-  // Admin User & Password Assistance Actions
+  // Admin User & Teacher Management Actions
+  const addUser = useCallback((newUser: Omit<UserAccount, 'id'>) => {
+    const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const id = `usr-${newUser.role}-${Date.now()}`;
+    const userWithId: UserAccount = {
+      ...newUser,
+      id,
+      status: newUser.status || 'aktif',
+    };
+    const updatedUsers = [...currentUsers, userWithId];
+    setStoredItem('users', updatedUsers);
+    writeFirestoreDoc('users', id, userWithId);
+    return userWithId;
+  }, []);
+
+  const updateUser = useCallback((userId: string, updated: Partial<UserAccount>) => {
+    const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const updatedUsers = currentUsers.map((u) => {
+      if (u.id === userId) {
+        const merged = { ...u, ...updated };
+        writeFirestoreDoc('users', u.id, merged);
+        return merged;
+      }
+      return u;
+    });
+    setStoredItem('users', updatedUsers);
+
+    // If current logged-in user is updated, update current_user too
+    const current = getStoredItem<UserAccount | null>('current_user', null);
+    if (current && current.id === userId) {
+      setStoredItem('current_user', { ...current, ...updated });
+    }
+  }, []);
+
+  const deleteUser = useCallback((userId: string) => {
+    const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const updatedUsers = currentUsers.filter((u) => u.id !== userId);
+    setStoredItem('users', updatedUsers);
+    deleteFirestoreDoc('users', userId);
+  }, []);
+
   const resetUserPassword = useCallback((userId: string, newPassword?: string) => {
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
-    const generated = newPassword || `RESET-${Math.floor(1000 + Math.random() * 9000)}`;
+    const generated = newPassword?.trim() ? newPassword.trim() : `RESET-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let targetStudentId: string | undefined;
 
@@ -733,6 +773,9 @@ export function useEduStore() {
     updateStudent,
     deleteStudent,
     users,
+    addUser,
+    updateUser,
+    deleteUser,
     currentUser,
     login,
     switchRole,

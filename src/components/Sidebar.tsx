@@ -144,10 +144,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: <BookOpen className="w-4 h-4 shrink-0" />,
         },
         {
-          id: 'password',
-          label: 'Bantuan Reset Sandi',
-          icon: <KeyRound className="w-4 h-4 shrink-0" />,
-          badge: users.length,
+          id: 'guru',
+          label: 'Manajemen Guru & Akun',
+          icon: <UserCheck className="w-4 h-4 shrink-0" />,
+          badge: users.filter((u) => u.role !== 'orangtua').length,
         },
         {
           id: 'laporan',

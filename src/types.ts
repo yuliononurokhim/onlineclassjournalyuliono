@@ -16,6 +16,8 @@ export interface UserAccount {
   phone?: string;
   email?: string;
   avatar?: string;
+  status?: 'aktif' | 'nonaktif';
+  subjectAssignment?: string;
 }
 
 export interface SubjectItem {

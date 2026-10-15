@@ -125,6 +125,7 @@ export default function App() {
           activeView={activeView}
           setActiveView={setActiveView}
           activeSubTab={activeSubTab}
+          setActiveSubTab={setActiveSubTab}
           onOpenLoginModal={handleOpenLogin}
         />
 
