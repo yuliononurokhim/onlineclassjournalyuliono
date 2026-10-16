@@ -135,4 +135,87 @@
     background-color: #f1f5f9 !important;
     font-weight: bold !important;
   }
+
+  @page folio-cards {
+    size: 215mm 330mm;
+    margin: 8mm;
+  }
+
+  .print-cards-pages {
+    display: block !important;
+  }
+
+  .print-cards-page {
+    page: folio-cards;
+    box-sizing: border-box;
+    height: 314mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-cards-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-rows: 75mm;
+    gap: 3mm !important;
+    width: 100% !important;
+  }
+
+  .print-cards-grid > .print-card {
+    width: 100% !important;
+    height: 75mm !important;
+    min-height: 0 !important;
+    padding: 3mm !important;
+    border-radius: 3mm !important;
+    font-size: 8pt !important;
+  }
+
+  .print-cards-grid > .print-card .text-sm {
+    font-size: 9pt !important;
+  }
+
+  .print-cards-grid > .print-card .text-xs {
+    font-size: 7pt !important;
+    line-height: 1.25 !important;
+  }
+
+  .print-cards-grid > .print-card .text-\[11px\],
+  .print-cards-grid > .print-card .text-\[10px\] {
+    font-size: 6.5pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-cards-grid > .print-card .text-\[9px\] {
+    font-size: 6pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-cards-grid > .print-card .p-5 {
+    padding: 3mm !important;
+  }
+
+  .print-cards-grid > .print-card .p-3 {
+    padding: 2mm !important;
+  }
+
+  .print-cards-grid > .print-card .mb-4 {
+    margin-bottom: 2mm !important;
+  }
+
+  .print-cards-grid > .print-card .mt-4 {
+    margin-top: 2mm !important;
+  }
+
+  .print-cards-grid > .print-card .w-10,
+  .print-cards-grid > .print-card .h-10 {
+    width: 8mm !important;
+    height: 8mm !important;
+  }
 }

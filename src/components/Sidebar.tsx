@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
   const [showRoleSwitcherDropdown, setShowRoleSwitcherDropdown] = useState(false);
   const [firebaseStatus, setFirebaseStatus] = useState<FirebaseSyncState>({
-    isConnected: true,
+    isConnected: false,
     projectId: 'onlineclassjournalyuliono',
     lastSyncTime: null,
     error: null,
@@ -781,14 +781,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-1.5 min-w-0">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
-                  firebaseStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                  firebaseStatus.error
+                    ? 'bg-rose-500'
+                    : firebaseStatus.isConnected
+                      ? 'bg-emerald-500 animate-pulse'
+                      : 'bg-amber-500'
                 }`}
               />
               <span className="text-slate-600 font-medium truncate font-mono">
                 {firebaseStatus.projectId}
               </span>
             </div>
-            <span className="text-emerald-700 font-bold shrink-0">Realtime</span>
+            <span
+              className={`font-bold shrink-0 ${
+                firebaseStatus.error
+                  ? 'text-rose-700'
+                  : firebaseStatus.isConnected
+                    ? 'text-emerald-700'
+                    : 'text-amber-700'
+              }`}
+              title={firebaseStatus.error || undefined}
+            >
+              {firebaseStatus.error ? 'Periksa' : firebaseStatus.isConnected ? 'Realtime' : 'Menyambungkan'}
+            </span>
           </div>
         )}
 

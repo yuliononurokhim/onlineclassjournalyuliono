@@ -136,7 +136,7 @@ export function initFirebaseSync() {
   isInitialized = true;
 
   try {
-    updateSyncStatus({ isConnected: true, lastSyncTime: new Date(), error: null });
+    updateSyncStatus({ isConnected: false, lastSyncTime: null, error: null });
 
     // 1. School Profile
     const profileDocRef = doc(db, 'settings', 'school_profile');
@@ -150,14 +150,18 @@ export function initFirebaseSync() {
           updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
         } else {
           // Seed profile
-          setDoc(profileDocRef, INITIAL_SCHOOL_PROFILE, { merge: true }).catch((e) =>
-            console.warn('Seed profile failed', e)
-          );
+          setDoc(profileDocRef, INITIAL_SCHOOL_PROFILE, { merge: true }).catch((error) => {
+            console.warn('Seed profile failed', error);
+            updateSyncStatus({
+              isConnected: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          });
         }
       },
       (err) => {
         console.warn('Firestore profile sync error:', err.message);
-        updateSyncStatus({ error: err.message });
+        updateSyncStatus({ isConnected: false, error: err.message });
       }
     );
 
@@ -185,6 +189,10 @@ export function initFirebaseSync() {
             if (preserveEmpty) {
               setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
                 console.warn(`Failed marking ${collectionName} as initialized:`, error);
+                updateSyncStatus({
+                  isConnected: false,
+                  error: error instanceof Error ? error.message : String(error),
+                });
               });
             }
             updateSyncStatus({
@@ -203,11 +211,19 @@ export function initFirebaseSync() {
                 if (preserveEmpty) {
                   batch.set(initializationRef, { initialized: true }, { merge: true });
                 }
-                batch.commit().catch((error) =>
-                  console.warn(`Seed batch for ${collectionName} error:`, error)
-                );
+                batch.commit().catch((error) => {
+                  console.warn(`Seed batch for ${collectionName} error:`, error);
+                  updateSyncStatus({
+                    isConnected: false,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
+                });
               } catch (seedError) {
                 console.warn(`Seed batch error for ${collectionName}:`, seedError);
+                updateSyncStatus({
+                  isConnected: false,
+                  error: seedError instanceof Error ? seedError.message : String(seedError),
+                });
               }
             };
 
@@ -225,6 +241,10 @@ export function initFirebaseSync() {
                 })
                 .catch((error) => {
                   console.warn(`Initialization check for ${collectionName} failed:`, error);
+                  updateSyncStatus({
+                    isConnected: false,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
                 });
             } else {
               seedCollection();
@@ -233,7 +253,7 @@ export function initFirebaseSync() {
         },
         (err) => {
           console.warn(`Firestore sync error for ${collectionName}:`, err.message);
-          updateSyncStatus({ error: err.message });
+          updateSyncStatus({ isConnected: false, error: err.message });
         }
       );
     }
@@ -267,7 +287,9 @@ export async function writeFirestoreDoc(collectionName: string, id: string, data
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
     console.warn(`Write to Firestore [${collectionName}/${id}] failed:`, err);
-    updateSyncStatus({ error: err.message });
+    updateSyncStatus({
+      error: err.message || 'Gagal menyimpan perubahan ke Firebase',
+    });
   }
 }
 
@@ -281,7 +303,9 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
     console.warn(`Delete from Firestore [${collectionName}/${id}] failed:`, err);
-    updateSyncStatus({ error: err.message });
+    updateSyncStatus({
+      error: err.message || 'Gagal menghapus data di Firebase',
+    });
   }
 }
 
@@ -295,6 +319,8 @@ export async function deleteStudentFirestoreRecords(studentId: string, parentUse
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (error) {
     console.warn(`Failed deleting student records for ${studentId}:`, error);
-    updateSyncStatus({ error: error instanceof Error ? error.message : 'Gagal menghapus data siswa' });
+    updateSyncStatus({
+      error: error instanceof Error ? error.message : 'Gagal menghapus data siswa',
+    });
   }
 }

@@ -85,7 +85,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'star' | 'case' | 'announcement'>('all');
 
   const [firebaseStatus, setFirebaseStatus] = useState<FirebaseSyncState>({
-    isConnected: true,
+    isConnected: false,
     projectId: 'onlineclassjournalyuliono',
     lastSyncTime: null,
     error: null,
@@ -388,21 +388,32 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {/* Firebase Live Realtime Indicator */}
           <div
             className={`hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-              firebaseStatus.isConnected
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-amber-50 border-amber-200 text-amber-800'
+              firebaseStatus.error
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : firebaseStatus.isConnected
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-amber-50 border-amber-200 text-amber-800'
             }`}
-            title={`Sinkronisasi Realtime: ${firebaseStatus.projectId} (${
-              firebaseStatus.isConnected ? 'Aktif' : 'Mencoba Terhubung...'
-            })`}
+            title={
+              firebaseStatus.error
+                ? `Kesalahan sinkronisasi Firebase: ${firebaseStatus.error}`
+                : `Sinkronisasi Realtime: ${firebaseStatus.projectId} (${
+                    firebaseStatus.isConnected ? 'Aktif' : 'Mencoba Terhubung...'
+                  })`
+            }
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                firebaseStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                firebaseStatus.error
+                  ? 'bg-rose-500'
+                  : firebaseStatus.isConnected
+                    ? 'bg-emerald-500 animate-pulse'
+                    : 'bg-amber-500'
               }`}
             />
             <span className="font-mono text-[11px]">
-              Live: <span className="font-bold">{firebaseStatus.projectId}</span>
+              {firebaseStatus.error ? 'Sync bermasalah' : 'Live:'}{' '}
+              {!firebaseStatus.error && <span className="font-bold">{firebaseStatus.projectId}</span>}
             </span>
           </div>
 

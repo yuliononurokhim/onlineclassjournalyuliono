@@ -288,6 +288,9 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
 
   // Print Cards
   const handlePrintCards = () => {
+    const cleanup = () => document.body.classList.remove('print-cards-mode');
+    document.body.classList.add('print-cards-mode');
+    window.addEventListener('afterprint', cleanup, { once: true });
     window.print();
   };
 
@@ -381,6 +384,10 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
       s.nisn.includes(studentSearch) ||
       s.parentName.toLowerCase().includes(studentSearch.toLowerCase())
+  );
+  const studentCardPages = Array.from(
+    { length: Math.ceil(students.length / 8) },
+    (_, pageIndex) => students.slice(pageIndex * 8, pageIndex * 8 + 8)
   );
 
   // Selected student chat messages
@@ -586,88 +593,90 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
           </div>
 
           {/* Printable Cards Grid (Optimized for Screen & Print Window) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4">
-            {students.map((std) => (
-              <div
-                key={std.id}
-                className="print-card bg-white rounded-2xl border-2 border-dashed border-slate-300 p-5 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-indigo-400 transition-colors"
-              >
-                {/* Official Letterhead Strip on Card */}
-                <div>
-                  <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-3">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      <School className="w-5 h-5 text-indigo-300" />
-                    </div>
-                    <div>
-                      <h5 className="text-[11px] font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
-                        {schoolProfile.name}
-                      </h5>
-                      <p className="text-[10px] text-slate-500 leading-none mt-0.5">
-                        KARTU AKSES PORTAL JURNAL ORANG TUA · {schoolProfile.classGrade}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Student & Parent Info */}
-                  <div className="space-y-1.5 mb-4">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        NAMA SISWA:
-                      </span>
-                      <h4 className="text-sm font-extrabold text-slate-900 leading-tight">
-                        {std.name}
-                      </h4>
-                      <p className="text-xs text-slate-500 font-mono">NISN: {std.nisn}</p>
-                    </div>
-
-                    <div className="pt-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        WALI / ORANG TUA:
-                      </span>
-                      <p className="text-xs font-medium text-slate-800">{std.parentName}</p>
-                      <p className="text-[11px] text-slate-500 font-mono">{std.parentPhone}</p>
-                    </div>
-                  </div>
-
-                  {/* Highlighted Credentials Box */}
-                  <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-indigo-900 uppercase">
-                        KREDENSIAL LOGIN ANDA
-                      </span>
-                      <span className="text-[10px] font-medium text-indigo-600 bg-white px-1.5 py-0.2 rounded border border-indigo-200">
-                        Privat & Rahasia
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="print-cards-pages">
+            {studentCardPages.map((pageStudents, pageIndex) => (
+              <div className="print-cards-page" key={`cards-page-${pageIndex}`}>
+                <div className="print-cards-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4">
+                  {pageStudents.map((std) => (
+                    <div
+                      key={std.id}
+                      className="print-card bg-white rounded-2xl border-2 border-dashed border-slate-300 p-5 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-indigo-400 transition-colors"
+                    >
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Username:</span>
-                        <span className="font-mono font-bold text-indigo-900 select-all">
-                          {std.parentUsername}
-                        </span>
+                        <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-3">
+                          <div className="w-9 h-9 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                            <School className="w-5 h-5 text-indigo-300" />
+                          </div>
+                          <div>
+                            <h5 className="text-[11px] font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
+                              {schoolProfile.name}
+                            </h5>
+                            <p className="text-[10px] text-slate-500 leading-none mt-0.5">
+                              KARTU AKSES PORTAL JURNAL ORANG TUA · {schoolProfile.classGrade}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 mb-4">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                              NAMA SISWA:
+                            </span>
+                            <h4 className="text-sm font-extrabold text-slate-900 leading-tight">
+                              {std.name}
+                            </h4>
+                            <p className="text-xs text-slate-500 font-mono">NISN: {std.nisn}</p>
+                          </div>
+
+                          <div className="pt-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                              WALI / ORANG TUA:
+                            </span>
+                            <p className="text-xs font-medium text-slate-800">{std.parentName}</p>
+                            <p className="text-[11px] text-slate-500 font-mono">{std.parentPhone}</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-indigo-900 uppercase">
+                              KREDENSIAL LOGIN ANDA
+                            </span>
+                            <span className="text-[10px] font-medium text-indigo-600 bg-white px-1.5 py-0.2 rounded border border-indigo-200">
+                              Privat & Rahasia
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-500 block">Username:</span>
+                              <span className="font-mono font-bold text-indigo-900 select-all">
+                                {std.parentUsername}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-500 block">Kata Sandi:</span>
+                              <span className="font-mono font-bold text-indigo-900 select-all">
+                                {std.parentPassword}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-slate-500 block">Kata Sandi:</span>
-                        <span className="font-mono font-bold text-indigo-900 select-all">
-                          {std.parentPassword}
-                        </span>
+
+                      <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+                        <div className="text-[10px] text-slate-500">
+                          <p className="font-medium text-slate-700">Akses Portal Jurnal:</p>
+                          <p className="font-mono text-[9px] text-indigo-700 truncate max-w-[170px]">
+                            {window.location.origin}
+                          </p>
+                        </div>
+                        <div className="w-10 h-10 rounded border border-slate-300 p-0.5 bg-white flex items-center justify-center shrink-0">
+                          <QrCode className="w-7 h-7 text-slate-800" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Card Footer with Mock QR Code & Website URL */}
-                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-                  <div className="text-[10px] text-slate-500">
-                    <p className="font-medium text-slate-700">Akses Portal Jurnal:</p>
-                    <p className="font-mono text-[9px] text-indigo-700 truncate max-w-[170px]">
-                      {window.location.origin}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 rounded border border-slate-300 p-0.5 bg-white flex items-center justify-center shrink-0">
-                    <QrCode className="w-7 h-7 text-slate-800" />
-                  </div>
+                  ))}
                 </div>
               </div>
             ))}
