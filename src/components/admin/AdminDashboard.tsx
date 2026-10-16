@@ -49,6 +49,7 @@ const LANDING_FEATURES: {
   { key: 'gallery', label: 'Galeri foto & video' },
   { key: 'agenda', label: 'Agenda & tugas' },
 ];
+type LandingFeatureSettings = NonNullable<SchoolProfile['landingFeatures']>;
 
 interface AdminDashboardProps {
   currentTab?: string;
@@ -84,7 +85,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   } = useEduStore();
 
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
-  const [activeTab, setActiveTabState] = useState<'profil' | 'kurikulum' | 'guru' | 'password' | 'laporan'>(
+  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan'>(
     (currentTab as any) || 'profil'
   );
 
@@ -92,7 +93,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [teacherSubTab, setTeacherSubTab] = useState<'guru' | 'password'>('guru');
 
   useEffect(() => {
-    if (currentTab && ['profil', 'kurikulum', 'guru', 'password', 'laporan'].includes(currentTab)) {
+    if (currentTab && ['profil', 'landing', 'kurikulum', 'guru', 'password', 'laporan'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
         setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
@@ -102,12 +103,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'profil' | 'kurikulum' | 'guru' | 'password' | 'laporan') => {
+  const setActiveTab = (tab: 'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
 
   const [profileForm, setProfileForm] = useState<SchoolProfile>(() => ({ ...schoolProfile }));
+  const [landingFeatureSettings, setLandingFeatureSettings] = useState<LandingFeatureSettings>(() => ({
+    dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
+    gallery: schoolProfile.landingFeatures?.gallery ?? true,
+    agenda: schoolProfile.landingFeatures?.agenda ?? true,
+  }));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const isProfileDirtyRef = useRef(false);
   const lastProfileJsonRef = useRef(JSON.stringify(schoolProfile));
@@ -122,6 +128,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       }
     }
   }, [schoolProfile]);
+
+  useEffect(() => {
+    setLandingFeatureSettings({
+      dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
+      gallery: schoolProfile.landingFeatures?.gallery ?? true,
+      agenda: schoolProfile.landingFeatures?.agenda ?? true,
+    });
+  }, [schoolProfile.landingFeatures]);
+
+  const handleSaveLandingFeatures = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSchoolProfile({ ...schoolProfile, landingFeatures: landingFeatureSettings });
+    showToast('Pengaturan tampilan fitur landing page berhasil disimpan.');
+  };
 
   // Subject Modal / Form
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
@@ -840,32 +860,6 @@ Terima kasih.`;
                   />
                 </div>
 
-                <fieldset className="space-y-2 rounded-xl border border-slate-200 p-4">
-                  <legend className="px-1 text-xs font-bold text-slate-700">
-                    Fitur yang Ditampilkan di Halaman Depan
-                  </legend>
-                  {LANDING_FEATURES.map((feature) => (
-                    <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={profileForm.landingFeatures?.[feature.key] ?? true}
-                        onChange={(event) =>
-                          setProfileForm({
-                            ...profileForm,
-                            landingFeatures: {
-                              dailyReports: profileForm.landingFeatures?.dailyReports ?? true,
-                              gallery: profileForm.landingFeatures?.gallery ?? true,
-                              agenda: profileForm.landingFeatures?.agenda ?? true,
-                              [feature.key]: event.target.checked,
-                            },
-                          })
-                        }
-                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      {feature.label}
-                    </label>
-                  ))}
-                </fieldset>
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-3">
@@ -932,6 +926,53 @@ Terima kasih.`;
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'landing' && (
+        <div className="max-w-3xl bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+          <div className="mb-6">
+            <h3 className="text-base font-bold text-slate-900">Pengaturan Konten Landing Page</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Pilih kartu informasi yang akan ditampilkan pada bagian utama halaman depan. Perubahan berlaku untuk semua pengunjung setelah disimpan.
+            </p>
+          </div>
+
+          <form onSubmit={handleSaveLandingFeatures} className="space-y-3">
+            {LANDING_FEATURES.map((feature) => (
+              <label
+                key={feature.key}
+                className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-800"
+              >
+                <span>
+                  <span className="block font-semibold">{feature.label}</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">
+                    {landingFeatureSettings[feature.key] ? 'Ditampilkan pada halaman depan' : 'Disembunyikan dari halaman depan'}
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={landingFeatureSettings[feature.key]}
+                  onChange={(event) =>
+                    setLandingFeatureSettings((current) => ({
+                      ...current,
+                      [feature.key]: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+              </label>
+            ))}
+            <div className="pt-3 flex justify-end">
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                Simpan Pengaturan Landing Page
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

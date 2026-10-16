@@ -210,13 +210,15 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
 
   // Download Sample Excel Template (CSV)
   const handleDownloadTemplate = () => {
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      'NISN,Nama Siswa,Jenis Kelamin (L/P),Nama Orang Tua,No HP Orang Tua\n' +
-      '0142981010,Dimas Anugrah Saputra,L,Bapak Joko Saputra,0812-1111-2222\n' +
-      '0142981011,Annisa Rahmawati,P,Ibu Endang Rahma,0813-3333-4444\n' +
-      '0142981012,Rafi Pratama,L,Bapak Budi Pratama,0857-5555-6666';
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [
+      ['NISN', 'Nama Siswa', 'Jenis Kelamin (L/P)', 'Nama Orang Tua', 'No HP Orang Tua'],
+      ['0142981010', 'Dimas Anugrah Saputra', 'L', 'Bapak Joko Saputra', '0812-1111-2222'],
+      ['0142981011', 'Annisa Rahmawati', 'P', 'Ibu Endang Rahma', '0813-3333-4444'],
+      ['0142981012', 'Rafi Pratama', 'L', 'Bapak Budi Pratama', '0857-5555-6666'],
+    ]
+      .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+    const encodedUri = `data:text/csv;charset=utf-8,%EF%BB%BF${encodeURIComponent(csvContent)}`;
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `Template_Siswa_${schoolProfile.classGrade.replace(' ', '_')}.csv`);
@@ -252,28 +254,87 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       const text = event.target?.result as string;
       if (!text) return;
 
-      const lines = text.split(/\r\n|\n/).filter((l) => l.trim().length > 0);
-      const rows: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[] = [];
-
-      // Skip header if line 0 has keywords
-      const startIndex = lines[0].toLowerCase().includes('nisn') ? 1 : 0;
-
-      for (let i = startIndex; i < lines.length; i++) {
-        const cols = lines[i].split(',').map((c) => c.replace(/^"|"$/g, '').trim());
-        if (cols.length >= 2 && cols[1]) {
-          rows.push({
-            nisn: cols[0] || `014${Math.floor(1000000 + Math.random() * 8999999)}`,
-            name: cols[1],
-            gender: (cols[2]?.toUpperCase() === 'P' ? 'P' : 'L') as 'L' | 'P',
-            parentName: cols[3] || `Wali dari ${cols[1]}`,
-            parentPhone: cols[4] || '0812-0000-0000',
-          });
+      const lines = text.replace(/^\uFEFF/, '').split(/\r\n|\n|\r/).filter((line) => line.trim());
+      const countDelimiter = (line: string, delimiter: string) => {
+        let count = 0;
+        let inQuotes = false;
+        for (let index = 0; index < line.length; index += 1) {
+          if (line[index] === '"' && line[index + 1] === '"') {
+            index += 1;
+          } else if (line[index] === '"') {
+            inQuotes = !inQuotes;
+          } else if (line[index] === delimiter && !inQuotes) {
+            count += 1;
+          }
         }
+        return count;
+      };
+      const delimiter = [',', ';', '\t'].sort(
+        (left, right) => countDelimiter(lines[0], right) - countDelimiter(lines[0], left)
+      )[0];
+      const parseRow = (line: string) => {
+        const columns: string[] = [];
+        let value = '';
+        let inQuotes = false;
+        for (let index = 0; index < line.length; index += 1) {
+          const character = line[index];
+          if (character === '"' && line[index + 1] === '"' && inQuotes) {
+            value += '"';
+            index += 1;
+          } else if (character === '"') {
+            inQuotes = !inQuotes;
+          } else if (character === delimiter && !inQuotes) {
+            columns.push(value.trim());
+            value = '';
+          } else {
+            value += character;
+          }
+        }
+        columns.push(value.trim());
+        return columns;
+      };
+
+      const headers = parseRow(lines[0]).map((header) =>
+        header.toLowerCase().replace(/[^a-z0-9]/g, '')
+      );
+      const columnIndex = (patterns: RegExp[], fallback: number) => {
+        const index = headers.findIndex((header) => patterns.some((pattern) => pattern.test(header)));
+        return index >= 0 ? index : fallback;
+      };
+      const nisnColumn = columnIndex([/^nisn$/], 0);
+      const nameColumn = columnIndex([/^namasiswa$/, /^nama$/, /^name$/], 1);
+      const genderColumn = columnIndex([/^jeniskelamin/, /^gender$/], 2);
+      const parentNameColumn = columnIndex([/^namaorangtua$/, /^namawali$/, /^wali/], 3);
+      const parentPhoneColumn = columnIndex([/^nohp/, /^nomorhp/, /^telepon/, /^phone$/], 4);
+
+      if (!headers.some((header) => /^nisn$/.test(header)) || !headers.some((header) => /^(namasiswa|nama|name)$/.test(header))) {
+        showToast('Format CSV tidak sesuai. Pastikan header NISN dan Nama Siswa tersedia.');
+        return;
+      }
+
+      const rows: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[] = [];
+      for (const line of lines.slice(1)) {
+        const columns = parseRow(line);
+        const name = columns[nameColumn] || '';
+        if (!name) continue;
+        rows.push({
+          nisn: columns[nisnColumn] || `014${Math.floor(1000000 + Math.random() * 8999999)}`,
+          name,
+          gender: columns[genderColumn]?.toUpperCase() === 'P' ? 'P' : 'L',
+          parentName: columns[parentNameColumn] || `Wali dari ${name}`,
+          parentPhone: columns[parentPhoneColumn] || '0812-0000-0000',
+        });
+      }
+
+      if (rows.length === 0) {
+        showToast('Tidak ada baris siswa yang dapat diimpor dari file tersebut.');
+        return;
       }
 
       setParsedImportRows(rows);
       setShowUploadModal(true);
     };
+    reader.onerror = () => showToast('File CSV tidak dapat dibaca. Silakan coba lagi.');
     reader.readAsText(file);
     e.target.value = '';
   };

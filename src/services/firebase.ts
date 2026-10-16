@@ -154,6 +154,21 @@ export function initFirebaseSync() {
 
     // 1. School Profile
     const profileDocRef = doc(db, 'settings', 'school_profile');
+    const isExistingInstallation = getDoc(profileDocRef)
+      .then(async (snapshot) => {
+        if (snapshot.exists()) return true;
+        await setDoc(profileDocRef, INITIAL_SCHOOL_PROFILE, { merge: true });
+        return false;
+      })
+      .catch((error) => {
+        console.warn('School profile initialization check failed:', error);
+        updateSyncStatus({
+          isConnected: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return true;
+      });
+
     onSnapshot(
       profileDocRef,
       (snapshot) => {
@@ -162,15 +177,6 @@ export function initFirebaseSync() {
           saveLocal('school_profile', snapshot.data() as SchoolProfile);
           isRemoteUpdating = false;
           updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
-        } else {
-          // Seed profile
-          setDoc(profileDocRef, INITIAL_SCHOOL_PROFILE, { merge: true }).catch((error) => {
-            console.warn('Seed profile failed', error);
-            updateSyncStatus({
-              isConnected: false,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          });
         }
       },
       (err) => {
@@ -188,10 +194,13 @@ export function initFirebaseSync() {
       const colRef = collection(db, collectionName);
       const initializationRef = doc(db, 'settings', `${collectionName}_initialized`);
       let hasAttemptedSeed = false;
+      let hasSyncedItems = false;
       onSnapshot(
         colRef,
         (snapshot) => {
           if (!snapshot.empty) {
+            hasSyncedItems = true;
+            hasAttemptedSeed = true;
             const items: T[] = [];
             snapshot.forEach((docSnap) => {
               items.push({ ...(docSnap.data() as T), id: docSnap.id });
@@ -211,6 +220,11 @@ export function initFirebaseSync() {
               isConnected: true,
               syncedCollectionsCount: syncState.syncedCollectionsCount + 1,
             });
+          } else if (hasSyncedItems) {
+            isRemoteUpdating = true;
+            saveLocal(storageKey, []);
+            isRemoteUpdating = false;
+            updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
           } else if (!hasAttemptedSeed) {
             hasAttemptedSeed = true;
             const seedCollection = () => {
@@ -240,9 +254,16 @@ export function initFirebaseSync() {
               }
             };
 
-            getDoc(initializationRef)
-              .then((marker) => {
-                if (marker.exists()) {
+            Promise.all([getDoc(initializationRef), isExistingInstallation])
+              .then(([marker, existingInstallation]) => {
+                if (marker.exists() || existingInstallation) {
+                  setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
+                    console.warn(`Failed marking empty ${collectionName} as initialized:`, error);
+                    updateSyncStatus({
+                      isConnected: false,
+                      error: error instanceof Error ? error.message : String(error),
+                    });
+                  });
                   isRemoteUpdating = true;
                   saveLocal(storageKey, []);
                   isRemoteUpdating = false;

@@ -26,7 +26,8 @@ import {
   KeyRound,
   CheckSquare,
   MessageCircle,
-  Award
+  Award,
+  Eye
 } from 'lucide-react';
 
 interface SubMenuItem {
@@ -144,6 +145,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'profil',
           label: 'Profil & Kop Sekolah',
           icon: <School className="w-4 h-4 shrink-0" />,
+        },
+        {
+          id: 'landing',
+          label: 'Pengaturan Landing Page',
+          icon: <Eye className="w-4 h-4 shrink-0" />,
         },
         {
           id: 'kurikulum',
