@@ -6,11 +6,12 @@ import {
   Calendar,
   Sparkles,
   BookOpen,
-  HeartHandshake,
   Shield,
   MessageCircle,
   Phone,
   Mail,
+  ClipboardList,
+  Images,
   Lock,
   User,
   ArrowRight,
@@ -29,18 +30,19 @@ import {
 
 interface LandingPageProps {
   activeView?: string;
-  onNavigate?: (view: string) => void;
   onLoginSuccess: () => void;
-  onOpenLoginModal?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
-  onNavigate,
   onLoginSuccess,
-  onOpenLoginModal,
 }) => {
-  const { schoolProfile, announcements, users, login, logout, currentUser, starAwards, students } = useEduStore();
+  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students } = useEduStore();
+  const landingFeatures = {
+    dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
+    gallery: schoolProfile.landingFeatures?.gallery ?? true,
+    agenda: schoolProfile.landingFeatures?.agenda ?? true,
+  };
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -197,13 +199,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span>{schoolProfile.heroTagline || 'Portal Jurnal Belajar & Karakter Siswa Real-Time'}</span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight text-balance">
-                {schoolProfile.heroTitle || 'Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita'}
+                {schoolProfile.heroTitle || 'Pantau Tumbuh Kembang dan Aktivitas Belajar Si Kecil Setiap Hari'}
               </h2>
               {/* Hero Description */}
               <div className="space-y-2">
                 <p className="text-slate-200 text-sm sm:text-base leading-relaxed max-w-xl">
                   {schoolProfile.heroDescription ||
-                    `Aplikasi digital terpadu ${schoolProfile.classGrade} yang menghubungkan capaian harian siswa di kelas, bimbingan karakter konseling, penilaian ibadah PAI fleksibel, serta laporan khusus langsung ke wali murid secara transparan dan aman.`}
+                    'Jurnal digital interaktif dari guru untuk menghubungkan sekolah dan rumah dengan mudah. Lihat laporan belajar, perkembangan anak, dan agenda sekolah melalui satu portal.'}
                 </p>
                 <div className="flex items-center gap-2 text-[11px] text-indigo-300/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -211,29 +213,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               </div>
 
-              {/* 3 Pillars Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center mb-2.5">
-                    <Sparkles className="w-4 h-4" />
+              {/* Parent portal feature overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                {landingFeatures.dailyReports && (
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-400/20 text-indigo-200 flex items-center justify-center mb-2.5">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">Laporan Harian/Mingguan</h4>
+                    <p className="text-xs text-slate-300 mt-1">Catatan aktivitas belajar dan perkembangan anak di kelas.</p>
                   </div>
-                  <h4 className="text-sm font-bold text-white">Sistem Bintang Karakter</h4>
-                  <p className="text-xs text-slate-300 mt-1">Apresiasi disiplin, empati, dan keaktifan murid dari guru kelas, BK, dan PAI.</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <div className="w-8 h-8 rounded-lg bg-rose-400/20 text-rose-300 flex items-center justify-center mb-2.5">
-                    <HeartHandshake className="w-4 h-4" />
+                )}
+                {landingFeatures.gallery && (
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-rose-400/20 text-rose-200 flex items-center justify-center mb-2.5">
+                      <Images className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">Galeri Foto & Video</h4>
+                    <p className="text-xs text-slate-300 mt-1">Momen belajar dan kegiatan anak yang dibagikan guru.</p>
                   </div>
-                  <h4 className="text-sm font-bold text-white">Laporan BK Real-Time</h4>
-                  <p className="text-xs text-slate-300 mt-1">Pendampingan siswa terpantau langsung oleh wali murid bersangkutan tanpa keterlambatan.</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <div className="w-8 h-8 rounded-lg bg-teal-400/20 text-teal-300 flex items-center justify-center mb-2.5">
-                    <MessageCircle className="w-4 h-4" />
+                )}
+                {landingFeatures.agenda && (
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-teal-400/20 text-teal-200 flex items-center justify-center mb-2.5">
+                      <ClipboardList className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">Agenda & Tugas</h4>
+                    <p className="text-xs text-slate-300 mt-1">Informasi kegiatan sekolah, jadwal, dan tugas yang akan datang.</p>
                   </div>
-                  <h4 className="text-sm font-bold text-white">Chat Privat & Aman</h4>
-                  <p className="text-xs text-slate-300 mt-1">Komunikasi dua arah langsung dengan guru pendamping untuk kemajuan anak.</p>
-                </div>
+                )}
               </div>
             </div>
 
@@ -314,10 +322,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div>
                       <h3 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                         <UserCheck className="w-5 h-5 text-indigo-600" />
-                        <span>Masuk ke Portal Resmi</span>
+                        <span>Masuk ke Akun Anak</span>
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Gunakan kredensial resmi Guru, Admin, atau Kartu Akses Orang Tua (NISN)
+                        Orang tua dapat masuk dengan username dan password. Guru dan admin juga dapat menggunakan akun resmi.
                       </p>
                     </div>
                   </div>
@@ -379,9 +387,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <button
                       type="submit"
-                      className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-3.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-indigo-950 font-extrabold text-sm shadow-lg shadow-indigo-950/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>Masuk ke Portal SIM</span>
+                      <span>Login Orang Tua / Masuk ke Akun Anak</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
@@ -400,6 +408,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           )}
         </div>
           </div>
+        </div>
+      </section>
+
+      {/* Parent access steps */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-extrabold text-slate-900">Cara Mengakses Jurnal Anak</h3>
+            <p className="text-sm text-slate-500 mt-1">Tiga langkah mudah untuk mulai memantau aktivitas belajar si kecil.</p>
+          </div>
+          <ol className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <li className="flex md:flex-col items-center md:text-center gap-4 md:gap-3 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
+              <span className="w-10 h-10 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center shrink-0">1</span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Klik tombol Login</h4>
+                <p className="text-xs text-slate-600 mt-1">Gunakan tombol kontras “Login Orang Tua / Masuk ke Akun Anak” di atas.</p>
+              </div>
+            </li>
+            <li className="flex md:flex-col items-center md:text-center gap-4 md:gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-100">
+              <span className="w-10 h-10 rounded-full bg-rose-600 text-white font-black flex items-center justify-center shrink-0">2</span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Masukkan username & password</h4>
+                <p className="text-xs text-slate-600 mt-1">Pakai kredensial akun orang tua yang diberikan oleh sekolah.</p>
+              </div>
+            </li>
+            <li className="flex md:flex-col items-center md:text-center gap-4 md:gap-3 p-4 rounded-2xl bg-teal-50 border border-teal-100">
+              <span className="w-10 h-10 rounded-full bg-teal-600 text-white font-black flex items-center justify-center shrink-0">3</span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Pantau jurnal belajar anak</h4>
+                <p className="text-xs text-slate-600 mt-1">Lihat informasi dan perkembangan anak melalui akun pribadi Anda.</p>
+              </div>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -557,7 +598,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-900">{st.studentName}</span>
+                        <span className="font-bold text-slate-900">Siswa</span>
                         <span className="text-[10px] text-amber-700 font-mono font-bold bg-amber-50 px-1.5 py-0.2 rounded">
                           +{st.starsCount} ★
                         </span>
@@ -672,20 +713,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span className="truncate">{tch.email}</span>
                 </a>
-                <button
-                  onClick={() => {
-                    handleQuickDemoLogin('orangtua');
-                  }}
+                <a
+                  href={`mailto:${tch.email}?subject=${encodeURIComponent(`Konsultasi dengan ${tch.name}`)}`}
                   className="w-full mt-2 py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Kirim Pesan Chat</span>
-                </button>
+                  <span>Kirim Pesan</span>
+                </a>
               </div>
             </div>
           ))}
         </div>
       </section>
+
+      <footer className="mt-16 bg-slate-950 text-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div>
+            <h3 className="text-sm font-bold text-white">Bantuan Akses Orang Tua</h3>
+            <p className="text-xs text-slate-400 mt-1">Untuk bantuan lupa password atau kendala akun, hubungi Humas sekolah.</p>
+            <a
+              href={`mailto:${schoolProfile.email}?subject=${encodeURIComponent('Bantuan akses akun orang tua')}`}
+              className="inline-flex items-center gap-2 mt-3 text-sm font-semibold text-indigo-300 hover:text-white"
+            >
+              <Mail className="w-4 h-4" />
+              {schoolProfile.email}
+            </a>
+            {schoolProfile.phone && (
+              <a
+                href={`tel:${schoolProfile.phone.replace(/[^0-9+]/g, '')}`}
+                className="inline-flex items-center gap-2 mt-2 sm:ml-5 text-sm font-semibold text-indigo-300 hover:text-white"
+              >
+                <Phone className="w-4 h-4" />
+                {schoolProfile.phone}
+              </a>
+            )}
+          </div>
+          <div className="text-xs text-slate-400 sm:text-right">
+            <p className="font-semibold text-slate-200">© {new Date().getFullYear()} Yuliono Nurokhim</p>
+            <p className="mt-1">{schoolProfile.name} · {schoolProfile.classGrade}</p>
+          </div>
+        </div>
+      </footer>
 
       {/* Forgot Password Modal */}
       {showForgotModal && (
@@ -721,15 +789,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="mt-5 flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setShowForgotModal(false);
-                  handleQuickDemoLogin('admin');
-                }}
+              <a
+                href={`mailto:${schoolProfile.email}?subject=${encodeURIComponent('Bantuan akses akun SIM Sekolah')}`}
                 className="text-xs text-indigo-700 hover:underline font-semibold"
               >
-                Buka Panel Admin (Demo Reset) &rarr;
-              </button>
+                Hubungi Admin SIM &rarr;
+              </a>
               <button
                 onClick={() => setShowForgotModal(false)}
                 className="px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors"

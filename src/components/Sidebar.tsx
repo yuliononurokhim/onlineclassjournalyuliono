@@ -382,6 +382,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleGeneralViewClick = (view: string) => {
     setActiveView(view);
+    requestAnimationFrame(() => {
+      if (view === 'landing') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        document.getElementById(view)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
     onCloseMobile();
   };
 
@@ -765,30 +772,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* ROLE CASE 3: GUEST / NOT LOGGED IN -> CLEAN ENTRY CARD */}
-        {!currentUser && (
-          <div className="space-y-2">
-            {!isCollapsedDesktop && (
-              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 text-center space-y-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-sm">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Pintu Masuk Portal</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                    Silakan masuk menggunakan akun Guru, Admin, atau Kartu Akses Orang Tua (NISN).
-                  </p>
-                </div>
-                <button
-                  onClick={onOpenLoginModal}
-                  className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors"
-                >
-                  Masuk ke Aplikasi
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 4. Bottom Footer & Session Controls */}

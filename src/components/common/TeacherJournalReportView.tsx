@@ -95,7 +95,9 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
       csv += `No,Tanggal,Nama Siswa,Kategori Kasus,Tingkat Urgensi,Deskripsi Kejadian,Tindak Lanjut & Konseling,Status Kasus,Lapor Ortu\n`;
 
       filteredCaseRecords.forEach((c, i) => {
-        csv += `${i + 1},"${c.date}","${c.studentName}","${c.category}","${c.severity}","${c.description.replace(/"/g, '""')}","${c.followUpAction.replace(/"/g, '""')}","${c.status}","${c.isReportedToParent ? 'Ya' : 'Tidak'}"\n`;
+        const category = c.category === 'Konseling Khusus' ? 'Konseling Individu' : c.category;
+        const status = c.status === 'Dalam Pantauan' ? 'Dalam Bimbingan/Pendampingan' : c.status;
+        csv += `${i + 1},"${c.date}","${c.studentName}","${category}","${c.severity}","${c.description.replace(/"/g, '""')}","${c.followUpAction.replace(/"/g, '""')}","${status}","${c.isReportedToParent ? 'Ya' : 'Tidak'}"\n`;
       });
 
       filename = `Laporan_Bimbingan_Konseling_${new Date().toISOString().split('T')[0]}.csv`;
@@ -366,7 +368,9 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
                         <td className="py-2 px-3 text-center font-mono">{i + 1}</td>
                         <td className="py-2 px-3 font-mono">{c.date}</td>
                         <td className="py-2 px-3 font-semibold text-slate-900">{c.studentName}</td>
-                        <td className="py-2 px-3">{c.category}</td>
+                        <td className="py-2 px-3">
+                          {c.category === 'Konseling Khusus' ? 'Konseling Individu' : c.category}
+                        </td>
                         <td className="py-2 px-3 text-center">
                           <span className="font-semibold text-xs">{c.severity}</span>
                         </td>
@@ -375,7 +379,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
                           <p className="text-slate-600 text-xs mt-0.5">Tindak Lanjut: {c.followUpAction}</p>
                         </td>
                         <td className="py-2 px-3 text-center font-semibold text-xs">
-                          {c.status}
+                          {c.status === 'Dalam Pantauan' ? 'Dalam Bimbingan/Pendampingan' : c.status}
                         </td>
                       </tr>
                     ))}

@@ -3,6 +3,7 @@ import { useEduStore } from '../../services/store';
 import { CaseRecord, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
+import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
   HeartHandshake,
   AlertCircle,
@@ -71,13 +72,18 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
   const [caseDescription, setCaseDescription] = useState('');
   const [caseFollowUp, setCaseFollowUp] = useState('');
   const [caseIsReported, setCaseIsReported] = useState(true); // Default true for realtime parent report!
-  const [caseStatus, setCaseStatus] = useState<CaseRecord['status']>('Dalam Pantauan');
+  const [caseStatus, setCaseStatus] = useState<CaseRecord['status']>('Dalam Bimbingan/Pendampingan');
 
   // Star Modal (Apresiasi & Pengurangan Sanksi BK)
   const [showStarModal, setShowStarModal] = useState(false);
   const [starActionType, setStarActionType] = useState<StarActionType>('reward');
-  const [starStudentId, setStarStudentId] = useState(students[0]?.id || '');
+  const [starStudentIds, setStarStudentIds] = useState<string[]>(students[0] ? [students[0].id] : []);
   const [starCategory, setStarCategory] = useState('Empati & Kejujuran');
+  const [newStarCategory, setNewStarCategory] = useState('');
+  const [customStarCategories, setCustomStarCategories] = useState<Record<StarActionType, string[]>>({
+    reward: [],
+    penalty: [],
+  });
   const [starCount, setStarCount] = useState(3);
   const [starNote, setStarNote] = useState('');
 
@@ -91,6 +97,28 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const baseStarCategories = starActionType === 'reward'
+    ? ['Empati & Kejujuran', 'Kesantunan & Sikap Hormat', 'Tanggung Jawab', 'Penyelesaian Masalah Positif']
+    : ['Perilaku Tidak Santun / Membantah', 'Mengejek / Intimidasi Teman', 'Berbohong / Tidak Jujur', 'Pertengkaran / Tindakan Agresif', 'Pelanggaran Tata Tertib Berat'];
+  const starCategoryOptions = Array.from(new Set([
+    ...baseStarCategories,
+    ...starAwards
+      .filter((award) => award.awarderRole === 'guru_bk' && award.type === starActionType)
+      .map((award) => award.category),
+    ...customStarCategories[starActionType],
+  ]));
+
+  const handleAddStarCategory = () => {
+    const category = newStarCategory.trim();
+    if (!category) return;
+    setCustomStarCategories((existing) => ({
+      ...existing,
+      [starActionType]: [...new Set([...existing[starActionType], category])],
+    }));
+    setStarCategory(category);
+    setNewStarCategory('');
   };
 
   const handleCreateCase = (e: React.FormEvent) => {
@@ -119,12 +147,15 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
 
   const handleSaveStar = (e: React.FormEvent) => {
     e.preventDefault();
-    const st = students.find((s) => s.id === starStudentId);
-    if (!st) return;
+    const selectedStudents = students.filter((student) => starStudentIds.includes(student.id));
+    if (!selectedStudents.length) {
+      showToast('Pilih minimal satu siswa.');
+      return;
+    }
 
-    addStarAward({
-      studentId: st.id,
-      studentName: st.name,
+    selectedStudents.forEach((student) => addStarAward({
+      studentId: student.id,
+      studentName: student.name,
       awarderRole: 'guru_bk',
       awarderName: currentUser?.name || 'Ibu Dian Permatasari, M.Psi.',
       type: starActionType,
@@ -132,14 +163,17 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi BK atas pelanggaran perilaku/sikap.' : 'Apresiasi perilaku empati dan budi pekerti luhur.'),
       date: new Date().toISOString().split('T')[0],
-    });
+    }));
 
+    setStarStudentIds(students[0] ? [students[0].id] : []);
+    setNewStarCategory('');
     setShowStarModal(false);
     setStarNote('');
+    const totalStars = starCount * selectedStudents.length;
     if (starActionType === 'penalty') {
-      showToast(`Konsekuensi tercatat: Pengurangan -${starCount} Bintang pada ${st.name} (Tersinkron real-time ke orang tua)`);
+      showToast(`Konsekuensi tercatat untuk ${selectedStudents.length} siswa: -${totalStars} bintang total.`);
     } else {
-      showToast(`Berhasil memberikan +${starCount} Bintang Karakter kepada ${st.name}!`);
+      showToast(`Berhasil memberikan ${totalStars} bintang karakter kepada ${selectedStudents.length} siswa.`);
     }
   };
 
@@ -279,7 +313,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                           ? 'bg-blue-50 text-blue-800'
                           : 'bg-amber-50 text-amber-800'
                       }`}>
-                        {rec.status}
+                        {rec.status === 'Dalam Pantauan' ? 'Dalam Bimbingan/Pendampingan' : rec.status}
                       </span>
 
                       <button
@@ -330,13 +364,14 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
 
                     <button
                       onClick={() => {
-                        const nextStatus = rec.status === 'Dalam Pantauan' ? 'Selesai' : 'Dalam Pantauan';
+                        const isOngoing = rec.status === 'Dalam Pantauan' || rec.status === 'Dalam Bimbingan/Pendampingan';
+                        const nextStatus: CaseRecord['status'] = isOngoing ? 'Selesai' : 'Dalam Bimbingan/Pendampingan';
                         updateCaseRecord(rec.id, { status: nextStatus });
                         showToast(`Status kasus diperbarui: ${nextStatus}`);
                       }}
                       className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition-colors"
                     >
-                      Ubah Status ({rec.status === 'Dalam Pantauan' ? 'Tandai Selesai' : 'Tandai Dalam Pantauan'})
+                      Ubah Status ({rec.status === 'Dalam Pantauan' || rec.status === 'Dalam Bimbingan/Pendampingan' ? 'Tandai Selesai' : 'Tandai Dalam Bimbingan/Pendampingan'})
                     </button>
                   </div>
                 </div>
@@ -610,7 +645,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                   >
                     <option value="Perlu Perhatian">Perlu Perhatian</option>
                     <option value="Pelanggaran Ringan">Pelanggaran Ringan</option>
-                    <option value="Konseling Khusus">Konseling Khusus</option>
+                    <option value="Konseling Individu">Konseling Individu</option>
                     <option value="Apresiasi Karakter Positif">Apresiasi Karakter Positif</option>
                   </select>
                 </div>
@@ -622,7 +657,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                     onChange={(e) => setCaseStatus(e.target.value as any)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white font-medium"
                   >
-                    <option value="Dalam Pantauan">Dalam Pantauan</option>
+                    <option value="Dalam Bimbingan/Pendampingan">Dalam Bimbingan/Pendampingan</option>
                     <option value="Selesai">Selesai</option>
                     <option value="Jadwal Pertemuan Orang Tua">Jadwal Pertemuan Orang Tua</option>
                   </select>
@@ -753,48 +788,18 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
             </div>
 
             <form onSubmit={handleSaveStar} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Siswa</label>
-                <select
-                  value={starStudentId}
-                  onChange={(e) => setStarStudentId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white font-semibold"
-                >
-                  {students.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name} ({st.nisn})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {starActionType === 'reward' ? 'Kategori Budi Pekerti' : 'Jenis Pelanggaran Sikap'}
-                </label>
-                <select
-                  value={starCategory}
-                  onChange={(e) => setStarCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white"
-                >
-                  {starActionType === 'reward' ? (
-                    <>
-                      <option value="Empati & Kejujuran">Empati & Kejujuran</option>
-                      <option value="Kesantunan & Sikap Hormat">Kesantunan & Sikap Hormat</option>
-                      <option value="Tanggung Jawab">Tanggung Jawab & Disiplin Pribadi</option>
-                      <option value="Penyelesaian Masalah Positif">Penyelesaian Masalah Positif</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Perilaku Tidak Santun / Membantah">Perilaku Tidak Santun / Membantah Guru</option>
-                      <option value="Mengejek / Intimidasi Teman">Mengejek / Mengintimidasi Teman</option>
-                      <option value="Berbohong / Tidak Jujur">Berbohong / Berkata Tidak Jujur</option>
-                      <option value="Pertengkaran / Tindakan Agresif">Pertengkaran Fisik / Tindakan Agresif</option>
-                      <option value="Pelanggaran Tata Tertib Berat">Pelanggaran Tata Tertib Lingkungan Sekolah</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <StarAwardBatchFields
+                students={students}
+                selectedStudentIds={starStudentIds}
+                onSelectedStudentIdsChange={setStarStudentIds}
+                category={starCategory}
+                onCategoryChange={setStarCategory}
+                categoryOptions={starCategoryOptions}
+                newCategory={newStarCategory}
+                onNewCategoryChange={setNewStarCategory}
+                onAddCategory={handleAddStarCategory}
+                categoryLabel={starActionType === 'reward' ? 'Kategori Budi Pekerti' : 'Jenis Pelanggaran Sikap'}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">

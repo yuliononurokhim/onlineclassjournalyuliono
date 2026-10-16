@@ -619,12 +619,12 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-100 pb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
-                          {cs.category}
+                          {cs.category === 'Konseling Khusus' ? 'Konseling Individu' : cs.category}
                         </span>
                         <span className="text-xs text-slate-500 font-mono">Tanggal: {cs.date}</span>
                       </div>
                       <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-white">
-                        Status: {cs.status}
+                        Status: {cs.status === 'Dalam Pantauan' ? 'Dalam Bimbingan/Pendampingan' : cs.status}
                       </span>
                     </div>
 

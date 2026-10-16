@@ -7,6 +7,7 @@ import {
   deleteDoc,
   onSnapshot,
   getDocs,
+  getDoc,
   enableIndexedDbPersistence,
   writeBatch,
 } from 'firebase/firestore';
@@ -164,9 +165,11 @@ export function initFirebaseSync() {
     function syncCollection<T extends { id: string }>(
       collectionName: string,
       storageKey: string,
-      initialData: T[]
+      initialData: T[],
+      preserveEmpty = false
     ) {
       const colRef = collection(db, collectionName);
+      const initializationRef = doc(db, 'settings', `${collectionName}_initialized`);
       let hasAttemptedSeed = false;
       onSnapshot(
         colRef,
@@ -179,6 +182,11 @@ export function initFirebaseSync() {
             isRemoteUpdating = true;
             saveLocal(storageKey, items);
             isRemoteUpdating = false;
+            if (preserveEmpty) {
+              setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
+                console.warn(`Failed marking ${collectionName} as initialized:`, error);
+              });
+            }
             updateSyncStatus({
               lastSyncTime: new Date(),
               isConnected: true,
@@ -186,16 +194,40 @@ export function initFirebaseSync() {
             });
           } else if (!hasAttemptedSeed) {
             hasAttemptedSeed = true;
-            try {
-              const batch = writeBatch(db);
-              initialData.forEach((item) => {
-                batch.set(doc(db, collectionName, item.id), item, { merge: true });
-              });
-              batch.commit().catch((e) =>
-                console.warn(`Seed batch for ${collectionName} error:`, e)
-              );
-            } catch (seedErr) {
-              console.warn(`Seed batch error for ${collectionName}:`, seedErr);
+            const seedCollection = () => {
+              try {
+                const batch = writeBatch(db);
+                initialData.forEach((item) => {
+                  batch.set(doc(db, collectionName, item.id), item, { merge: true });
+                });
+                if (preserveEmpty) {
+                  batch.set(initializationRef, { initialized: true }, { merge: true });
+                }
+                batch.commit().catch((error) =>
+                  console.warn(`Seed batch for ${collectionName} error:`, error)
+                );
+              } catch (seedError) {
+                console.warn(`Seed batch error for ${collectionName}:`, seedError);
+              }
+            };
+
+            if (preserveEmpty) {
+              getDoc(initializationRef)
+                .then((marker) => {
+                  if (marker.exists()) {
+                    isRemoteUpdating = true;
+                    saveLocal(storageKey, []);
+                    isRemoteUpdating = false;
+                    updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+                  } else {
+                    seedCollection();
+                  }
+                })
+                .catch((error) => {
+                  console.warn(`Initialization check for ${collectionName} failed:`, error);
+                });
+            } else {
+              seedCollection();
             }
           }
         },
@@ -207,7 +239,7 @@ export function initFirebaseSync() {
     }
 
     // Sync all key educational collections
-    syncCollection<Student>('students', 'students', INITIAL_STUDENTS);
+    syncCollection<Student>('students', 'students', INITIAL_STUDENTS, true);
     syncCollection<ClassJournalEntry>('journal_entries', 'journal_entries', INITIAL_JOURNAL_ENTRIES);
     syncCollection<InternalGradeRecord>('internal_grades', 'internal_grades', INITIAL_INTERNAL_GRADES);
     syncCollection<StarAward>('star_awards', 'star_awards', INITIAL_STAR_AWARDS);
@@ -250,5 +282,19 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
   } catch (err: any) {
     console.warn(`Delete from Firestore [${collectionName}/${id}] failed:`, err);
     updateSyncStatus({ error: err.message });
+  }
+}
+
+export async function deleteStudentFirestoreRecords(studentId: string, parentUserIds: string[]) {
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'settings', 'students_initialized'), { initialized: true }, { merge: true });
+    batch.delete(doc(db, 'students', studentId));
+    parentUserIds.forEach((userId) => batch.delete(doc(db, 'users', userId)));
+    await batch.commit();
+    updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
+  } catch (error) {
+    console.warn(`Failed deleting student records for ${studentId}:`, error);
+    updateSyncStatus({ error: error instanceof Error ? error.message : 'Gagal menghapus data siswa' });
   }
 }

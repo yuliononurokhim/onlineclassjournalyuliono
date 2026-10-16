@@ -41,6 +41,15 @@ import {
   Info
 } from 'lucide-react';
 
+const LANDING_FEATURES: {
+  key: keyof NonNullable<SchoolProfile['landingFeatures']>;
+  label: string;
+}[] = [
+  { key: 'dailyReports', label: 'Laporan harian/mingguan' },
+  { key: 'gallery', label: 'Galeri foto & video' },
+  { key: 'agenda', label: 'Agenda & tugas' },
+];
+
 interface AdminDashboardProps {
   currentTab?: string;
   onTabChange?: (tab: string) => void;
@@ -830,6 +839,33 @@ Terima kasih.`;
                     className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none leading-relaxed"
                   />
                 </div>
+
+                <fieldset className="space-y-2 rounded-xl border border-slate-200 p-4">
+                  <legend className="px-1 text-xs font-bold text-slate-700">
+                    Fitur yang Ditampilkan di Halaman Depan
+                  </legend>
+                  {LANDING_FEATURES.map((feature) => (
+                    <label key={feature.key} className="flex items-center gap-2 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={profileForm.landingFeatures?.[feature.key] ?? true}
+                        onChange={(event) =>
+                          setProfileForm({
+                            ...profileForm,
+                            landingFeatures: {
+                              dailyReports: profileForm.landingFeatures?.dailyReports ?? true,
+                              gallery: profileForm.landingFeatures?.gallery ?? true,
+                              agenda: profileForm.landingFeatures?.agenda ?? true,
+                              [feature.key]: event.target.checked,
+                            },
+                          })
+                        }
+                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      {feature.label}
+                    </label>
+                  ))}
+                </fieldset>
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-3">

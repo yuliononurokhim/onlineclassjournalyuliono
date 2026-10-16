@@ -3,6 +3,7 @@ import { useEduStore } from '../../services/store';
 import { PaiAssessment, PaiSubIndicator, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
+import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
   Sparkles,
   CheckSquare,
@@ -80,8 +81,13 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
   // Star Modal
   const [showStarModal, setShowStarModal] = useState(false);
   const [starActionType, setStarActionType] = useState<StarActionType>('reward');
-  const [starStudentId, setStarStudentId] = useState(students[0]?.id || '');
+  const [starStudentIds, setStarStudentIds] = useState<string[]>(students[0] ? [students[0].id] : []);
   const [starCategory, setStarCategory] = useState('Ibadah & Sholat');
+  const [newStarCategory, setNewStarCategory] = useState('');
+  const [customStarCategories, setCustomStarCategories] = useState<Record<StarActionType, string[]>>({
+    reward: [],
+    penalty: [],
+  });
   const [starCount, setStarCount] = useState(3);
   const [starNote, setStarNote] = useState('');
 
@@ -92,6 +98,28 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const baseStarCategories = starActionType === 'reward'
+    ? ['Ibadah & Sholat', "Tartil Al-Qur'an", 'Adab & Budi Pekerti', 'Infak & Sedekah', 'Hafalan Surat Pendek']
+    : ['Bercanda Saat Sholat Berjamaah', 'Tidak Membawa Perlengkapan Sholat', 'Main Air Saat Wudhu', 'Melanggar Adab Islami', 'Mengabaikan Tugas Mengaji'];
+  const starCategoryOptions = Array.from(new Set([
+    ...baseStarCategories,
+    ...starAwards
+      .filter((award) => award.awarderRole === 'guru_pai' && award.type === starActionType)
+      .map((award) => award.category),
+    ...customStarCategories[starActionType],
+  ]));
+
+  const handleAddStarCategory = () => {
+    const category = newStarCategory.trim();
+    if (!category) return;
+    setCustomStarCategories((existing) => ({
+      ...existing,
+      [starActionType]: [...new Set([...existing[starActionType], category])],
+    }));
+    setStarCategory(category);
+    setNewStarCategory('');
   };
 
   const activeAssessment = paiAssessments.find((a) => a.id === selectedAssessmentId) || paiAssessments[0];
@@ -159,12 +187,15 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
 
   const handleSaveStar = (e: React.FormEvent) => {
     e.preventDefault();
-    const st = students.find((s) => s.id === starStudentId);
-    if (!st) return;
+    const selectedStudents = students.filter((student) => starStudentIds.includes(student.id));
+    if (!selectedStudents.length) {
+      showToast('Pilih minimal satu siswa.');
+      return;
+    }
 
-    addStarAward({
-      studentId: st.id,
-      studentName: st.name,
+    selectedStudents.forEach((student) => addStarAward({
+      studentId: student.id,
+      studentName: student.name,
       awarderRole: 'guru_pai',
       awarderName: currentUser?.name || 'Ust. Ahmad Fauzan, S.Pd.I.',
       type: starActionType,
@@ -172,14 +203,17 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi atas pelanggaran adab islami dan tata tertib ibadah.' : 'Apresiasi pembiasaan ibadah dan doa harian.'),
       date: new Date().toISOString().split('T')[0],
-    });
+    }));
 
+    setStarStudentIds(students[0] ? [students[0].id] : []);
+    setNewStarCategory('');
     setShowStarModal(false);
     setStarNote('');
+    const totalStars = starCount * selectedStudents.length;
     if (starActionType === 'penalty') {
-      showToast(`Pengurangan -${starCount} Bintang pada ${st.name} (Tersinkron real-time ke orang tua)`);
+      showToast(`Pengurangan bintang tercatat untuk ${selectedStudents.length} siswa: -${totalStars} bintang total.`);
     } else {
-      showToast(`Berhasil memberikan +${starCount} Bintang Ibadah kepada ${st.name}!`);
+      showToast(`Berhasil memberikan ${totalStars} bintang ibadah kepada ${selectedStudents.length} siswa.`);
     }
   };
 
@@ -880,49 +914,18 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
             </div>
 
             <form onSubmit={handleSaveStar} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Siswa</label>
-                <select
-                  value={starStudentId}
-                  onChange={(e) => setStarStudentId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white font-semibold"
-                >
-                  {students.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name} ({st.nisn})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {starActionType === 'reward' ? 'Kategori Ibadah & Adab' : 'Jenis Pelanggaran Adab Islami'}
-                </label>
-                <select
-                  value={starCategory}
-                  onChange={(e) => setStarCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
-                >
-                  {starActionType === 'reward' ? (
-                    <>
-                      <option value="Ibadah & Sholat">Sholat Berjamaah & Tepat Waktu</option>
-                      <option value="Tartil Al-Qur'an">Kelancaran & Tartil Membaca Al-Qur'an</option>
-                      <option value="Adab & Budi Pekerti">Adab Santun & Doa Harian</option>
-                      <option value="Infak & Sedekah">Kepedulian Sosial & Infak Subuh</option>
-                      <option value="Hafalan Surat Pendek">Hafalan Surat Pendek Juz 30</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Bercanda Saat Sholat Berjamaah">Bercanda / Gaduh Saat Sholat Berjamaah</option>
-                      <option value="Tidak Membawa Perlengkapan Sholat">Tidak Membawa Perlengkapan Sholat / Mukena</option>
-                      <option value="Main Air Saat Wudhu">Bercanda & Bermain Air Saat Berwudhu</option>
-                      <option value="Melanggar Adab Islami">Berkata Kasar / Melanggar Adab Islami</option>
-                      <option value="Mengabaikan Tugas Mengaji">Mengabaikan Bimbingan Mengaji / Hafalan</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <StarAwardBatchFields
+                students={students}
+                selectedStudentIds={starStudentIds}
+                onSelectedStudentIdsChange={setStarStudentIds}
+                category={starCategory}
+                onCategoryChange={setStarCategory}
+                categoryOptions={starCategoryOptions}
+                newCategory={newStarCategory}
+                onNewCategoryChange={setNewStarCategory}
+                onAddCategory={handleAddStarCategory}
+                categoryLabel={starActionType === 'reward' ? 'Kategori Ibadah & Adab' : 'Jenis Pelanggaran Adab Islami'}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">

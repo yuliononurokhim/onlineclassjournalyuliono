@@ -34,8 +34,13 @@ export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
   principalNip: '19740512 199803 2 004',
   logoUrl: '',
   heroTagline: 'Portal Jurnal Belajar & Karakter Siswa Real-Time',
-  heroTitle: 'Kolaborasi Harmonis Guru & Orang Tua untuk Kemajuan Putra-Putri Kita',
-  heroDescription: 'Aplikasi digital terpadu Kelas 4-A yang menghubungkan capaian harian siswa di kelas, bimbingan karakter konseling, penilaian ibadah PAI fleksibel, serta laporan khusus langsung ke wali murid secara transparan dan aman.',
+  heroTitle: 'Pantau Tumbuh Kembang dan Aktivitas Belajar Si Kecil Setiap Hari',
+  heroDescription: 'Jurnal digital interaktif dari guru untuk menghubungkan sekolah dan rumah dengan mudah. Lihat laporan belajar, perkembangan anak, dan agenda sekolah melalui satu portal.',
+  landingFeatures: {
+    dailyReports: true,
+    gallery: true,
+    agenda: true,
+  },
 };
 
 export const INITIAL_SUBJECTS: SubjectItem[] = [
@@ -732,4 +737,3 @@ export const INITIAL_INTERNAL_GRADES: InternalGradeRecord[] = [
     timestamp: Date.now() - 3600000 * 72,
   },
 ];
-

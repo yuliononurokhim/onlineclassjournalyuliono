@@ -25,7 +25,7 @@ export const ImpersonateModal: React.FC<ImpersonateModalProps> = ({
   onClose,
   onSelectUser,
 }) => {
-  const { users, students, currentUser, impersonateUser } = useEduStore();
+  const { users, students, currentUser, isImpersonating, impersonateUser } = useEduStore();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'teachers' | 'parents'>('all');
 
@@ -88,7 +88,7 @@ export const ImpersonateModal: React.FC<ImpersonateModalProps> = ({
     });
   }, [allAccounts, roleFilter, search]);
 
-  if (!isOpen) return null;
+  if (!isOpen || (currentUser?.role !== 'admin' && !isImpersonating)) return null;
 
   const handleImpersonate = (target: UserAccount) => {
     impersonateUser(target);

@@ -60,6 +60,11 @@ export interface SchoolProfile {
   heroTagline?: string;
   heroTitle?: string;
   heroDescription?: string;
+  landingFeatures?: {
+    dailyReports: boolean;
+    gallery: boolean;
+    agenda: boolean;
+  };
 }
 
 export interface Student {
@@ -115,12 +120,12 @@ export interface CaseRecord {
   studentId: string;
   studentName: string;
   date: string; // YYYY-MM-DD
-  category: 'Perlu Perhatian' | 'Pelanggaran Ringan' | 'Konseling Khusus' | 'Apresiasi Karakter Positif';
+  category: 'Perlu Perhatian' | 'Pelanggaran Ringan' | 'Konseling Individu' | 'Konseling Khusus' | 'Apresiasi Karakter Positif';
   severity: 'Ringan' | 'Sedang' | 'Perlu Perhatian';
   description: string;
   followUpAction: string;
   isReportedToParent: boolean;
-  status: 'Dalam Pantauan' | 'Selesai' | 'Jadwal Pertemuan Orang Tua';
+  status: 'Dalam Bimbingan/Pendampingan' | 'Dalam Pantauan' | 'Selesai' | 'Jadwal Pertemuan Orang Tua';
   counselorName: string;
   timestamp: number;
 }
@@ -178,7 +183,7 @@ export type AssessmentType =
 
 export interface InternalScoreDetail {
   score: number; // 0 - 100
-  predicate: 'A' | 'B' | 'C' | 'D';
+  predicate: 'A' | 'B' | 'C' | 'D' | 'SB' | 'PB';
   notes?: string;
 }
 
@@ -199,4 +204,3 @@ export interface InternalGradeRecord {
   isInternalOnly: boolean; // Flag verifying this is confidential & excluded from parent view
   timestamp: number;
 }
-

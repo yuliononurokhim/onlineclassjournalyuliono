@@ -42,7 +42,15 @@ export default function App() {
 
   const handleOpenLogin = () => {
     setActiveView('landing');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => {
+      const loginForm = document.getElementById('login-form-container');
+      if (!loginForm) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      loginForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('login-username-input')?.focus({ preventScroll: true });
+    }, 0);
   };
 
   // Determine which dashboard to render based on user role
@@ -126,7 +134,7 @@ export default function App() {
         {/* Dynamic View Body */}
         <main className="flex-1">
           {activeView === 'landing' || activeView === 'pengumuman' || activeView === 'kontak' ? (
-            <LandingPage onLoginSuccess={handleLoginSuccess} />
+            <LandingPage activeView={activeView} onLoginSuccess={handleLoginSuccess} />
           ) : (
             renderDashboard()
           )}

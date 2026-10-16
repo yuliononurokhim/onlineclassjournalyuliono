@@ -3,6 +3,7 @@ import { useEduStore } from '../../services/store';
 import { Student, ClassJournalEntry, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
+import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
   Users,
   CreditCard,
@@ -81,6 +82,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
 
   // Add Manual Student Modal
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [newNisn, setNewNisn] = useState('');
   const [newName, setNewName] = useState('');
   const [newGender, setNewGender] = useState<'L' | 'P'>('L');
@@ -107,8 +109,13 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   // Star Award & Penalty Modal
   const [showStarModal, setShowStarModal] = useState(false);
   const [starActionType, setStarActionType] = useState<StarActionType>('reward');
-  const [starStudentId, setStarStudentId] = useState(students[0]?.id || '');
+  const [starStudentIds, setStarStudentIds] = useState<string[]>(students[0] ? [students[0].id] : []);
   const [starCategory, setStarCategory] = useState('Keaktifan Belajar');
+  const [newStarCategory, setNewStarCategory] = useState('');
+  const [customStarCategories, setCustomStarCategories] = useState<Record<StarActionType, string[]>>({
+    reward: [],
+    penalty: [],
+  });
   const [starCount, setStarCount] = useState(3);
   const [starNote, setStarNote] = useState('');
 
@@ -121,25 +128,84 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const baseStarCategories = starActionType === 'reward'
+    ? ['Keaktifan Belajar', 'Kedisiplinan', 'Budi Pekerti', 'Kerjasama Kelompok', 'Kreativitas']
+    : ['Lupa Membawa Buku / PR', 'Terlambat Masuk Kelas', 'Tidak Tertib / Mengganggu', 'Pelanggaran Seragam', 'Mengabaikan Instruksi Guru'];
+  const starCategoryOptions = Array.from(new Set([
+    ...baseStarCategories,
+    ...starAwards
+      .filter((award) => award.awarderRole === 'guru_kelas' && award.type === starActionType)
+      .map((award) => award.category),
+    ...customStarCategories[starActionType],
+  ]));
+
+  const handleAddStarCategory = () => {
+    const category = newStarCategory.trim();
+    if (!category) return;
+    setCustomStarCategories((existing) => ({
+      ...existing,
+      [starActionType]: [...new Set([...existing[starActionType], category])],
+    }));
+    setStarCategory(category);
+    setNewStarCategory('');
+  };
+
   // Filter CP/TP based on selected subject in journal form
   const availableLoForSubject = learningObjectives.filter((lo) => lo.subjectId === journalSubjectId);
 
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newNisn.trim()) return;
-    addStudent({
+    const studentDetails = {
       nisn: newNisn.trim(),
       name: newName.trim(),
       gender: newGender,
       parentName: newParentName.trim() || `Orang Tua ${newName.trim()}`,
       parentPhone: newParentPhone.trim() || '0812-0000-0000',
-    });
+    };
+
+    if (editingStudentId) {
+      if (students.some((student) => student.id !== editingStudentId && student.nisn === studentDetails.nisn)) {
+        showToast('NISN tersebut sudah digunakan oleh siswa lain.');
+        return;
+      }
+      updateStudent(editingStudentId, studentDetails);
+      showToast(`Detail siswa ${studentDetails.name} berhasil diperbarui.`);
+    } else {
+      if (students.some((student) => student.nisn === studentDetails.nisn)) {
+        showToast('NISN tersebut sudah terdaftar.');
+        return;
+      }
+      addStudent(studentDetails);
+      showToast(`Siswa ${studentDetails.name} berhasil ditambahkan dan akun orang tua telah dibuat!`);
+    }
+
     setNewNisn('');
     setNewName('');
     setNewParentName('');
     setNewParentPhone('');
+    setEditingStudentId(null);
     setShowAddStudentModal(false);
-    showToast(`Siswa ${newName} berhasil ditambahkan dan akun orang tua telah dibuat!`);
+  };
+
+  const openAddStudentModal = () => {
+    setEditingStudentId(null);
+    setNewNisn('');
+    setNewName('');
+    setNewGender('L');
+    setNewParentName('');
+    setNewParentPhone('');
+    setShowAddStudentModal(true);
+  };
+
+  const openEditStudentModal = (student: Student) => {
+    setEditingStudentId(student.id);
+    setNewNisn(student.nisn);
+    setNewName(student.name);
+    setNewGender(student.gender);
+    setNewParentName(student.parentName);
+    setNewParentPhone(student.parentPhone);
+    setShowAddStudentModal(true);
   };
 
   // Download Sample Excel Template (CSV)
@@ -256,12 +322,15 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   // Submit Star (Reward or Penalty)
   const handleSaveStar = (e: React.FormEvent) => {
     e.preventDefault();
-    const st = students.find((s) => s.id === starStudentId);
-    if (!st) return;
+    const selectedStudents = students.filter((student) => starStudentIds.includes(student.id));
+    if (!selectedStudents.length) {
+      showToast('Pilih minimal satu siswa.');
+      return;
+    }
 
-    addStarAward({
-      studentId: st.id,
-      studentName: st.name,
+    selectedStudents.forEach((student) => addStarAward({
+      studentId: student.id,
+      studentName: student.name,
       awarderRole: 'guru_kelas',
       awarderName: currentUser?.name || 'Ibu Ratna Kumalasari, S.Pd.',
       type: starActionType,
@@ -269,14 +338,17 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi atas pelanggaran tata tertib kelas.' : 'Apresiasi perilaku positif dan keaktifan di kelas.'),
       date: new Date().toISOString().split('T')[0],
-    });
+    }));
 
+    setStarStudentIds(students[0] ? [students[0].id] : []);
+    setNewStarCategory('');
     setShowStarModal(false);
     setStarNote('');
+    const totalStars = starCount * selectedStudents.length;
     if (starActionType === 'penalty') {
-      showToast(`Konsekuensi tercatat: Pengurangan -${starCount} Bintang pada ${st.name} (Tersinkron real-time ke orang tua)`);
+      showToast(`Konsekuensi tercatat untuk ${selectedStudents.length} siswa: -${totalStars} bintang total.`);
     } else {
-      showToast(`Berhasil memberikan +${starCount} Bintang kepada ${st.name}!`);
+      showToast(`Berhasil memberikan ${totalStars} bintang kepada ${selectedStudents.length} siswa.`);
     }
   };
 
@@ -390,7 +462,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
               </label>
 
               <button
-                onClick={() => setShowAddStudentModal(true)}
+                onClick={openAddStudentModal}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-xs"
               >
                 <Plus className="w-4 h-4" />
@@ -414,7 +486,16 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredStudents.map((std, idx) => (
+                  {filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-10 px-4 text-center text-sm text-slate-500">
+                        {students.length === 0
+                          ? 'Belum ada data siswa. Tambahkan siswa secara manual atau unggah file Excel / CSV.'
+                          : 'Tidak ada siswa yang cocok dengan pencarian.'}
+                      </td>
+                    </tr>
+                  )}
+                  {filteredStudents.map((std, idx) => (
                   <tr key={std.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4 font-mono text-slate-400">{idx + 1}</td>
                     <td className="py-3 px-4">
@@ -443,6 +524,14 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => openEditStudentModal(std)}
+                        className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-md hover:bg-indigo-50 transition-colors"
+                        title="Edit Detail Murid"
+                        aria-label={`Edit detail ${std.name}`}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => {
                           if (confirm(`Hapus siswa ${std.name}? Data kartu dan relasi akun juga akan dihapus.`)) {
@@ -1093,9 +1182,13 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       {showAddStudentModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-1">Tambah Siswa Baru</h3>
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              {editingStudentId ? 'Edit Detail Siswa' : 'Tambah Siswa Baru'}
+            </h3>
             <p className="text-xs text-slate-500 mb-4">
-              Sistem akan otomatis membuat kartu akun login orang tua dengan username & password unik.
+              {editingStudentId
+                ? 'Perbarui data siswa dan informasi orang tua / wali.'
+                : 'Sistem akan otomatis membuat kartu akun login orang tua dengan username & password unik.'}
             </p>
 
             <form onSubmit={handleCreateStudent} className="space-y-4">
@@ -1161,7 +1254,10 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddStudentModal(false)}
+                  onClick={() => {
+                    setShowAddStudentModal(false);
+                    setEditingStudentId(null);
+                  }}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Batal
@@ -1170,7 +1266,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                   type="submit"
                   className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
                 >
-                  Simpan Siswa
+                  {editingStudentId ? 'Simpan Perubahan' : 'Simpan Siswa'}
                 </button>
               </div>
             </form>
@@ -1296,49 +1392,18 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
             </div>
 
             <form onSubmit={handleSaveStar} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Siswa</label>
-                <select
-                  value={starStudentId}
-                  onChange={(e) => setStarStudentId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-semibold"
-                >
-                  {students.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name} ({st.nisn})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {starActionType === 'reward' ? 'Kategori Capaian Positif' : 'Jenis Pelanggaran / Tata Tertib'}
-                </label>
-                <select
-                  value={starCategory}
-                  onChange={(e) => setStarCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
-                >
-                  {starActionType === 'reward' ? (
-                    <>
-                      <option value="Keaktifan Belajar">Keaktifan Belajar & Bertanya</option>
-                      <option value="Kedisiplinan">Kedisiplinan & Kerapian Tugas</option>
-                      <option value="Budi Pekerti">Budi Pekerti & Kejujuran</option>
-                      <option value="Kerjasama Kelompok">Kerjasama & Gotong Royong</option>
-                      <option value="Kreativitas">Kreativitas & Daya Cipta</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Lupa Membawa Buku / PR">Lupa Membawa Buku / Tugas PR</option>
-                      <option value="Terlambat Masuk Kelas">Terlambat Masuk Kelas</option>
-                      <option value="Tidak Tertib / Mengganggu">Tidak Tertib & Membuat Gaduh di Kelas</option>
-                      <option value="Pelanggaran Seragam">Tidak Memakai Seragam Lengkap Sesuai Jadwal</option>
-                      <option value="Mengabaikan Instruksi Guru">Mengabaikan Instruksi Guru saat Belajar</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <StarAwardBatchFields
+                students={students}
+                selectedStudentIds={starStudentIds}
+                onSelectedStudentIdsChange={setStarStudentIds}
+                category={starCategory}
+                onCategoryChange={setStarCategory}
+                categoryOptions={starCategoryOptions}
+                newCategory={newStarCategory}
+                onNewCategoryChange={setNewStarCategory}
+                onAddCategory={handleAddStarCategory}
+                categoryLabel={starActionType === 'reward' ? 'Kategori Capaian Positif' : 'Jenis Pelanggaran / Tata Tertib'}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">

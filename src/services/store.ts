@@ -32,9 +32,17 @@ import {
   initFirebaseSync,
   writeFirestoreDoc,
   deleteFirestoreDoc,
+  deleteStudentFirestoreRecords,
 } from './firebase';
 
 const STORAGE_KEY_PREFIX = 'edujournal_sd_v1_';
+
+function createRecordId(prefix: string): string {
+  const uniqueId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${uniqueId}`;
+}
 
 function getStoredItem<T>(key: string, defaultValue: T): T {
   try {
@@ -67,6 +75,19 @@ function setStoredItem<T>(key: string, value: T): void {
     scheduleStoreDispatch();
   } catch (e) {
     console.error('Error saving localStorage for key', key, e);
+  }
+}
+
+function hasOriginalAdminSession(): boolean {
+  const raw = sessionStorage.getItem('edujournal_original_admin');
+  if (!raw) return false;
+  try {
+    const originalAdmin = JSON.parse(raw) as UserAccount;
+    return originalAdmin.role === 'admin';
+  } catch (error) {
+    console.warn('Failed validating impersonation session', error);
+    sessionStorage.removeItem('edujournal_original_admin');
+    return false;
   }
 }
 
@@ -280,6 +301,15 @@ export function useEduStore() {
   }, []);
 
   const switchRole = useCallback((role: UserRole, studentIdOrUserId?: string) => {
+    const current = getStoredItem<UserAccount | null>('current_user', null);
+    if (!current || (current.role !== 'admin' && !hasOriginalAdminSession())) {
+      console.error('Only an administrator can switch to another account.');
+      return;
+    }
+    if (current.role === 'admin' && !hasOriginalAdminSession()) {
+      sessionStorage.setItem('edujournal_original_admin', JSON.stringify(current));
+    }
+
     const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     let targetUser: UserAccount | undefined;
     if (studentIdOrUserId) {
@@ -300,7 +330,11 @@ export function useEduStore() {
 
   const impersonateUser = useCallback((targetUser: UserAccount) => {
     const current = getStoredItem<UserAccount | null>('current_user', null);
-    if (current && (current.role === 'admin' || !sessionStorage.getItem('edujournal_original_admin'))) {
+    if (!current || (current.role !== 'admin' && !hasOriginalAdminSession())) {
+      console.error('Only an administrator can impersonate another account.');
+      return;
+    }
+    if (current.role === 'admin' && !hasOriginalAdminSession()) {
       sessionStorage.setItem('edujournal_original_admin', JSON.stringify(current));
     }
     setStoredItem('current_user', targetUser);
@@ -310,7 +344,10 @@ export function useEduStore() {
     try {
       const raw = sessionStorage.getItem('edujournal_original_admin');
       if (raw) {
-        const originalAdmin = JSON.parse(raw);
+        const originalAdmin = JSON.parse(raw) as UserAccount;
+        if (originalAdmin.role !== 'admin') {
+          throw new Error('Stored impersonation account is not an administrator.');
+        }
         sessionStorage.removeItem('edujournal_original_admin');
         setStoredItem('current_user', originalAdmin);
         return;
@@ -325,7 +362,7 @@ export function useEduStore() {
   }, []);
 
   const isImpersonating = useMemo(() => {
-    return Boolean(typeof window !== 'undefined' && sessionStorage.getItem('edujournal_original_admin'));
+    return typeof window !== 'undefined' && hasOriginalAdminSession();
   }, [version]);
 
   const logout = useCallback(() => {
@@ -408,7 +445,7 @@ export function useEduStore() {
     const parentUsername = `ortu_${cleanFirstName}_${Math.floor(10 + Math.random() * 89)}`;
     const randomCode = Math.floor(1000 + Math.random() * 9000);
     const parentPassword = `${cleanFirstName.toUpperCase().slice(0, 4)}-${randomCode}`;
-    const studentId = 'std-' + Date.now();
+    const studentId = createRecordId('std');
 
     const newStudent: Student = {
       ...data,
@@ -420,7 +457,7 @@ export function useEduStore() {
 
     // Auto-create parent user account
     const newParentAccount: UserAccount = {
-      id: 'usr-parent-' + Date.now(),
+      id: createRecordId('usr-parent'),
       username: parentUsername,
       password: parentPassword,
       role: 'orangtua',
@@ -449,7 +486,7 @@ export function useEduStore() {
       const parentUsername = `ortu_${cleanFirstName}_${Math.floor(10 + Math.random() * 89)}`;
       const randomCode = Math.floor(1000 + Math.random() * 9000);
       const parentPassword = `${cleanFirstName.toUpperCase().slice(0, 4)}-${randomCode}`;
-      const studentId = `std-${Date.now()}-${index}`;
+      const studentId = createRecordId(`std-${index}`);
 
       const s: Student = {
         ...item,
@@ -461,7 +498,7 @@ export function useEduStore() {
       generatedStudents.push(s);
 
       const p: UserAccount = {
-        id: `usr-parent-${Date.now()}-${index}`,
+        id: createRecordId(`usr-parent-${index}`),
         username: parentUsername,
         password: parentPassword,
         role: 'orangtua',
@@ -495,12 +532,13 @@ export function useEduStore() {
     }
 
     // Sync parent user account name/phone if changed
-    if (updated.parentName || updated.parentPhone) {
+    if (updated.name || updated.parentName || updated.parentPhone) {
       const updatedUsers = currentUsers.map((u) => {
         if (u.studentId === id) {
           const mergedUser = {
             ...u,
             name: updated.parentName ? `${updated.parentName} (Wali)` : u.name,
+            title: updated.name ? `Orang Tua dari ${updated.name}` : u.title,
             phone: updated.parentPhone || u.phone,
           };
           writeFirestoreDoc('users', u.id, mergedUser);
@@ -516,13 +554,10 @@ export function useEduStore() {
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     setStoredItem('students', currentStudents.filter((s) => s.id !== id));
-    deleteFirestoreDoc('students', id);
 
-    const parentUser = currentUsers.find((u) => u.studentId === id);
-    if (parentUser) {
-      setStoredItem('users', currentUsers.filter((u) => u.studentId !== id));
-      deleteFirestoreDoc('users', parentUser.id);
-    }
+    const parentUsers = currentUsers.filter((user) => user.studentId === id);
+    setStoredItem('users', currentUsers.filter((user) => user.studentId !== id));
+    deleteStudentFirestoreRecords(id, parentUsers.map((user) => user.id));
   }, []);
 
   // Admin User & Teacher Management Actions
@@ -623,7 +658,7 @@ export function useEduStore() {
     const current = getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS);
     const newItem: StarAward = {
       ...award,
-      id: 'star-' + Date.now(),
+      id: `star-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       timestamp: Date.now(),
     };
     setStoredItem('star_awards', [newItem, ...current]);
@@ -806,7 +841,7 @@ export function useEduStore() {
     gradeId: string,
     studentId: string,
     score: number,
-    predicate: 'A' | 'B' | 'C' | 'D',
+    predicate: 'A' | 'B' | 'C' | 'D' | 'SB' | 'PB',
     notes?: string
   ) => {
     const current = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);

@@ -10,12 +10,13 @@ import {
   AlertCircle,
   Award,
   Search,
-  BookOpen,
   Calendar,
   Save,
   HelpCircle,
   FileText
 } from 'lucide-react';
+
+type BkPredicate = 'SB' | 'B' | 'C' | 'PB';
 
 interface InternalGradesTabProps {
   teacherRole: 'guru_kelas' | 'guru_bk' | 'guru_pai';
@@ -64,7 +65,7 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     'Praktik & Unjuk Kerja': 'Praktik Bimbingan Klasikal',
   };
 
-  const BK_PREDICATES = [
+  const BK_PREDICATES: { code: BkPredicate; label: string; score: number }[] = [
     { code: 'SB', label: 'Sangat Baik (SB)', score: 95 },
     { code: 'B', label: 'Baik / Berkembang (B)', score: 85 },
     { code: 'C', label: 'Cukup / Mulai Tampak (C)', score: 70 },
@@ -83,12 +84,19 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
   // New Grade Sheet Form State
   const [newTitle, setNewTitle] = useState('');
   const [newSubject, setNewSubject] = useState(
-    isBk ? BK_FIELDS[0] : (defaultSubjectName || subjects[0]?.name || 'Matematika')
+    isBk ? (defaultSubjectName || BK_FIELDS[0]) : (defaultSubjectName || subjects[0]?.name || 'Matematika')
   );
   const [newType, setNewType] = useState<AssessmentType>('Formatif Harian');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [newKkm, setNewKkm] = useState(isBk ? 0 : 75);
   const [newTpDesc, setNewTpDesc] = useState('');
+
+  const normalizeBkPredicate = (predicate?: InternalGradeRecord['scores'][string]['predicate']): BkPredicate => {
+    if (predicate === 'A' || predicate === 'SB') return 'SB';
+    if (predicate === 'C') return 'C';
+    if (predicate === 'D' || predicate === 'PB') return 'PB';
+    return 'B';
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -157,7 +165,7 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
   const handleBkPredicateChange = (
     gradeId: string,
     studentId: string,
-    predCode: string,
+    predCode: BkPredicate,
     notesVal?: string
   ) => {
     const found = BK_PREDICATES.find((p) => p.code === predCode);
@@ -182,8 +190,8 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
 
       students.forEach((s, idx) => {
         const entry = activeGradeSheet.scores[s.id] || { score: 85, predicate: 'B', notes: '-' };
-        const predObj = BK_PREDICATES.find((p) => p.code === entry.predicate);
-        const predLabel = predObj ? predObj.label : (entry.predicate === 'A' ? 'Sangat Baik (SB)' : 'Baik (B)');
+        const predObj = BK_PREDICATES.find((p) => p.code === normalizeBkPredicate(entry.predicate));
+        const predLabel = predObj ? predObj.label : 'Baik / Berkembang (B)';
         csv += `${idx + 1},"${s.nisn}","${s.name}","${predLabel}","${entry.notes || '-'}"\n`;
       });
 
@@ -245,18 +253,16 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
 
   // BK-specific qualitative counts
   const bkSbCount = students.filter(
-    (s) =>
-      activeGradeSheet?.scores[s.id]?.predicate === 'SB' ||
-      activeGradeSheet?.scores[s.id]?.predicate === 'A'
+    (s) => normalizeBkPredicate(activeGradeSheet?.scores[s.id]?.predicate) === 'SB'
   ).length;
   const bkBCount = students.filter(
-    (s) =>
-      activeGradeSheet?.scores[s.id]?.predicate === 'B' ||
-      !activeGradeSheet?.scores[s.id]?.predicate
+    (s) => normalizeBkPredicate(activeGradeSheet?.scores[s.id]?.predicate) === 'B'
+  ).length;
+  const bkCCount = students.filter(
+    (s) => normalizeBkPredicate(activeGradeSheet?.scores[s.id]?.predicate) === 'C'
   ).length;
   const bkPbCount = students.filter(
-    (s) =>
-      ['C', 'D', 'PB'].includes(activeGradeSheet?.scores[s.id]?.predicate || '')
+    (s) => normalizeBkPredicate(activeGradeSheet?.scores[s.id]?.predicate) === 'PB'
   ).length;
 
   return (
@@ -277,10 +283,12 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
             <span>ARSIP RAHASIA GURU (TIDAK TAMPIL DI HALAMAN ORANG TUA)</span>
           </div>
           <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Form Penilaian Internal & Rekap Nilai Siswa
+            {isBk ? 'Form Observasi Perkembangan Siswa' : 'Form Penilaian Internal & Rekap Nilai Siswa'}
           </h3>
           <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-            Pencatatan nilai formatif, tugas modul, unjuk kerja, dan sumatif lingkup materi oleh {roleTitle}. Nilai angka ini disimpan ke database sebagai berkas portofolio guru dan secara khusus <strong>tidak dipublikasikan</strong> ke akun orang tua siswa.
+            {isBk
+              ? <>Pencatatan observasi kualitatif perkembangan sikap dan karakter oleh {roleTitle}. Catatan ini bersifat internal dan <strong>tidak dipublikasikan</strong> ke akun orang tua siswa.</>
+              : <>Pencatatan nilai formatif, tugas modul, unjuk kerja, dan sumatif lingkup materi oleh {roleTitle}. Nilai angka ini disimpan ke database sebagai berkas portofolio guru dan secara khusus <strong>tidak dipublikasikan</strong> ke akun orang tua siswa.</>}
           </p>
         </div>
 
@@ -310,27 +318,25 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
         <div className="space-y-6">
           {/* Assessment Sheets Selector Row */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-1">
+              <label
+                htmlFor="assessment-sheet-selector"
+                className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0"
+              >
                 PILIH INSTRUMEN NILAI:
-              </span>
-              {roleGrades.map((g) => {
-                const isSelected = activeGradeSheet?.id === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    onClick={() => setSelectedGradeId(g.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>{g.subjectName} · {g.assessmentTitle}</span>
-                  </button>
-                );
-              })}
+              </label>
+              <select
+                id="assessment-sheet-selector"
+                value={activeGradeSheet?.id || ''}
+                onChange={(event) => setSelectedGradeId(event.target.value)}
+                className="w-full sm:max-w-2xl px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {roleGrades.map((grade) => (
+                  <option key={grade.id} value={grade.id}>
+                    {grade.subjectName} · {grade.assessmentTitle}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {activeGradeSheet && (
@@ -360,14 +366,18 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
                         {activeGradeSheet.subjectName}
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                        {activeGradeSheet.assessmentType}
+                        {isBk
+                          ? (BK_TYPE_LABELS[activeGradeSheet.assessmentType] || activeGradeSheet.assessmentType)
+                          : activeGradeSheet.assessmentType}
                       </span>
                       <span className="text-xs text-slate-500 font-mono flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" /> {activeGradeSheet.date}
                       </span>
-                      <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-mono">
-                        KKM: {activeGradeSheet.kkmScore}
-                      </span>
+                      {!isBk && (
+                        <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-mono">
+                          KKM: {activeGradeSheet.kkmScore}
+                        </span>
+                      )}
                     </div>
 
                     <h4 className="text-lg font-extrabold text-slate-900 leading-snug">
@@ -381,48 +391,80 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
                     )}
                   </div>
 
-                  {/* 4 Statistics Badges */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
-                    <div className="text-center px-2">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Rata-Rata</span>
-                      <span className="text-lg font-black text-slate-900 font-mono tabular-nums leading-tight">{avgScore}</span>
-                    </div>
-                    <div className="text-center px-2">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Tertinggi</span>
-                      <span className="text-lg font-black text-emerald-700 font-mono tabular-nums leading-tight">{maxScore}</span>
-                    </div>
-                    <div className="text-center px-2">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Terendah</span>
-                      <span className="text-lg font-black text-rose-700 font-mono tabular-nums leading-tight">{minScore}</span>
-                    </div>
-                    <div className="text-center px-2">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Ketuntasan</span>
-                      <span className="text-lg font-black text-indigo-700 font-mono tabular-nums leading-tight">{passPercentage}%</span>
-                    </div>
+                    {isBk ? (
+                      <>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Sangat Baik</span>
+                          <span className="text-lg font-black text-emerald-700 leading-tight">{bkSbCount}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Baik / Berkembang</span>
+                          <span className="text-lg font-black text-blue-700 leading-tight">{bkBCount}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Mulai Tampak</span>
+                          <span className="text-lg font-black text-amber-700 leading-tight">{bkCCount}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Perlu Bimbingan</span>
+                          <span className="text-lg font-black text-rose-700 leading-tight">{bkPbCount}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Rata-Rata</span>
+                          <span className="text-lg font-black text-slate-900 font-mono tabular-nums leading-tight">{avgScore}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Tertinggi</span>
+                          <span className="text-lg font-black text-emerald-700 font-mono tabular-nums leading-tight">{maxScore}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Terendah</span>
+                          <span className="text-lg font-black text-rose-700 font-mono tabular-nums leading-tight">{minScore}</span>
+                        </div>
+                        <div className="text-center px-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase block">Ketuntasan</span>
+                          <span className="text-lg font-black text-indigo-700 font-mono tabular-nums leading-tight">{passPercentage}%</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Score Input Matrix Table */}
+                {/* Internal assessment matrix */}
                 <div className="overflow-x-auto border border-slate-200 rounded-2xl">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-xs tracking-wider border-b border-slate-200">
                       <tr>
                         <th className="py-3.5 px-4 w-12 text-center">No</th>
                         <th className="py-3.5 px-4 min-w-[200px]">Nama Siswa & NISN</th>
-                        <th className="py-3.5 px-4 w-36 text-center">Nilai Angka (0-100)</th>
-                        <th className="py-3.5 px-4 w-28 text-center">Predikat</th>
-                        <th className="py-3.5 px-4 w-32 text-center">Status Ketuntasan</th>
-                        <th className="py-3.5 px-4 min-w-[260px]">Catatan Evaluasi Internal Guru</th>
+                        {isBk ? (
+                          <>
+                            <th className="py-3.5 px-4 min-w-[210px]">Perkembangan Sikap</th>
+                            <th className="py-3.5 px-4 min-w-[260px]">Catatan Rekomendasi Guru BK</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="py-3.5 px-4 w-36 text-center">Nilai Angka (0-100)</th>
+                            <th className="py-3.5 px-4 w-28 text-center">Predikat</th>
+                            <th className="py-3.5 px-4 w-32 text-center">Status Ketuntasan</th>
+                            <th className="py-3.5 px-4 min-w-[260px]">Catatan Evaluasi Internal Guru</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {students.map((std, idx) => {
                         const entry = activeGradeSheet.scores[std.id] || {
-                          score: activeGradeSheet.kkmScore,
+                          score: isBk ? 85 : activeGradeSheet.kkmScore,
                           predicate: 'B',
                           notes: '',
                         };
                         const isPassed = entry.score >= activeGradeSheet.kkmScore;
+                        const bkPredicate = normalizeBkPredicate(entry.predicate);
 
                         return (
                           <tr key={std.id} className="hover:bg-slate-50/80 transition-colors">
@@ -437,67 +479,108 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
                                 NISN: {std.nisn} · Wali: {std.parentName}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              <div className="inline-flex items-center gap-1.5">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={entry.score}
-                                  onChange={(e) =>
-                                    handleScoreChange(
-                                      activeGradeSheet.id,
-                                      std.id,
-                                      Number(e.target.value),
-                                      entry.notes
-                                    )
-                                  }
-                                  className="w-20 px-2.5 py-1.5 text-center text-base font-extrabold font-mono rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                />
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span
-                                className={`inline-block px-3 py-1 rounded-lg text-xs font-black font-mono ${
-                                  entry.predicate === 'A'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : entry.predicate === 'B'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : entry.predicate === 'C'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-rose-100 text-rose-800'
-                                }`}
-                              >
-                                {entry.predicate}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                                  isPassed
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                }`}
-                              >
-                                {isPassed ? 'TUNTAS' : 'REMEDIAL'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <input
-                                type="text"
-                                defaultValue={entry.notes || ''}
-                                onBlur={(e) =>
-                                  handleScoreChange(
-                                    activeGradeSheet.id,
-                                    std.id,
-                                    entry.score,
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Catatan internal guru (cth: Perlu pengayaan pada rumus luas)..."
-                                className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
-                              />
-                            </td>
+                            {isBk ? (
+                              <>
+                                <td className="py-3 px-4">
+                                  <select
+                                    value={bkPredicate}
+                                    onChange={(event) =>
+                                      handleBkPredicateChange(
+                                        activeGradeSheet.id,
+                                        std.id,
+                                        event.target.value as BkPredicate,
+                                        entry.notes
+                                      )
+                                    }
+                                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
+                                  >
+                                    {BK_PREDICATES.map((predicate) => (
+                                      <option key={predicate.code} value={predicate.code}>
+                                        {predicate.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <input
+                                    type="text"
+                                    defaultValue={entry.notes || ''}
+                                    onBlur={(event) =>
+                                      handleBkPredicateChange(
+                                        activeGradeSheet.id,
+                                        std.id,
+                                        bkPredicate,
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Catatan perkembangan dan tindak lanjut..."
+                                    className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-rose-500 bg-white"
+                                  />
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="py-3 px-4 text-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={entry.score}
+                                    onChange={(event) =>
+                                      handleScoreChange(
+                                        activeGradeSheet.id,
+                                        std.id,
+                                        Number(event.target.value),
+                                        entry.notes
+                                      )
+                                    }
+                                    className="w-20 px-2.5 py-1.5 text-center text-base font-extrabold font-mono rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                  />
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span
+                                    className={`inline-block px-3 py-1 rounded-lg text-xs font-black font-mono ${
+                                      entry.predicate === 'A'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : entry.predicate === 'B'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : entry.predicate === 'C'
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-rose-100 text-rose-800'
+                                    }`}
+                                  >
+                                    {entry.predicate}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                      isPassed
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    }`}
+                                  >
+                                    {isPassed ? 'TUNTAS' : 'REMEDIAL'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <input
+                                    type="text"
+                                    defaultValue={entry.notes || ''}
+                                    onBlur={(event) =>
+                                      handleScoreChange(
+                                        activeGradeSheet.id,
+                                        std.id,
+                                        entry.score,
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Catatan internal guru..."
+                                    className="w-full px-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+                                  />
+                                </td>
+                              </>
+                            )}
                           </tr>
                         );
                       })}
@@ -508,7 +591,7 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
                 <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
                   <div className="flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Perubahan nilai otomatis tersimpan langsung ke sistem saat diubah.</span>
+                    <span>{isBk ? 'Perubahan observasi otomatis tersimpan saat diubah.' : 'Perubahan nilai otomatis tersimpan langsung ke sistem saat diubah.'}</span>
                   </div>
                   <span>Total Siswa Dinilai: {students.length} Anak</span>
                 </div>
@@ -524,7 +607,9 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
           <div>
             <h4 className="text-base font-bold text-slate-900">Belum Ada Lembar Penilaian Internal</h4>
             <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-              Buat lembar penilaian formatif atau sumatif baru untuk mencatat nilai angka siswa. Nilai tersimpan rahasia khusus guru.
+              {isBk
+                ? 'Buat lembar observasi sikap dan karakter siswa. Hasil tersimpan sebagai catatan rahasia khusus guru BK.'
+                : 'Buat lembar penilaian formatif atau sumatif baru untuk mencatat nilai angka siswa. Nilai tersimpan rahasia khusus guru.'}
             </p>
           </div>
           <button
@@ -555,20 +640,28 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
             <form onSubmit={handleCreateGradeSheet} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Mata Pelajaran
+                  {isBk ? 'Bidang Layanan BK' : 'Mata Pelajaran'}
                 </label>
                 <select
                   value={newSubject}
                   onChange={(e) => setNewSubject(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium"
                 >
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.name}>
-                      {sub.name} ({sub.code})
+                  {isBk ? (
+                    <option value={defaultSubjectName || BK_FIELDS[0]}>
+                      {defaultSubjectName || BK_FIELDS[0]}
                     </option>
-                  ))}
-                  {defaultSubjectName && !subjects.some((s) => s.name === defaultSubjectName) && (
-                    <option value={defaultSubjectName}>{defaultSubjectName}</option>
+                  ) : (
+                    <>
+                      {subjects.map((sub) => (
+                        <option key={sub.id} value={sub.name}>
+                          {sub.name} ({sub.code})
+                        </option>
+                      ))}
+                      {defaultSubjectName && !subjects.some((s) => s.name === defaultSubjectName) && (
+                        <option value={defaultSubjectName}>{defaultSubjectName}</option>
+                      )}
+                    </>
                   )}
                 </select>
               </div>
@@ -590,35 +683,43 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Jenis Penilaian
+                    {isBk ? 'Jenis Observasi / Layanan' : 'Jenis Penilaian'}
                   </label>
                   <select
                     value={newType}
                     onChange={(e) => setNewType(e.target.value as AssessmentType)}
                     className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
                   >
-                    <option value="Formatif Harian">Formatif Harian</option>
-                    <option value="Sumatif Lingkup Materi">Sumatif Lingkup Materi</option>
-                    <option value="Sumatif Akhir Semester">Sumatif Akhir Semester</option>
-                    <option value="Tugas / Modul Proyek">Tugas / Proyek</option>
-                    <option value="Praktik & Unjuk Kerja">Praktik & Unjuk Kerja</option>
+                    {(isBk ? BK_TYPES : [
+                      'Formatif Harian',
+                      'Sumatif Lingkup Materi',
+                      'Sumatif Akhir Semester',
+                      'Tugas / Modul Proyek',
+                      'Praktik & Unjuk Kerja',
+                    ] as AssessmentType[]).map((assessmentType) => (
+                      <option key={assessmentType} value={assessmentType}>
+                        {isBk ? BK_TYPE_LABELS[assessmentType] : assessmentType}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    KKM / Nilai Ketercapaian
-                  </label>
-                  <input
-                    type="number"
-                    min="50"
-                    max="100"
-                    required
-                    value={newKkm}
-                    onChange={(e) => setNewKkm(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 text-sm font-mono font-bold rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
+                {!isBk && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      KKM / Nilai Ketercapaian
+                    </label>
+                    <input
+                      type="number"
+                      min="50"
+                      max="100"
+                      required
+                      value={newKkm}
+                      onChange={(e) => setNewKkm(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 text-sm font-mono font-bold rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -642,7 +743,9 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
                   rows={2}
                   value={newTpDesc}
                   onChange={(e) => setNewTpDesc(e.target.value)}
-                  placeholder="Deskripsi kompetensi yang diujikan dalam penilaian ini..."
+                  placeholder={isBk
+                    ? 'Indikator sikap, kemandirian, atau perkembangan sosial yang diamati...'
+                    : 'Deskripsi kompetensi yang diujikan dalam penilaian ini...'}
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
