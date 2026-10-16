@@ -239,7 +239,7 @@ export const ImpersonateModal: React.FC<ImpersonateModalProps> = ({
                             : acc.role === 'guru_bk'
                             ? 'Guru BK'
                             : acc.role === 'guru_pai'
-                            ? 'Guru PAI'
+                            ? 'Guru PAI dan Islamic Literacy'
                             : 'Orang Tua'}
                         </span>
                       </div>

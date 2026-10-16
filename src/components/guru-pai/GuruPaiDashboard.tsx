@@ -261,7 +261,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
           </div>
           <div>
             <span className="text-[11px] font-bold text-teal-600 uppercase tracking-wider">
-              RUANG GURU PENDIDIKAN AGAMA ISLAM (PAI) & BUDI PEKERTI
+              RUANG GURU PAI DAN ISLAMIC LITERACY
             </span>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
               Penilaian Harian Khusus & Pembiasaan Ibadah
@@ -706,7 +706,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
         <InternalGradesTab
           teacherRole="guru_pai"
           teacherName={currentUser?.name || 'Ust. Ahmad Fauzan, S.Pd.I.'}
-          roleTitle="Guru Pendidikan Agama Islam"
+          roleTitle="Guru PAI dan Islamic Literacy"
           defaultSubjectName="Pendidikan Agama Islam (PAI)"
         />
       )}

@@ -247,8 +247,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       role: 'guru_pai',
-      title: 'Guru PAI',
-      roleBadge: 'Pendidikan Agama Islam',
+      title: 'Guru PAI dan Islamic Literacy',
+      roleBadge: 'PAI & Islamic Literacy',
       color: 'text-teal-900 bg-teal-50 border-teal-200',
       icon: <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />,
       subItems: [
@@ -396,7 +396,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { role: 'admin', label: 'Admin SIM', icon: <Shield className="w-3.5 h-3.5" /> },
     { role: 'guru_kelas', label: 'Guru Kelas', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { role: 'guru_bk', label: 'Guru BK', icon: <HeartHandshake className="w-3.5 h-3.5" /> },
-    { role: 'guru_pai', label: 'Guru PAI', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { role: 'guru_pai', label: 'Guru PAI dan Islamic Literacy', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { role: 'orangtua', label: 'Orang Tua', icon: <Users className="w-3.5 h-3.5" /> },
   ];
 

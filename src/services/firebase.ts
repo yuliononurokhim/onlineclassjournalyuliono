@@ -4,7 +4,6 @@ import {
   collection,
   doc,
   setDoc,
-  deleteDoc,
   onSnapshot,
   getDocs,
   getDoc,
@@ -121,6 +120,21 @@ function saveLocal<T>(key: string, data: T) {
   }
 }
 
+function removeUndefinedFields<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => item === undefined ? null : removeUndefinedFields(item)) as T;
+  }
+
+  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    const cleanedEntries = Object.entries(value).flatMap(([key, item]) =>
+      item === undefined ? [] : [[key, removeUndefinedFields(item)] as const]
+    );
+    return Object.fromEntries(cleanedEntries) as T;
+  }
+
+  return value;
+}
+
 // Flag to prevent echo loops when remote snapshot updates local storage
 let isRemoteUpdating = false;
 
@@ -169,8 +183,7 @@ export function initFirebaseSync() {
     function syncCollection<T extends { id: string }>(
       collectionName: string,
       storageKey: string,
-      initialData: T[],
-      preserveEmpty = false
+      initialData: T[]
     ) {
       const colRef = collection(db, collectionName);
       const initializationRef = doc(db, 'settings', `${collectionName}_initialized`);
@@ -186,15 +199,13 @@ export function initFirebaseSync() {
             isRemoteUpdating = true;
             saveLocal(storageKey, items);
             isRemoteUpdating = false;
-            if (preserveEmpty) {
-              setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
-                console.warn(`Failed marking ${collectionName} as initialized:`, error);
-                updateSyncStatus({
-                  isConnected: false,
-                  error: error instanceof Error ? error.message : String(error),
-                });
+            setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
+              console.warn(`Failed marking ${collectionName} as initialized:`, error);
+              updateSyncStatus({
+                isConnected: false,
+                error: error instanceof Error ? error.message : String(error),
               });
-            }
+            });
             updateSyncStatus({
               lastSyncTime: new Date(),
               isConnected: true,
@@ -206,11 +217,13 @@ export function initFirebaseSync() {
               try {
                 const batch = writeBatch(db);
                 initialData.forEach((item) => {
-                  batch.set(doc(db, collectionName, item.id), item, { merge: true });
+                  batch.set(
+                    doc(db, collectionName, item.id),
+                    removeUndefinedFields(item),
+                    { merge: true }
+                  );
                 });
-                if (preserveEmpty) {
-                  batch.set(initializationRef, { initialized: true }, { merge: true });
-                }
+                batch.set(initializationRef, { initialized: true }, { merge: true });
                 batch.commit().catch((error) => {
                   console.warn(`Seed batch for ${collectionName} error:`, error);
                   updateSyncStatus({
@@ -227,28 +240,24 @@ export function initFirebaseSync() {
               }
             };
 
-            if (preserveEmpty) {
-              getDoc(initializationRef)
-                .then((marker) => {
-                  if (marker.exists()) {
-                    isRemoteUpdating = true;
-                    saveLocal(storageKey, []);
-                    isRemoteUpdating = false;
-                    updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
-                  } else {
-                    seedCollection();
-                  }
-                })
-                .catch((error) => {
-                  console.warn(`Initialization check for ${collectionName} failed:`, error);
-                  updateSyncStatus({
-                    isConnected: false,
-                    error: error instanceof Error ? error.message : String(error),
-                  });
+            getDoc(initializationRef)
+              .then((marker) => {
+                if (marker.exists()) {
+                  isRemoteUpdating = true;
+                  saveLocal(storageKey, []);
+                  isRemoteUpdating = false;
+                  updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+                } else {
+                  seedCollection();
+                }
+              })
+              .catch((error) => {
+                console.warn(`Initialization check for ${collectionName} failed:`, error);
+                updateSyncStatus({
+                  isConnected: false,
+                  error: error instanceof Error ? error.message : String(error),
                 });
-            } else {
-              seedCollection();
-            }
+              });
           }
         },
         (err) => {
@@ -259,7 +268,7 @@ export function initFirebaseSync() {
     }
 
     // Sync all key educational collections
-    syncCollection<Student>('students', 'students', INITIAL_STUDENTS, true);
+    syncCollection<Student>('students', 'students', INITIAL_STUDENTS);
     syncCollection<ClassJournalEntry>('journal_entries', 'journal_entries', INITIAL_JOURNAL_ENTRIES);
     syncCollection<InternalGradeRecord>('internal_grades', 'internal_grades', INITIAL_INTERNAL_GRADES);
     syncCollection<StarAward>('star_awards', 'star_awards', INITIAL_STAR_AWARDS);
@@ -283,7 +292,7 @@ export function initFirebaseSync() {
 export async function writeFirestoreDoc(collectionName: string, id: string, data: any) {
   if (isRemoteUpdating) return;
   try {
-    await setDoc(doc(db, collectionName, id), data, { merge: true });
+    await setDoc(doc(db, collectionName, id), removeUndefinedFields(data), { merge: true });
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
     console.warn(`Write to Firestore [${collectionName}/${id}] failed:`, err);
@@ -299,7 +308,16 @@ export async function writeFirestoreDoc(collectionName: string, id: string, data
 export async function deleteFirestoreDoc(collectionName: string, id: string) {
   if (isRemoteUpdating) return;
   try {
-    await deleteDoc(doc(db, collectionName, id));
+    const batch = writeBatch(db);
+    batch.delete(doc(db, collectionName, id));
+    if (collectionName !== 'settings') {
+      batch.set(
+        doc(db, 'settings', `${collectionName}_initialized`),
+        { initialized: true },
+        { merge: true }
+      );
+    }
+    await batch.commit();
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
     console.warn(`Delete from Firestore [${collectionName}/${id}] failed:`, err);

@@ -73,7 +73,15 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
   ];
 
   // Filter grades created by this teacher role
-  const roleGrades = internalGrades.filter((g) => g.teacherRole === teacherRole);
+  const activeSubjectNames = new Set(
+    subjects.map((subject) => subject.name.trim().toLocaleLowerCase())
+  );
+  const roleGrades = internalGrades.filter(
+    (grade) =>
+      grade.teacherRole === teacherRole &&
+      (teacherRole !== 'guru_kelas' ||
+        activeSubjectNames.has(grade.subjectName.trim().toLocaleLowerCase()))
+  );
 
   const [selectedGradeId, setSelectedGradeId] = useState<string>(
     roleGrades[0]?.id || ''

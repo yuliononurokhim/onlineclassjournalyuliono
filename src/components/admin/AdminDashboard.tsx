@@ -1175,7 +1175,7 @@ Terima kasih.`;
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
                   <div className="flex items-center justify-between text-slate-500 mb-1">
-                    <span className="text-xs font-semibold">Guru PAI & Mapel</span>
+                    <span className="text-xs font-semibold">Guru PAI dan Islamic Literacy</span>
                     <Sparkles className="w-4 h-4 text-teal-600" />
                   </div>
                   <div className="text-2xl font-black text-teal-950 font-mono">
@@ -1963,7 +1963,7 @@ Terima kasih.`;
                       const role = e.target.value as UserRole;
                       let defaultTitle = 'Wali Kelas 4-A';
                       if (role === 'guru_bk') defaultTitle = 'Guru Bimbingan Konseling (BK)';
-                      if (role === 'guru_pai') defaultTitle = 'Guru Pendidikan Agama Islam (PAI)';
+                      if (role === 'guru_pai') defaultTitle = 'Guru PAI dan Islamic Literacy';
                       if (role === 'admin') defaultTitle = 'Administrator SIM';
 
                       setTeacherFormData((prev) => ({
@@ -1977,7 +1977,7 @@ Terima kasih.`;
                   >
                     <option value="guru_kelas">Guru Kelas (Wali Kelas)</option>
                     <option value="guru_bk">Guru Bimbingan Konseling (BK)</option>
-                    <option value="guru_pai">Guru PAI & Pembiasaan</option>
+                    <option value="guru_pai">Guru PAI dan Islamic Literacy</option>
                     <option value="admin">Administrator SIM</option>
                   </select>
                 </div>
@@ -2190,7 +2190,7 @@ Terima kasih.`;
                   >
                     <option value="guru_kelas">Guru Kelas (Wali Kelas)</option>
                     <option value="guru_bk">Guru Bimbingan Konseling (BK)</option>
-                    <option value="guru_pai">Guru PAI & Pembiasaan</option>
+                    <option value="guru_pai">Guru PAI dan Islamic Literacy</option>
                     <option value="admin">Administrator SIM</option>
                   </select>
                 </div>
