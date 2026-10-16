@@ -135,39 +135,57 @@ export function useEduStore() {
     const cleanInput = identifier.trim().toLowerCase();
     const cleanPass = password?.trim() || '';
 
-    // Match student: by parentUsername, NISN, name (exact or substring), or index (e.g. "2" for 2nd student)
-    let matchedStudent: Student | undefined = allStudents.find((s, idx) => {
-      const sName = s.name.toLowerCase();
-      const sUser = s.parentUsername.toLowerCase();
-      const sNisn = s.nisn.toLowerCase();
-      const sId = s.id.toLowerCase();
-      const idxStr = String(idx + 1);
-
-      return (
-        sUser === cleanInput ||
-        sNisn === cleanInput ||
-        sId === cleanInput ||
-        sName === cleanInput ||
-        sName.includes(cleanInput) ||
-        cleanInput.includes(sName.split(' ')[0]) || // e.g. "siti" or "khadijah"
-        (sName.split(' ')[1] && cleanInput.includes(sName.split(' ')[1].toLowerCase())) ||
-        cleanInput === idxStr ||
-        cleanInput === `murid ${idxStr}` ||
-        cleanInput === `siswa ${idxStr}`
-      );
-    });
-
-    // 1. Direct match in users list (by username, email, phone, or linked studentId)
+    // 1. Direct match in users list first (by username, email, phone)
     let matchedUser = allUsers.find(
       (u) =>
         u.username.toLowerCase() === cleanInput ||
         (u.phone && u.phone.toLowerCase() === cleanInput) ||
-        (u.email && u.email.toLowerCase() === cleanInput) ||
-        (matchedStudent && u.studentId === matchedStudent.id) ||
-        (matchedStudent && u.username === matchedStudent.parentUsername)
+        (u.email && u.email.toLowerCase() === cleanInput)
     );
 
-    // 2. If user not found but student found, synthesize user account
+    // 2. Match student: by parentUsername, NISN, id, name, parentName, or Yuliono
+    let matchedStudent: Student | undefined;
+    if (matchedUser?.studentId) {
+      matchedStudent = allStudents.find((s) => s.id === matchedUser?.studentId);
+    }
+
+    if (!matchedStudent) {
+      matchedStudent = allStudents.find((s, idx) => {
+        const sName = s.name.toLowerCase();
+        const sUser = s.parentUsername.toLowerCase();
+        const sNisn = s.nisn.toLowerCase();
+        const sId = s.id.toLowerCase();
+        const sParent = s.parentName.toLowerCase();
+        const idxStr = String(idx + 1);
+
+        return (
+          sUser === cleanInput ||
+          sNisn === cleanInput ||
+          sId === cleanInput ||
+          sName === cleanInput ||
+          sName.includes(cleanInput) ||
+          sParent.includes(cleanInput) ||
+          cleanInput.includes(sParent) ||
+          (cleanInput.includes('yuliono') && (sName.includes('yuliono') || sParent.includes('yuliono'))) ||
+          cleanInput.includes(sName.split(' ')[0]) || // e.g. "siti" or "khadijah"
+          (sName.split(' ')[1] && cleanInput.includes(sName.split(' ')[1].toLowerCase())) ||
+          cleanInput === idxStr ||
+          cleanInput === `murid ${idxStr}` ||
+          cleanInput === `siswa ${idxStr}`
+        );
+      });
+    }
+
+    // 3. If matched student found but user not yet matched, find user by studentId or parentUsername
+    if (!matchedUser && matchedStudent) {
+      matchedUser = allUsers.find(
+        (u) =>
+          (matchedStudent && u.studentId === matchedStudent.id) ||
+          (matchedStudent && u.username.toLowerCase() === matchedStudent.parentUsername.toLowerCase())
+      );
+    }
+
+    // 4. If user not found but student found, synthesize user account
     if (!matchedUser && matchedStudent) {
       matchedUser = {
         id: `usr-parent-${matchedStudent.id}`,
@@ -185,9 +203,47 @@ export function useEduStore() {
 
     if (!matchedUser) return false;
 
-    // Link back student if not set
-    if (!matchedStudent && matchedUser.studentId) {
+    // Ensure parent user account is strictly linked to their student
+    if (matchedStudent) {
+      if (!matchedUser.studentId || matchedUser.studentId !== matchedStudent.id) {
+        matchedUser = {
+          ...matchedUser,
+          studentId: matchedStudent.id,
+          title: matchedUser.title || `Orang Tua dari ${matchedStudent.name}`,
+        };
+        const uIdx = allUsers.findIndex((u) => u.id === matchedUser!.id);
+        if (uIdx !== -1) {
+          allUsers[uIdx] = matchedUser;
+        } else {
+          allUsers.push(matchedUser);
+        }
+        setStoredItem('users', allUsers);
+      }
+    } else if (matchedUser.studentId) {
       matchedStudent = allStudents.find((s) => s.id === matchedUser?.studentId);
+    } else if (matchedUser.role === 'orangtua') {
+      const cleanU = matchedUser.username.toLowerCase().replace(/^ortu_/, '');
+      const autoMatch = allStudents.find(
+        (s) =>
+          s.parentUsername.toLowerCase() === matchedUser!.username.toLowerCase() ||
+          s.parentName.toLowerCase().includes(cleanU) ||
+          s.name.toLowerCase().includes(cleanU) ||
+          (cleanU.includes('yuliono') && (s.name.toLowerCase().includes('yuliono') || s.parentName.toLowerCase().includes('yuliono'))) ||
+          cleanU.includes(s.name.toLowerCase().split(' ')[0])
+      );
+      if (autoMatch) {
+        matchedUser = {
+          ...matchedUser,
+          studentId: autoMatch.id,
+          title: `Orang Tua dari ${autoMatch.name}`,
+        };
+        matchedStudent = autoMatch;
+        const uIdx = allUsers.findIndex((u) => u.id === matchedUser!.id);
+        if (uIdx !== -1) {
+          allUsers[uIdx] = matchedUser;
+          setStoredItem('users', allUsers);
+        }
+      }
     }
 
     // If password is blank, allow direct login
@@ -242,7 +298,38 @@ export function useEduStore() {
     }
   }, []);
 
+  const impersonateUser = useCallback((targetUser: UserAccount) => {
+    const current = getStoredItem<UserAccount | null>('current_user', null);
+    if (current && (current.role === 'admin' || !sessionStorage.getItem('edujournal_original_admin'))) {
+      sessionStorage.setItem('edujournal_original_admin', JSON.stringify(current));
+    }
+    setStoredItem('current_user', targetUser);
+  }, []);
+
+  const stopImpersonating = useCallback(() => {
+    try {
+      const raw = sessionStorage.getItem('edujournal_original_admin');
+      if (raw) {
+        const originalAdmin = JSON.parse(raw);
+        sessionStorage.removeItem('edujournal_original_admin');
+        setStoredItem('current_user', originalAdmin);
+        return;
+      }
+    } catch (e) {
+      console.warn('Failed restoring admin', e);
+    }
+    const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const adminUser = allUsers.find((u) => u.role === 'admin') || INITIAL_USERS[0];
+    sessionStorage.removeItem('edujournal_original_admin');
+    setStoredItem('current_user', adminUser);
+  }, []);
+
+  const isImpersonating = useMemo(() => {
+    return Boolean(typeof window !== 'undefined' && sessionStorage.getItem('edujournal_original_admin'));
+  }, [version]);
+
   const logout = useCallback(() => {
+    sessionStorage.removeItem('edujournal_original_admin');
     setStoredItem('current_user', null);
   }, []);
 
@@ -797,6 +884,9 @@ export function useEduStore() {
     currentUser,
     login,
     switchRole,
+    impersonateUser,
+    stopImpersonating,
+    isImpersonating,
     logout,
     resetUserPassword,
     journalEntries,

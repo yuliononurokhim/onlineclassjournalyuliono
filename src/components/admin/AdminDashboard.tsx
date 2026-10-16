@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEduStore } from '../../services/store';
+import { ImpersonateModal } from '../common/ImpersonateModal';
 import { SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
 import {
   School,
@@ -70,8 +71,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     caseRecords,
     paiAssessments,
     starAwards,
+    impersonateUser,
   } = useEduStore();
 
+  const [showImpersonateModal, setShowImpersonateModal] = useState(false);
   const [activeTab, setActiveTabState] = useState<'profil' | 'kurikulum' | 'guru' | 'password' | 'laporan'>(
     (currentTab as any) || 'profil'
   );
@@ -1533,15 +1536,26 @@ Terima kasih.`;
                     </button>
                   </div>
 
-                  <div className="relative w-full sm:w-64">
-                    <input
-                      type="text"
-                      placeholder="Cari nama, username, siswa, NISN..."
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    />
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowImpersonateModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
+                      title="Beralih dan masuk ke akun pengguna lain secara langsung"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Beralih Akun (Impersonate)</span>
+                    </button>
+
+                    <div className="relative w-full sm:w-56">
+                      <input
+                        type="text"
+                        placeholder="Cari nama, username, NISN..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1569,6 +1583,7 @@ Terima kasih.`;
                       filteredUsers.map((u) => {
                         const student = students.find((s) => s.id === u.studentId);
                         const isRecentlyReset = recentResetPassword?.userId === u.id;
+                        const isCurrent = currentUser?.id === u.id;
 
                         return (
                           <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
@@ -1640,6 +1655,17 @@ Terima kasih.`;
 
                             <td className="py-3 px-4 text-right">
                               <div className="inline-flex items-center gap-1.5">
+                                {!isCurrent && (
+                                  <button
+                                    onClick={() => impersonateUser(u)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs transition-colors shadow-2xs border border-emerald-200"
+                                    title={`Masuk dan gunakan aplikasi sebagai ${u.name}`}
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Masuk Akun</span>
+                                  </button>
+                                )}
+
                                 <a
                                   href={createWhatsAppLink(u, u.password)}
                                   target="_blank"
@@ -3001,6 +3027,12 @@ Terima kasih.`;
           </div>
         </div>
       )}
+
+      {/* Impersonate Modal for Admin */}
+      <ImpersonateModal
+        isOpen={showImpersonateModal}
+        onClose={() => setShowImpersonateModal(false)}
+      />
     </div>
   );
 };

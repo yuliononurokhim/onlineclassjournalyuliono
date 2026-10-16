@@ -41,6 +41,36 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     schoolProfile,
   } = useEduStore();
 
+  const isBk = teacherRole === 'guru_bk';
+
+  const BK_FIELDS = [
+    'Bimbingan Pribadi & Emosi',
+    'Bimbingan Sosial & Relasi Teman',
+    'Bimbingan Belajar & Motivasi',
+    'Bimbingan Karakter & Kedisiplinan',
+  ];
+
+  const BK_TYPES: AssessmentType[] = [
+    'Formatif Harian', // underlying type compatibility
+    'Tugas / Modul Proyek',
+    'Praktik & Unjuk Kerja',
+  ];
+
+  const BK_TYPE_LABELS: Record<string, string> = {
+    'Formatif Harian': 'Observasi Sikap Harian',
+    'Sumatif Lingkup Materi': 'Asesmen Kebutuhan Non-Kognitif',
+    'Sumatif Akhir Semester': 'Evaluasi Periodik Konseling',
+    'Tugas / Modul Proyek': 'Sosiometri & Dinamika Kelompok',
+    'Praktik & Unjuk Kerja': 'Praktik Bimbingan Klasikal',
+  };
+
+  const BK_PREDICATES = [
+    { code: 'SB', label: 'Sangat Baik (SB)', score: 95 },
+    { code: 'B', label: 'Baik / Berkembang (B)', score: 85 },
+    { code: 'C', label: 'Cukup / Mulai Tampak (C)', score: 70 },
+    { code: 'PB', label: 'Perlu Bimbingan (PB)', score: 55 },
+  ];
+
   // Filter grades created by this teacher role
   const roleGrades = internalGrades.filter((g) => g.teacherRole === teacherRole);
 
@@ -52,10 +82,12 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
 
   // New Grade Sheet Form State
   const [newTitle, setNewTitle] = useState('');
-  const [newSubject, setNewSubject] = useState(defaultSubjectName || subjects[0]?.name || 'Matematika');
+  const [newSubject, setNewSubject] = useState(
+    isBk ? BK_FIELDS[0] : (defaultSubjectName || subjects[0]?.name || 'Matematika')
+  );
   const [newType, setNewType] = useState<AssessmentType>('Formatif Harian');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
-  const [newKkm, setNewKkm] = useState(75);
+  const [newKkm, setNewKkm] = useState(isBk ? 0 : 75);
   const [newTpDesc, setNewTpDesc] = useState('');
 
   const showToast = (msg: string) => {
@@ -70,13 +102,13 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    // Initialize all students with default empty scores
+    // Initialize all students with default entries
     const initialScores: InternalGradeRecord['scores'] = {};
     students.forEach((s) => {
       initialScores[s.id] = {
-        score: newKkm,
-        predicate: newKkm >= 85 ? 'A' : newKkm >= 75 ? 'B' : 'C',
-        notes: 'Selesai tepat waktu',
+        score: isBk ? 85 : (Number(newKkm) || 75),
+        predicate: isBk ? 'B' : ((Number(newKkm) || 75) >= 85 ? 'A' : (Number(newKkm) || 75) >= 75 ? 'B' : 'C'),
+        notes: isBk ? 'Berkembang sesuai harapan.' : 'Selesai tepat waktu',
       };
     });
 
@@ -87,8 +119,12 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
       assessmentTitle: newTitle.trim(),
       assessmentType: newType,
       date: newDate,
-      kkmScore: Number(newKkm) || 75,
-      tpDescription: newTpDesc.trim() || 'Tercapai sesuai indikator tujuan pembelajaran modul ajar.',
+      kkmScore: isBk ? 0 : (Number(newKkm) || 75),
+      tpDescription:
+        newTpDesc.trim() ||
+        (isBk
+          ? 'Pemantauan perkembangan sikap, kemandirian, dan dinamika interaksi sosial murid.'
+          : 'Tercapai sesuai indikator tujuan pembelajaran modul ajar.'),
       scores: initialScores,
       isInternalOnly: true,
     });
@@ -96,7 +132,11 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     setShowAddModal(false);
     setNewTitle('');
     setNewTpDesc('');
-    showToast('Lembar penilaian internal berhasil dibuat! Data tersimpan rahasia untuk guru.');
+    showToast(
+      isBk
+        ? 'Lembar observasi perkembangan BK berhasil dibuat!'
+        : 'Lembar penilaian internal berhasil dibuat! Data tersimpan rahasia untuk guru.'
+    );
   };
 
   const handleScoreChange = (
@@ -114,9 +154,53 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     updateInternalStudentScore(gradeId, studentId, validScore, predicate, notesVal);
   };
 
+  const handleBkPredicateChange = (
+    gradeId: string,
+    studentId: string,
+    predCode: string,
+    notesVal?: string
+  ) => {
+    const found = BK_PREDICATES.find((p) => p.code === predCode);
+    const scoreVal = found ? found.score : 80;
+    const currentNotes = notesVal !== undefined ? notesVal : (activeGradeSheet?.scores[studentId]?.notes || '');
+    updateInternalStudentScore(gradeId, studentId, scoreVal, predCode, currentNotes);
+  };
+
   // Export current grade matrix to CSV
   const handleExportCsv = () => {
     if (!activeGradeSheet) return;
+
+    if (isBk) {
+      let csv = `LEMBAR OBSERVASI & ASESMEN NON-KOGNITIF GURU BK\n`;
+      csv += `Bidang Layanan BK:,"${activeGradeSheet.subjectName}"\n`;
+      csv += `Judul Asesmen:,"${activeGradeSheet.assessmentTitle}"\n`;
+      csv += `Jenis Layanan:,"${BK_TYPE_LABELS[activeGradeSheet.assessmentType] || activeGradeSheet.assessmentType}"\n`;
+      csv += `Tanggal:,"${activeGradeSheet.date}"\n`;
+      csv += `Guru Konselor:,"${activeGradeSheet.teacherName}"\n`;
+      csv += `Sekolah:,"${schoolProfile.name}"\n\n`;
+      csv += `No,NISN,Nama Siswa,Tingkat Perkembangan Karakter,Catatan Rekomendasi Guru BK\n`;
+
+      students.forEach((s, idx) => {
+        const entry = activeGradeSheet.scores[s.id] || { score: 85, predicate: 'B', notes: '-' };
+        const predObj = BK_PREDICATES.find((p) => p.code === entry.predicate);
+        const predLabel = predObj ? predObj.label : (entry.predicate === 'A' ? 'Sangat Baik (SB)' : 'Baik (B)');
+        csv += `${idx + 1},"${s.nisn}","${s.name}","${predLabel}","${entry.notes || '-'}"\n`;
+      });
+
+      const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csv);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute(
+        'download',
+        `Observasi_BK_${activeGradeSheet.subjectName.replace(/\s+/g, '_')}_${activeGradeSheet.date}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Data observasi BK berhasil diekspor ke spreadsheet CSV!');
+      return;
+    }
+
     let csv = `LEMBAR PENILAIAN INTERNAL GURU (${roleTitle.toUpperCase()})\n`;
     csv += `Mata Pelajaran:,"${activeGradeSheet.subjectName}"\n`;
     csv += `Nama Penilaian:,"${activeGradeSheet.assessmentTitle}"\n`;
@@ -158,6 +242,22 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     ? students.filter((s) => (activeGradeSheet.scores[s.id]?.score || 0) >= activeGradeSheet.kkmScore).length
     : 0;
   const passPercentage = students.length > 0 ? Math.round((passedCount / students.length) * 100) : 0;
+
+  // BK-specific qualitative counts
+  const bkSbCount = students.filter(
+    (s) =>
+      activeGradeSheet?.scores[s.id]?.predicate === 'SB' ||
+      activeGradeSheet?.scores[s.id]?.predicate === 'A'
+  ).length;
+  const bkBCount = students.filter(
+    (s) =>
+      activeGradeSheet?.scores[s.id]?.predicate === 'B' ||
+      !activeGradeSheet?.scores[s.id]?.predicate
+  ).length;
+  const bkPbCount = students.filter(
+    (s) =>
+      ['C', 'D', 'PB'].includes(activeGradeSheet?.scores[s.id]?.predicate || '')
+  ).length;
 
   return (
     <div className="space-y-6">

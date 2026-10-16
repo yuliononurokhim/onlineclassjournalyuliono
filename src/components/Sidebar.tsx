@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useEduStore } from '../services/store';
 import { subscribeFirebaseStatus, FirebaseSyncState } from '../services/firebase';
+import { ImpersonateModal } from './common/ImpersonateModal';
 import { UserRole } from '../types';
 import {
   School,
@@ -80,10 +81,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     paiAssessments,
     users,
     starAwards,
-    messages
+    messages,
+    isImpersonating,
+    stopImpersonating
   } = useEduStore();
 
   const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const [showImpersonateModal, setShowImpersonateModal] = useState(false);
   const [showRoleSwitcherDropdown, setShowRoleSwitcherDropdown] = useState(false);
   const [firebaseStatus, setFirebaseStatus] = useState<FirebaseSyncState>({
     isConnected: true,
@@ -313,12 +317,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   // Identify linked student and stars if role is orangtua
-  const linkedStudent =
-    currentUser?.role === 'orangtua'
-      ? students.find((s) => s.id === currentUser.studentId) ||
-        students.find((s) => s.parentUsername === currentUser.username) ||
-        students[0]
-      : null;
+  const linkedStudent = useMemo(() => {
+    if (currentUser?.role !== 'orangtua') return null;
+    if (currentUser.studentId) {
+      const match = students.find((s) => s.id === currentUser.studentId);
+      if (match) return match;
+    }
+    const cleanUser = currentUser.username.toLowerCase().replace(/^ortu_/, '');
+    const cleanName = (currentUser.name || '').toLowerCase();
+
+    // Check specific Yuliono student link
+    if (cleanUser.includes('yuliono') || cleanName.includes('yuliono')) {
+      const yuliMatch = students.find(
+        (s) =>
+          s.name.toLowerCase().includes('yuliono') ||
+          s.parentName.toLowerCase().includes('yuliono') ||
+          s.parentUsername.toLowerCase().includes('yuliono')
+      );
+      if (yuliMatch) return yuliMatch;
+    }
+
+    return (
+      students.find((s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()) ||
+      students.find(
+        (s) =>
+          s.name.toLowerCase() === cleanUser ||
+          s.name.toLowerCase().includes(cleanUser) ||
+          cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
+          (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
+      ) ||
+      students.find(
+        (s) =>
+          s.parentName.toLowerCase().includes(cleanUser) ||
+          cleanUser.includes(s.parentName.toLowerCase()) ||
+          (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
+      ) ||
+      students.find((s) => s.nisn === currentUser.username) ||
+      students[0]
+    );
+  }, [currentUser, students]);
 
   const studentStars = linkedStudent
     ? starAwards.filter((s) => s.studentId === linkedStudent.id)
@@ -439,52 +476,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
 
-                {/* Only Admin gets the Demo Role Switcher button */}
-                {currentUser.role === 'admin' && (
+                {/* Impersonate controls */}
+                {isImpersonating ? (
                   <button
-                    onClick={() => setShowRoleSwitcherDropdown(!showRoleSwitcherDropdown)}
-                    className="px-2 py-1 rounded-md text-[11px] font-bold bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 hover:text-indigo-700 transition-colors shrink-0"
-                    title="Ganti Peran Demo (Admin)"
+                    onClick={() => stopImpersonating()}
+                    className="px-2 py-1 rounded-md text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors shrink-0 shadow-2xs"
+                    title="Kembali ke Akun Administrator"
                   >
-                    Ganti
+                    Kembali Admin
                   </button>
-                )}
+                ) : currentUser.role === 'admin' ? (
+                  <button
+                    onClick={() => setShowImpersonateModal(true)}
+                    className="px-2 py-1 rounded-md text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition-colors shrink-0 flex items-center gap-1"
+                    title="Beralih ke akun pengguna lain (Impersonate)"
+                  >
+                    <Users className="w-3 h-3" />
+                    <span>Beralih</span>
+                  </button>
+                ) : null}
               </div>
-
-              {/* Quick Switch Dropdown - Strictly for Admin */}
-              {showRoleSwitcherDropdown && currentUser.role === 'admin' && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in slide-in-from-top-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    Ganti Peran Demo (Admin)
-                  </p>
-                  <div className="space-y-1">
-                    {rolesDemoList.map((r) => {
-                      const isCurrent = currentUser.role === r.role;
-                      return (
-                        <button
-                          key={r.role}
-                          onClick={() => {
-                            switchRole(r.role);
-                            setShowRoleSwitcherDropdown(false);
-                            setActiveView('dashboard');
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                            isCurrent
-                              ? 'bg-indigo-600 text-white'
-                              : 'text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {r.icon}
-                            <span>{r.label}</span>
-                          </div>
-                          {isCurrent && <span className="text-[10px]">Aktif</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <button
@@ -886,6 +897,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {sidebarContent}
       </aside>
+
+      {/* Impersonate Modal */}
+      <ImpersonateModal
+        isOpen={showImpersonateModal}
+        onClose={() => setShowImpersonateModal(false)}
+      />
     </>
   );
 };

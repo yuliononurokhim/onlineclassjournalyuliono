@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../services/store';
 import { UserRole } from '../types';
 import {
@@ -23,20 +23,41 @@ import {
   TrendingUp,
   BarChart3,
   Award,
-  LogOut
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 interface LandingPageProps {
+  activeView?: string;
+  onNavigate?: (view: string) => void;
   onLoginSuccess: () => void;
+  onOpenLoginModal?: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
-  const { schoolProfile, announcements, users, login, switchRole, logout, currentUser, starAwards, students } = useEduStore();
-  const [activeTab, setActiveTab] = useState<'quick' | 'manual'>('quick');
+export const LandingPage: React.FC<LandingPageProps> = ({
+  activeView,
+  onNavigate,
+  onLoginSuccess,
+  onOpenLoginModal,
+}) => {
+  const { schoolProfile, announcements, users, login, logout, currentUser, starAwards, students } = useEduStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showForgotModal, setShowForgotModal] = useState(false);
+
+  // Synchronize scrolling when activeView changes from navigation buttons
+  useEffect(() => {
+    if (activeView === 'pengumuman') {
+      const el = document.getElementById('pengumuman');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeView === 'kontak') {
+      const el = document.getElementById('kontak');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (activeView === 'landing') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeView]);
 
   // Companion teachers
   const companionTeachers = [
@@ -129,11 +150,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
     } else {
       setLoginError('Username atau password tidak sesuai. Cek kembali atau hubungi Administrator.');
     }
-  };
-
-  const handleQuickDemoLogin = (role: UserRole, studentIdOrUserId?: string) => {
-    switchRole(role, studentIdOrUserId);
-    onLoginSuccess();
   };
 
   return (
@@ -292,334 +308,95 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                   </div>
                 </div>
               ) : (
-                /* Unauthenticated Login Box */
-                <>
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                /* Clean Official Login Box (Demo buttons removed) */
+                <div id="login-form-container" className="scroll-mt-24 space-y-4">
+                  <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">Masuk ke Portal</h3>
-                      <p className="text-xs text-slate-500">Pilih akun demo atau gunakan kredensial resmi</p>
-                    </div>
-                    <div className="flex bg-slate-100 p-1 rounded-lg text-xs font-semibold">
-                      <button
-                        onClick={() => setActiveTab('quick')}
-                        className={`px-3 py-1 rounded-md transition-all ${
-                          activeTab === 'quick' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        1-Klik Demo
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('manual')}
-                        className={`px-3 py-1 rounded-md transition-all ${
-                          activeTab === 'manual' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Login Akun
-                      </button>
-                    </div>
-                  </div>
-
-                  {activeTab === 'quick' ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-500 mb-2">
-                        Klik akun di bawah untuk langsung membuka dashboard spesifik:
+                      <h3 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        <UserCheck className="w-5 h-5 text-indigo-600" />
+                        <span>Masuk ke Portal Resmi</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Gunakan kredensial resmi Guru, Admin, atau Kartu Akses Orang Tua (NISN)
                       </p>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('admin')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-slate-800 hover:bg-slate-50 transition-all group text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
-                            <Shield className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
-                              1. Administrator Sekolah
-                            </p>
-                            <p className="text-[11px] text-slate-500">Atur profil, kop & kurikulum CP/TP</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-                      </button>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('guru_kelas')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-400 transition-all group text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                            <BookOpen className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">
-                              2. Guru Kelas ({schoolProfile.classGrade})
-                            </p>
-                            <p className="text-[11px] text-slate-500">Daftar murid, jurnal & nilai guru</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
-                      </button>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('guru_bk')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50 hover:border-rose-400 transition-all group text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
-                            <HeartHandshake className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 group-hover:text-rose-600">
-                              3. Guru Bimbingan Konseling (BK)
-                            </p>
-                            <p className="text-[11px] text-slate-500">Rekam kasus & bintang karakter</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-rose-400 group-hover:translate-x-1 transition-transform" />
-                      </button>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('guru_pai')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 hover:border-teal-400 transition-all group text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0">
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 group-hover:text-teal-600">
-                              4. Guru Pendidikan Agama Islam (PAI)
-                            </p>
-                            <p className="text-[11px] text-slate-500">Penilaian matriks fleksibel & ibadah</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform" />
-                      </button>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('orangtua', 'std-1')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50 hover:border-amber-400 transition-all group text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-                            <Users className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 group-hover:text-amber-600">
-                              5. Orang Tua Murid #1 (Adam Pratama)
-                            </p>
-                            <p className="text-[11px] text-slate-500">Wali: Bpk. Irfan Pratama · NISN: 0142981001</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform" />
-                      </button>
-
-                      <button
-                        onClick={() => handleQuickDemoLogin('orangtua', 'std-2')}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50/60 hover:bg-rose-100 hover:border-rose-400 transition-all group text-left ring-1 ring-rose-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
-                            <Users className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <p className="text-xs font-bold text-slate-900 group-hover:text-rose-700">
-                                6. Orang Tua Murid #2 (Siti Khadijah)
-                              </p>
-                              <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-bold">
-                                Khadijah
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-slate-500">Wali: Ibu Fatimah Zahra · NISN: 0142981002</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-rose-500 group-hover:translate-x-1 transition-transform" />
-                      </button>
                     </div>
-                  ) : (
-                    <form onSubmit={handleManualLogin} className="space-y-4">
-                      {loginError && (
-                        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          <span>{loginError}</span>
-                        </div>
-                      )}
-
-                      {/* Quick Fill Shortcuts */}
-                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                          Klik Cepat untuk Mengisi Form:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5 text-[11px]">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUsername('ortu_khadijah');
-                              setPassword('KHAD-2026');
-                            }}
-                            className="px-2 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors"
-                            title="Klik untuk mengisi akun murid urutan ke-2 (Siti Khadijah)"
-                          >
-                            ★ Murid #2 (Siti Khadijah)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUsername('ortu_adam');
-                              setPassword('ADAM-2026');
-                            }}
-                            className="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-900 font-medium border border-blue-200 transition-colors"
-                          >
-                            Murid #1 (Adam)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUsername('guru_kelas');
-                              setPassword('guru123');
-                            }}
-                            className="px-2 py-1 rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-medium border border-indigo-200 transition-colors"
-                          >
-                            Guru Kelas
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUsername('admin');
-                              setPassword('admin123');
-                            }}
-                            className="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium transition-colors"
-                          >
-                            Admin SIM
-                          </button>
-                        </div>
-                      </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Username / Nama Siswa / NISN
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Contoh: ortu_khadijah, Siti Khadijah, atau 0142981002"
-                        className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Bisa login dengan username (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">ortu_khadijah</code>), nama murid (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">Siti Khadijah</code>), atau NISN (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">0142981002</code>).
-                    </p>
                   </div>
 
-                  {/* Smart detection for student #2 */}
-                  {(username.toLowerCase().includes('khadijah') ||
-                    username.toLowerCase() === 'ortu_khadijah' ||
-                    username.toLowerCase().includes('siti') ||
-                    username === '0142981002' ||
-                    username === '2') && (
-                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center justify-between gap-2 animate-in fade-in">
-                      <div>
-                        <span className="font-bold block">✓ Akun Murid #2: Siti Khadijah Azzahra</span>
-                        <span className="text-[11px] text-rose-700 font-mono">User: ortu_khadijah · Sandi: KHAD-2026</span>
+                  <form onSubmit={handleManualLogin} className="space-y-4">
+                    {loginError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                        <span className="font-medium">{loginError}</span>
                       </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Username / NISN Siswa <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="login-username-input"
+                          type="text"
+                          required
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Masukkan username atau NISN siswa..."
+                          className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
+                        />
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Contoh: Username Guru/Admin, NISN Murid (10 digit), atau username orang tua.
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Kata Sandi Akun <span className="text-rose-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotModal(true)}
+                          className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                        >
+                          Lupa Sandi?
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Masukkan kata sandi akun..."
+                          className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
+                        />
+                        <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Masuk ke Portal SIM</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>Membutuhkan bantuan login?</span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setUsername('ortu_khadijah');
-                          setPassword('KHAD-2026');
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] hover:bg-rose-700 shrink-0"
+                        onClick={() => setShowForgotModal(true)}
+                        className="text-indigo-600 hover:underline font-bold"
                       >
-                        Gunakan Sandi Ini
+                        Pusat Bantuan Akses &rarr;
                       </button>
                     </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Kata Sandi / Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Contoh: KHAD-2026, ADAM-2026, admin123"
-                        className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[11px] text-slate-500">
-                      Sandi murid ke-2: <strong className="font-mono text-rose-700 bg-rose-50 px-1 py-0.5 rounded">KHAD-2026</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotModal(true)}
-                      className="text-indigo-600 hover:text-indigo-800 font-medium"
-                    >
-                      Lupa Password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-200 transition-all"
-                  >
-                    Masuk Sekarang
-                  </button>
-
-                  {/* Quick Credentials Cheatsheet for Reviewer/Parent */}
-                  <div className="pt-2 border-t border-slate-100">
-                    <details className="text-[11px] text-slate-600 group">
-                      <summary className="cursor-pointer font-bold text-indigo-700 hover:text-indigo-900 flex items-center justify-between py-1 select-none">
-                        <span>Lihat Daftar Akun & Password Resmi Siswa ({students.length})</span>
-                        <span className="text-xs group-open:rotate-180 transition-transform">▾</span>
-                      </summary>
-                      <div className="mt-2 max-h-44 overflow-y-auto space-y-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200/80 font-mono text-[10px]">
-                        {students.map((st, i) => (
-                          <div
-                            key={st.id}
-                            onClick={() => {
-                              setUsername(st.parentUsername);
-                              setPassword(st.parentPassword);
-                            }}
-                            className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-colors ${
-                              i === 1
-                                ? 'bg-rose-50 border-rose-300 hover:bg-rose-100 ring-1 ring-rose-300'
-                                : 'bg-white border-slate-200 hover:bg-indigo-50'
-                            }`}
-                            title="Klik untuk mengisi otomatis ke form login"
-                          >
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-sans font-bold text-slate-900 block">{i + 1}. {st.name}</span>
-                                {i === 1 && (
-                                  <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-sans font-bold">
-                                    Murid ke-2
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-slate-500 font-mono">User: {st.parentUsername} · NISN: {st.nisn}</span>
-                            </div>
-                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">
-                              {st.parentPassword}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  </div>
-                </form>
-              )}
-            </>
+                  </form>
+                </div>
           )}
         </div>
           </div>

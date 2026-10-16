@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useEduStore } from '../../services/store';
 import { UserRole } from '../../types';
 import {
@@ -67,9 +67,91 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
   const [starFilter, setStarFilter] = useState<'all' | 'reward' | 'penalty'>('all');
 
-  // Find the linked student for this parent
-  // If parent logged in without studentId, default to std-1 (Adam Pratama)
-  const student = students.find((s) => s.id === currentUser?.studentId) || students[0];
+  // Robust student resolution for the logged-in parent
+  const resolvedLinkedStudent = useMemo(() => {
+    if (!currentUser) return students[0];
+    // 1. Direct studentId
+    if (currentUser.studentId) {
+      const match = students.find((s) => s.id === currentUser.studentId);
+      if (match) return match;
+    }
+    const cleanUser = currentUser.username.toLowerCase().replace(/^ortu_/, '');
+    const cleanName = (currentUser.name || '').toLowerCase();
+
+    // Priority for Yuliono
+    if (cleanUser.includes('yuliono') || cleanName.includes('yuliono')) {
+      const yuli = students.find(
+        (s) =>
+          s.name.toLowerCase().includes('yuliono') ||
+          s.parentName.toLowerCase().includes('yuliono') ||
+          s.parentUsername.toLowerCase().includes('yuliono')
+      );
+      if (yuli) return yuli;
+    }
+
+    // 2. Parent username match
+    const byParentUser = students.find(
+      (s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()
+    );
+    if (byParentUser) return byParentUser;
+
+    // 3. Parent name matches user's name or username
+    const byParentName = students.find(
+      (s) =>
+        s.parentName.toLowerCase().includes(cleanUser) ||
+        cleanUser.includes(s.parentName.toLowerCase()) ||
+        (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
+    );
+    if (byParentName) return byParentName;
+
+    // 4. Student name matches user's name or username
+    const byStudentName = students.find(
+      (s) =>
+        s.name.toLowerCase() === cleanUser ||
+        s.name.toLowerCase().includes(cleanUser) ||
+        cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
+        (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
+    );
+    if (byStudentName) return byStudentName;
+
+    // 5. NISN match
+    const byNisn = students.find((s) => s.nisn === currentUser.username);
+    if (byNisn) return byNisn;
+
+    return students[0];
+  }, [students, currentUser]);
+
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
+    try {
+      if (currentUser?.id) {
+        return localStorage.getItem(`edujournal_parent_student_${currentUser.id}`) || '';
+      }
+    } catch {
+      // fallback
+    }
+    return '';
+  });
+
+  const handleSelectStudent = (newId: string) => {
+    setSelectedStudentId(newId);
+    try {
+      if (currentUser?.id) {
+        localStorage.setItem(`edujournal_parent_student_${currentUser.id}`, newId);
+      }
+    } catch {
+      // ignore
+    }
+    const found = students.find((s) => s.id === newId);
+    if (found) {
+      showToast(`Beralih ke pemantauan putra/putri: ${found.name}`);
+    }
+  };
+
+  // Active student for this parent portal
+  const student =
+    students.find((s) => s.id === (selectedStudentId || resolvedLinkedStudent?.id)) ||
+    resolvedLinkedStudent ||
+    students[0];
 
   // Filter ONLY this student's data!
   const myStars = starAwards.filter((s) => s.studentId === student?.id);
@@ -201,6 +283,20 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
               <p className="text-xs text-indigo-200 mt-1">
                 {schoolProfile.name} · {schoolProfile.classGrade} · Wali: {student.parentName}
               </p>
+              <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                <span className="text-[11px] text-amber-200 font-medium">Beralih Profil Anak:</span>
+                <select
+                  value={student.id}
+                  onChange={(e) => handleSelectStudent(e.target.value)}
+                  className="bg-white/10 hover:bg-white/15 text-white text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-colors cursor-pointer"
+                >
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                      {s.name} ({s.nisn}) — Wali: {s.parentName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

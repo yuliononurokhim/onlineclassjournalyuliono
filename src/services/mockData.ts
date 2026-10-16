@@ -185,6 +185,17 @@ export const INITIAL_STUDENTS: Student[] = [
     parentPassword: 'ZAHR-2026',
     avatarBgColor: 'bg-pink-100 text-pink-700',
   },
+  {
+    id: 'std-9',
+    nisn: '0142981009',
+    name: 'Raditya Yuliono',
+    gender: 'L',
+    parentName: 'Bapak Yuliono',
+    parentPhone: '0812-7788-9900',
+    parentUsername: 'ortu_yuliono',
+    parentPassword: 'YULI-2026',
+    avatarBgColor: 'bg-emerald-100 text-emerald-700',
+  },
 ];
 
 export const INITIAL_USERS: UserAccount[] = [
@@ -242,6 +253,17 @@ export const INITIAL_USERS: UserAccount[] = [
     studentId: 'std-1',
     phone: '0812-3456-7890',
     email: 'irfan.pratama@gmail.com',
+  },
+  {
+    id: 'usr-ortu-yuliono',
+    username: 'yuliono',
+    password: 'YULI-2026',
+    role: 'orangtua',
+    name: 'Bpk. Yuliono (Wali Murid)',
+    title: 'Orang Tua Raditya Yuliono',
+    studentId: 'std-9',
+    phone: '0812-7788-9900',
+    email: 'yuliono@gmail.com',
   },
   {
     id: 'usr-ortu-khadijah',

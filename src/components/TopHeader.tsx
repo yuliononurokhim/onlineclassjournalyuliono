@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useEduStore } from '../services/store';
 import { subscribeFirebaseStatus, FirebaseSyncState } from '../services/firebase';
+import { ImpersonateModal } from './common/ImpersonateModal';
 import { UserRole } from '../types';
 import {
   Menu,
@@ -74,8 +75,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     starAwards,
     caseRecords,
     announcements,
+    isImpersonating,
+    stopImpersonating
   } = useEduStore();
 
+  const [showImpersonateModal, setShowImpersonateModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'star' | 'case' | 'announcement'>('all');
@@ -141,10 +145,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     const list: NotificationItem[] = [];
 
     // Identify linked student if orang tua
+    const cleanUser = (currentUser?.username || '').toLowerCase().replace(/^ortu_/, '');
+    const cleanName = (currentUser?.name || '').toLowerCase();
     const linkedStudent =
       currentUser?.role === 'orangtua'
-        ? students.find((s) => s.id === currentUser.studentId) ||
-          students.find((s) => s.parentUsername === currentUser.username)
+        ? (currentUser.studentId && students.find((s) => s.id === currentUser.studentId)) ||
+          students.find((s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()) ||
+          students.find(
+            (s) =>
+              s.name.toLowerCase() === cleanUser ||
+              s.name.toLowerCase().includes(cleanUser) ||
+              cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
+              (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
+          ) ||
+          students.find(
+            (s) =>
+              s.parentName.toLowerCase().includes(cleanUser) ||
+              cleanUser.includes(s.parentName.toLowerCase()) ||
+              (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
+          ) ||
+          students.find((s) => s.nisn === currentUser.username) ||
+          students[0]
         : null;
 
     // 1. Star Awards
@@ -315,8 +336,28 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   };
 
   return (
-    <header className="no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3 shadow-xs">
-      <div className="flex items-center justify-between gap-3">
+    <header className="no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+      {/* Impersonation Active Banner */}
+      {isImpersonating && (
+        <div className="bg-amber-400 text-amber-950 px-3 sm:px-6 py-2 text-xs font-bold flex items-center justify-between border-b border-amber-500 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <span className="p-1 rounded-md bg-amber-500/80 text-slate-950">
+              <UserCheck className="w-3.5 h-3.5" />
+            </span>
+            <span className="truncate">
+              Mode Akses Akun: <strong>{currentUser?.name}</strong> ({currentUser?.title || currentUser?.role})
+            </span>
+          </div>
+          <button
+            onClick={() => stopImpersonating()}
+            className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all shrink-0 shadow-2xs cursor-pointer"
+          >
+            Kembali ke Admin &rarr;
+          </button>
+        </div>
+      )}
+
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
         {/* Left: Mobile Menu Toggle & Title / Breadcrumb */}
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
@@ -634,7 +675,33 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     </p>
                   </div>
 
-                  <div className="p-2 border-t border-slate-100">
+                  <div className="p-2 border-t border-slate-100 space-y-1">
+                    {(currentUser.role === 'admin' || isImpersonating) && (
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          setShowImpersonateModal(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors"
+                      >
+                        <Users className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Beralih Akun (Impersonate)</span>
+                      </button>
+                    )}
+
+                    {isImpersonating && (
+                      <button
+                        onClick={() => {
+                          stopImpersonating();
+                          setShowUserDropdown(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      >
+                        <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Kembali ke Administrator</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         logout();
@@ -661,6 +728,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Impersonate Modal for Admin */}
+      <ImpersonateModal
+        isOpen={showImpersonateModal}
+        onClose={() => setShowImpersonateModal(false)}
+      />
     </header>
   );
 };
