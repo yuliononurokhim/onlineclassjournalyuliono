@@ -25,6 +25,27 @@
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
   }
 
+  /* Accessible focus outlines (only shown when using keyboard navigation) */
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(99,102,241,0.95); /* indigo-500 */
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* Prefer reduced motion for users who request it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   h1, h2, h3, h4, h5, h6 {
     color: #1e293b;
     letter-spacing: -0.02em;

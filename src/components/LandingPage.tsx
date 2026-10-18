@@ -155,9 +155,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16" role="main" aria-label="Landing page">
       {/* Hero Section with Official School Header */}
-      <section className="bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 border-b border-indigo-800">
+      <section className="bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 border-b border-indigo-800" role="region" aria-labelledby="hero-title">
         <div className="max-w-7xl mx-auto">
           {/* Official Letterhead / Kop Surat Mockup */}
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/15 mb-10 shadow-xl">
@@ -169,7 +169,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <p className="text-xs uppercase tracking-widest text-indigo-300 font-semibold mb-1">
                   {schoolProfile.kopLine1}
                 </p>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                <h1 id="hero-title" className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
                   {schoolProfile.name}
                 </h1>
                 <p className="text-xs sm:text-sm text-indigo-200 mt-1 max-w-2xl leading-relaxed">
@@ -299,16 +299,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                   <div className="space-y-2 pt-2">
                     <button
+                      type="button"
                       onClick={onLoginSuccess}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all group"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all"
                     >
                       <span>Masuk ke Dashboard</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => logout()}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-600 text-xs font-semibold transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-600 text-xs font-bold"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Keluar / Ganti Akun Pengguna</span>
@@ -320,7 +322,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div id="login-form-container" className="scroll-mt-24 space-y-4">
                   <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                      <h3 id="login-title" className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                         <UserCheck className="w-5 h-5 text-indigo-600" />
                         <span>Masuk ke Akun Anak</span>
                       </h3>
@@ -330,9 +332,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                   </div>
 
-                  <form onSubmit={handleManualLogin} className="space-y-4">
+                  <form onSubmit={handleManualLogin} className="space-y-4" role="form" aria-labelledby="login-title">
                     {loginError && (
-                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-in fade-in">
+                      <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-in fade-in">
                         <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                         <span className="font-medium">{loginError}</span>
                       </div>
@@ -345,8 +347,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <div className="relative">
                         <input
                           id="login-username-input"
+                          aria-label="username or student NISN"
                           type="text"
                           required
+                          aria-required="true"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           placeholder="Masukkan username atau NISN siswa..."
@@ -374,8 +378,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       </div>
                       <div className="relative">
                         <input
+                          aria-label="account password"
                           type="password"
                           required
+                          aria-required="true"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Masukkan kata sandi akun..."
@@ -387,7 +393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-indigo-950 font-extrabold text-sm shadow-lg shadow-indigo-950/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-3.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-indigo-950 font-extrabold text-sm shadow-lg shadow-indigo-950/20 transition-all flex items-center justify-center gap-2"
                     >
                       <span>Login Orang Tua / Masuk ke Akun Anak</span>
                       <ArrowRight className="w-4 h-4" />
@@ -400,7 +406,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         onClick={() => setShowForgotModal(true)}
                         className="text-indigo-600 hover:underline font-bold"
                       >
-                        Pusat Bantuan Akses &rarr;
+                        Pusat Bantuan Akses →
                       </button>
                     </div>
                   </form>
@@ -412,10 +418,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Parent access steps */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10" role="region" aria-labelledby="access-steps-title">
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
           <div className="text-center mb-6">
-            <h3 className="text-xl font-extrabold text-slate-900">Cara Mengakses Jurnal Anak</h3>
+            <h3 id="access-steps-title" className="text-xl font-extrabold text-slate-900">Cara Mengakses Jurnal Anak</h3>
             <p className="text-sm text-slate-500 mt-1">Tiga langkah mudah untuk mulai memantau aktivitas belajar si kecil.</p>
           </div>
           <ol className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -535,7 +541,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="text-[11px] text-slate-600 flex items-start gap-2.5 bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100">
                 <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Sistem Apresiasi & Disiplin Berkeadilan:</strong> Selain apresiasi penambahan bintang (+), guru juga menerapkan pengurangan bintang terukur (-) saat terjadi pelanggaran tata tertib demi menanamkan tanggung jawab sejak dini. Semua rekam jejak terhubung real-time ke <strong>Dashboard Orang Tua</strong>.
+                  <strong>Sistem Apresiasi & Disiplin Berkeadilan:</strong> Selain apresiasi penambahan bintang (+), guru juga menerapkan pengurangan bintang terukur (-) saat terjadi pelanggaran ...
                 </span>
               </div>
             </div>
@@ -620,10 +626,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Section 2: Announcements Board (Pengumuman Sekolah) */}
-      <section id="pengumuman" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+      <section id="pengumuman" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12" role="region" aria-labelledby="pengumuman-title">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Papan Informasi & Pengumuman Sekolah</h3>
+            <h3 id="pengumuman-title" className="text-xl font-bold text-slate-900 tracking-tight">Papan Informasi & Pengumuman Sekolah</h3>
             <p className="text-xs text-slate-500">Agenda akademik, kegiatan proyek P5, dan pemberitahuan resmi untuk wali murid</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-indigo-700 font-semibold bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
@@ -669,9 +675,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Section 3: Companion Teachers Transparent Contact */}
-      <section id="kontak" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+      <section id="kontak" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16" role="region" aria-labelledby="kontak-title">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Kontak Terbuka Guru Pendamping Kelas</h3>
+          <h3 id="kontak-title" className="text-xl font-bold text-slate-900 tracking-tight">Kontak Terbuka Guru Pendamping Kelas</h3>
           <p className="text-xs text-slate-500">
             Transparansi narahubung guru pendamping untuk memudahkan konsultasi dan sinergi bersama wali murid
           </p>
@@ -775,7 +781,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </p>
               <ul className="list-disc pl-4 space-y-1.5">
                 <li>
-                  <span className="font-semibold text-slate-700">Orang Tua Murid:</span> Anda dapat meminta kartu cetak kredensial baru kepada <strong>Wali Kelas ({schoolProfile.classGrade})</strong> atau meminta reset instan ke <strong>Admin SIM Sekolah</strong>.
+                  <span className="font-semibold text-slate-700">Orang Tua Murid:</span> Anda dapat meminta kartu cetak kredensial baru kepada <strong>Wali Kelas ({schoolProfile.classGrade})</strong>
                 </li>
                 <li>
                   <span className="font-semibold text-slate-700">Guru & Tenaga Kependidikan:</span> Hubungi Admin SIM melalui panel administrator sekolah.
@@ -783,7 +789,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </ul>
               <div className="pt-2 border-t border-slate-200 mt-2">
                 <p className="text-[11px] text-slate-500">
-                  Kontak Layanan Admin: <span className="font-mono font-semibold text-slate-800">admin@sdnnusantara01.sch.id</span> atau WhatsApp Admin: <span className="font-mono font-semibold text-slate-800">0812-9999-0001</span>.
+                  Kontak Layanan Admin: <span className="font-mono font-semibold text-slate-800">admin@sdnnusantara01.sch.id</span> atau WhatsApp Admin: <span className="font-mono font-semibold text-slate-800">0812-3456-7890</span>
                 </p>
               </div>
             </div>
@@ -793,9 +799,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 href={`mailto:${schoolProfile.email}?subject=${encodeURIComponent('Bantuan akses akun SIM Sekolah')}`}
                 className="text-xs text-indigo-700 hover:underline font-semibold"
               >
-                Hubungi Admin SIM &rarr;
+                Hubungi Admin SIM →
               </a>
               <button
+                type="button"
                 onClick={() => setShowForgotModal(false)}
                 className="px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors"
               >
