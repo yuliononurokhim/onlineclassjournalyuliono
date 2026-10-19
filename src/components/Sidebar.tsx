@@ -296,6 +296,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />,
       subItems: [
         {
+          id: 'jurnal',
+          label: 'Jurnal Harian Mengajar',
+          icon: <BookOpen className="w-4 h-4 shrink-0" />,
+          badge: journalEntries.length,
+        },
+        {
           id: 'penilaian',
           label: 'Matriks Penilaian Fleksibel',
           icon: <CheckSquare className="w-4 h-4 shrink-0" />,

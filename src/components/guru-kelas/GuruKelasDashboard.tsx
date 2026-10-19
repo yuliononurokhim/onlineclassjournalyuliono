@@ -6,6 +6,7 @@ import { Student, ClassJournalEntry, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
+import { ClassJournalTab } from '../common/ClassJournalTab';
 import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
   Users,
@@ -797,7 +798,8 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       )}
 
       {/* Tab 3: Jurnal Harian Kelas (Data from Admin CP/TP) */}
-      {activeTab === 'jurnal' && (
+      {activeTab === 'jurnal' && <ClassJournalTab />}
+      {false && activeTab === 'jurnal' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Form Jurnal Baru */}
           <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">

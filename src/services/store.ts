@@ -674,6 +674,17 @@ export function useEduStore() {
     writeFirestoreDoc('journal_entries', newItem.id, newItem);
   }, []);
 
+  const addJournalEntries = useCallback((entries: Omit<ClassJournalEntry, 'id'>[]) => {
+    if (entries.length === 0) return;
+    const current = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
+    const newItems = entries.map((entry) => ({
+      ...entry,
+      id: createRecordId('jrn'),
+    }));
+    setStoredItem('journal_entries', [...newItems, ...current]);
+    newItems.forEach((entry) => writeFirestoreDoc('journal_entries', entry.id, entry));
+  }, []);
+
   const deleteJournalEntry = useCallback((id: string) => {
     const current = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
     setStoredItem('journal_entries', current.filter((j) => j.id !== id));
@@ -971,6 +982,7 @@ export function useEduStore() {
     resetUserPassword,
     journalEntries,
     addJournalEntry,
+    addJournalEntries,
     deleteJournalEntry,
     starAwards,
     addStarAward,

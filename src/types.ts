@@ -95,6 +95,7 @@ export interface ClassJournalEntry {
   attendanceSick: number;
   attendancePermit: number;
   attendanceAbsent: number;
+  attendanceByStudent?: Record<string, 'hadir' | 'sakit' | 'izin' | 'alpa'>;
   notes?: string;
   teacherName: string;
 }
