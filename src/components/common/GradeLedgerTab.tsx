@@ -45,6 +45,10 @@ function csvCell(value: string | number): string {
   return `"${safeValue.replace(/"/g, '""')}"`;
 }
 
+function normalizeTeacherName(name: string): string {
+  return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 export const GradeLedgerTab: React.FC<GradeLedgerTabProps> = ({ teacherRole }) => {
   const { students, internalGrades, paiAssessments, users, schoolProfile } = useEduStore();
   const [roleFilter, setRoleFilter] = useState<TeacherRole | 'all'>(teacherRole || 'all');
@@ -55,6 +59,17 @@ export const GradeLedgerTab: React.FC<GradeLedgerTabProps> = ({ teacherRole }) =
 
   const rows = useMemo<GradeLedgerRow[]>(() => {
     const studentById = new Map(students.map((student) => [student.id, student]));
+    const resolveTeacherName = (role: TeacherRole, recordedName: string): string => {
+      const roleUsers = users.filter((user) => user.role === role);
+      const normalizedRecordedName = normalizeTeacherName(recordedName);
+      const matchingUser = roleUsers.find(
+        (user) => normalizeTeacherName(user.name) === normalizedRecordedName
+      );
+      if (matchingUser) return matchingUser.name;
+
+      const activeRoleUsers = roleUsers.filter((user) => user.status !== 'nonaktif');
+      return activeRoleUsers.length === 1 ? activeRoleUsers[0].name : recordedName;
+    };
     const ledgerRows: GradeLedgerRow[] = [];
     const grades = internalGrades.filter(
       (grade) => grade.isInternalOnly && (!teacherRole || grade.teacherRole === teacherRole)
@@ -68,7 +83,7 @@ export const GradeLedgerTab: React.FC<GradeLedgerTabProps> = ({ teacherRole }) =
           studentName: student?.name || `Siswa belum terhubung (${studentId})`,
           nisn: student?.nisn || '-',
           teacherRole: grade.teacherRole,
-          teacherName: grade.teacherName,
+          teacherName: resolveTeacherName(grade.teacherRole, grade.teacherName),
           subjectName: grade.subjectName,
           assessmentTitle: grade.assessmentTitle,
           assessmentType: grade.assessmentType,
@@ -82,7 +97,7 @@ export const GradeLedgerTab: React.FC<GradeLedgerTabProps> = ({ teacherRole }) =
     });
 
     if (!teacherRole || teacherRole === 'guru_pai') {
-      const paiTeacherName = users.find((user) => user.role === 'guru_pai')?.name || 'Guru PAI';
+      const paiTeacherName = users.find((user) => user.role === 'guru_pai' && user.status !== 'nonaktif')?.name || 'Guru PAI';
       paiAssessments.forEach((assessment) => {
         Object.entries(assessment.results).forEach(([studentId, result]) => {
           const student = studentById.get(studentId);

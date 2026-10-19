@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
   onLoginSuccess,
 }) => {
-  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students } = useEduStore();
+  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students, users } = useEduStore();
   const landingFeatures = {
     dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
     gallery: schoolProfile.landingFeatures?.gallery ?? true,
@@ -103,7 +103,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       badgeColor: 'bg-slate-100 text-slate-800 border-slate-300',
       roleKey: 'admin' as UserRole,
     },
-  ];
+  ].map((teacher) => {
+    if (teacher.roleKey === 'admin') {
+      return { ...teacher, name: schoolProfile.principalName || teacher.name };
+    }
+
+    const activeRoleUsers = users.filter(
+      (user) => user.role === teacher.roleKey && user.status !== 'nonaktif'
+    );
+    if (activeRoleUsers.length !== 1) return teacher;
+
+    const account = activeRoleUsers[0];
+    return {
+      ...teacher,
+      name: account.name,
+      phone: account.phone || teacher.phone,
+      email: account.email || teacher.email,
+    };
+  });
 
   // Current Week's Total Star Distribution Statistics
   const rewardsList = starAwards.filter((s) => s.type !== 'penalty');
