@@ -62,7 +62,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
   }, [subjectScope, subjects]);
   const [date, setDate] = useState(getLocalDateString());
   const [rows, setRows] = useState<JournalRow[]>(
-    () => Array.from({ length: 6 }, createJournalRow)
+    () => [createJournalRow()]
   );
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [notes, setNotes] = useState('');
@@ -156,22 +156,30 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
       };
     }));
 
-    setRows((current) => current.map((row) => ({ ...row, activity: '' })));
+    setRows((current) => current.map(() => createJournalRow()));
     setNotes('');
     setSavedMessage(`${populatedRows.length} jurnal berhasil disimpan; sinkronisasi otomatis berjalan.`);
   };
 
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
-        <div>
-          <h3 className="text-base font-bold text-slate-900">Input Bulk Jurnal Harian Pembelajaran</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Isi mata pelajaran dan kegiatan tiap jam. CP dan TP diambil dari kurikulum Admin sesuai mata pelajaran.
-          </p>
+      <section className="overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-100">Jurnal Pembelajaran</p>
+              <h3 className="text-lg font-extrabold tracking-tight">Input Jurnal Harian</h3>
+              <p className="mt-1 text-xs text-indigo-100">
+                Tambahkan baris sesuai jumlah jam mengajar. CP dan TP terhubung ke kurikulum Admin.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-5 p-4 sm:p-6">
           {formError && (
             <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
               {formError}
@@ -183,29 +191,43 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             </p>
           )}
 
-          <div className="max-w-xs">
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Hari efektif / tanggal</label>
+          <div className="flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <label htmlFor="class-journal-date" className="block text-xs font-bold text-slate-800">Hari efektif / tanggal</label>
+              <p className="mt-1 text-[11px] text-slate-500">Tanggal ini digunakan untuk seluruh baris jurnal.</p>
+            </div>
             <input
+              id="class-journal-date"
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
               required
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:w-56"
             />
-            <p className="text-[10px] text-slate-400 mt-1">Satu tanggal berlaku untuk seluruh baris jurnal.</p>
           </div>
 
-          <div className="overflow-x-auto border border-slate-300 rounded-xl">
-            <table className="w-full min-w-[1100px] border-collapse text-left text-xs">
-              <thead className="bg-slate-100 text-slate-700">
+          <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div>
+                <h4 className="text-xs font-bold text-slate-800">Rincian jam pelajaran</h4>
+                <p className="mt-0.5 text-[10px] text-slate-500">Baris kosong tidak akan disimpan.</p>
+              </div>
+              <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-[10px] font-bold text-indigo-700">
+                {rows.length} baris
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1160px] border-collapse text-left text-xs">
+              <thead className="bg-slate-100 text-slate-600">
                 <tr>
-                  <th className="border border-slate-300 px-2 py-2 w-10">No</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-36">Hari/Tanggal</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-20">Jam</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-48">Mata Pelajaran</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-56">Capaian Pembelajaran (CP)</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-56">Tujuan Pembelajaran / Materi (TP)</th>
-                  <th className="border border-slate-300 px-2 py-2 min-w-56">Kegiatan</th>
+                  <th className="w-12 border-b border-r border-slate-200 px-3 py-3 text-center font-bold">No</th>
+                  <th className="min-w-40 border-b border-r border-slate-200 px-3 py-3 font-bold">Hari/Tanggal</th>
+                  <th className="min-w-20 border-b border-r border-slate-200 px-3 py-3 font-bold">Jam</th>
+                  <th className="min-w-48 border-b border-r border-slate-200 px-3 py-3 font-bold">Mata Pelajaran</th>
+                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Capaian Pembelajaran (CP)</th>
+                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Tujuan Pembelajaran / Materi (TP)</th>
+                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Kegiatan</th>
+                  <th className="w-14 border-b border-slate-200 px-3 py-3 text-center font-bold">Hapus</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,15 +237,17 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                   );
                   const selectedObjective = objectives.find((objective) => objective.id === row.objectiveId);
                   return (
-                    <tr key={index} className="align-top even:bg-slate-50/70">
-                      <td className="border border-slate-300 px-2 py-2 text-center">{index + 1}</td>
-                      <td className="border border-slate-300 px-2 py-2 whitespace-nowrap">{formatJournalDate(date)}</td>
-                      <td className="border border-slate-300 px-2 py-2 font-semibold whitespace-nowrap">ke-{index + 1}</td>
-                      <td className="border border-slate-300 p-1.5">
+                    <tr key={index} className="align-top transition-colors hover:bg-indigo-50/40">
+                      <td className="border-b border-r border-slate-200 px-3 py-3 text-center font-semibold text-slate-500">{index + 1}</td>
+                      <td className="border-b border-r border-slate-200 px-3 py-3 whitespace-nowrap text-slate-600">{formatJournalDate(date)}</td>
+                      <td className="border-b border-r border-slate-200 px-3 py-3">
+                        <span className="inline-flex rounded-md bg-indigo-100 px-2 py-1 font-bold text-indigo-700">ke-{index + 1}</span>
+                      </td>
+                      <td className="border-b border-r border-slate-200 p-2">
                         <select
                           value={row.subjectId}
                           onChange={(event) => updateRow(index, { subjectId: event.target.value, objectiveId: '' })}
-                          className="w-full min-w-44 px-2 py-2 text-xs rounded border border-slate-300 bg-white"
+                          className="w-full min-w-44 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                         >
                           <option value="">Pilih mata pelajaran</option>
                           {availableSubjects.map((subject) => (
@@ -231,15 +255,17 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                           ))}
                         </select>
                       </td>
-                      <td className="border border-slate-300 px-2 py-2 text-slate-600 leading-relaxed">
-                        {selectedObjective?.capaianPembelajaran || 'CP diambil dari data kurikulum Admin setelah TP dipilih.'}
+                      <td className="border-b border-r border-slate-200 px-3 py-3 leading-relaxed text-slate-600">
+                        <div className={`min-h-12 rounded-lg p-2.5 ${selectedObjective ? 'bg-violet-50 text-slate-700' : 'text-slate-400'}`}>
+                          {selectedObjective?.capaianPembelajaran || 'CP dari kurikulum Admin akan tampil setelah TP dipilih.'}
+                        </div>
                       </td>
-                      <td className="border border-slate-300 p-1.5">
+                      <td className="border-b border-r border-slate-200 p-2">
                         <select
                           value={row.objectiveId}
                           onChange={(event) => updateRow(index, { objectiveId: event.target.value })}
                           disabled={!row.subjectId}
-                          className="w-full min-w-52 px-2 py-2 text-xs rounded border border-slate-300 bg-white disabled:bg-slate-100"
+                          className="w-full min-w-52 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
                         >
                           <option value="">Pilih TP dari kurikulum Admin</option>
                           {objectives.map((objective) => (
@@ -247,50 +273,63 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                           ))}
                         </select>
                       </td>
-                      <td className="border border-slate-300 p-1.5">
+                      <td className="border-b border-r border-slate-200 p-2">
                         <textarea
                           rows={3}
                           value={row.activity}
                           onChange={(event) => updateRow(index, { activity: event.target.value })}
-                          placeholder="Diisi oleh guru"
-                          className="w-full min-w-52 px-2 py-2 text-xs rounded border border-slate-300"
+                          placeholder="Ceritakan kegiatan belajar..."
+                          className="w-full min-w-52 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                         />
+                      </td>
+                      <td className="border-b border-slate-200 px-2 py-3 text-center">
+                        <button
+                          type="button"
+                          disabled={rows.length === 1}
+                          onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))}
+                          aria-label={`Hapus baris jam ke-${index + 1}`}
+                          title={rows.length === 1 ? 'Minimal harus ada satu baris' : 'Hapus baris'}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setRows((current) => [...current, createJournalRow()])}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-xs font-bold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-100"
           >
-            <Plus className="w-4 h-4" /> Tambah jam pelajaran
+            <Plus className="h-4 w-4" /> Tambah baris jam pelajaran
           </button>
 
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
                   Presensi murid ({students.length})
                 </h4>
                 <p className="text-[10px] text-slate-500 mt-1">Pilih satu status pada setiap murid. Default: Hadir.</p>
               </div>
-              <label className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-indigo-700 cursor-pointer">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100">
                 <input
                   type="checkbox"
                   checked={allPresent}
                   onChange={(event) => setAllAttendance(event.target.checked ? 'hadir' : 'alpa')}
-                  className="rounded border-slate-300 text-indigo-600"
+                  className="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 Tandai semua hadir
               </label>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[590px] text-xs">
-                <thead>
+                <thead className="border-b border-slate-200 bg-slate-50">
                   <tr className="text-slate-500">
                     <th className="text-left font-semibold py-2">Nama anak</th>
                     {ATTENDANCE_OPTIONS.map((option) => (
@@ -298,7 +337,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-100">
                   {students.map((student) => {
                     const status = attendance[student.id] || 'hadir';
                     return (
