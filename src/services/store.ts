@@ -168,6 +168,32 @@ export function useEduStore() {
     const cleanPass = password || '';
     if (!cleanInput || !cleanPass) return false;
 
+    const defaultAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
+    if (
+      defaultAdmin &&
+      cleanInput === defaultAdmin.username.trim().toLowerCase() &&
+      cleanPass === defaultAdmin.password
+    ) {
+      const existingAdmin = allUsers.find((user) => user.id === defaultAdmin.id)
+        || allUsers.find((user) => user.role === 'admin');
+      const adminAccount: UserAccount = {
+        ...defaultAdmin,
+        ...existingAdmin,
+        username: defaultAdmin.username,
+        password: defaultAdmin.password,
+        role: 'admin',
+        status: 'aktif',
+      };
+      const updatedUsers = existingAdmin
+        ? allUsers.map((user) => user.id === existingAdmin.id ? adminAccount : user)
+        : [...allUsers, adminAccount];
+
+      setStoredItem('users', updatedUsers);
+      writeFirestoreDoc('users', adminAccount.id, adminAccount);
+      setStoredItem('current_user', adminAccount);
+      return true;
+    }
+
     const matchedStudent = allStudents.find(
       (student) =>
         student.nisn.trim().toLowerCase() === cleanInput ||
@@ -197,19 +223,6 @@ export function useEduStore() {
         phone: matchedStudent.parentPhone,
       };
       isLegacyParentAccount = true;
-    }
-
-    const defaultAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
-    if (
-      !matchedUser &&
-      defaultAdmin &&
-      cleanInput === defaultAdmin.username.trim().toLowerCase() &&
-      cleanPass === defaultAdmin.password &&
-      !allUsers.some((user) => user.role === 'admin')
-    ) {
-      matchedUser = defaultAdmin;
-      setStoredItem('users', [...allUsers, defaultAdmin]);
-      writeFirestoreDoc('users', defaultAdmin.id, defaultAdmin);
     }
 
     if (!matchedUser || matchedUser.status === 'nonaktif' || matchedUser.password !== cleanPass) return false;
