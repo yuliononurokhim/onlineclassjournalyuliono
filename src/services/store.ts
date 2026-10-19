@@ -199,6 +199,19 @@ export function useEduStore() {
       isLegacyParentAccount = true;
     }
 
+    const defaultAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
+    if (
+      !matchedUser &&
+      defaultAdmin &&
+      cleanInput === defaultAdmin.username.trim().toLowerCase() &&
+      cleanPass === defaultAdmin.password &&
+      !allUsers.some((user) => user.role === 'admin')
+    ) {
+      matchedUser = defaultAdmin;
+      setStoredItem('users', [...allUsers, defaultAdmin]);
+      writeFirestoreDoc('users', defaultAdmin.id, defaultAdmin);
+    }
+
     if (!matchedUser || matchedUser.status === 'nonaktif' || matchedUser.password !== cleanPass) return false;
 
     if (isLegacyParentAccount) {
