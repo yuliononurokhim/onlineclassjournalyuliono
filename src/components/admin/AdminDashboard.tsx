@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
 import { ImpersonateModal } from '../common/ImpersonateModal';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
@@ -588,7 +589,7 @@ Terima kasih.`;
     const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csv);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Daftar_Guru_${schoolProfile.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Daftar_Guru_${schoolProfile.name.replace(/\s+/g, '_')}_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1842,7 +1843,7 @@ Terima kasih.`;
                   link.setAttribute('href', encodedUri);
                   link.setAttribute(
                     'download',
-                    `Rekap_Eksekutif_Sekolah_${schoolProfile.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+                    `Rekap_Eksekutif_Sekolah_${schoolProfile.name.replace(/\s+/g, '_')}_${getLocalDateString()}.csv`
                   );
                   document.body.appendChild(link);
                   link.click();

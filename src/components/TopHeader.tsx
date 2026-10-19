@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useEduStore } from '../services/store';
+import { getLinkedStudentsForParent } from '../services/relationships';
 import { subscribeFirebaseStatus, FirebaseSyncState } from '../services/firebase';
 import { ImpersonateModal } from './common/ImpersonateModal';
 import { UserRole } from '../types';
@@ -145,34 +146,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     const list: NotificationItem[] = [];
 
     // Identify linked student if orang tua
-    const cleanUser = (currentUser?.username || '').toLowerCase().replace(/^ortu_/, '');
-    const cleanName = (currentUser?.name || '').toLowerCase();
     const linkedStudent =
       currentUser?.role === 'orangtua'
-        ? (currentUser.studentId && students.find((s) => s.id === currentUser.studentId)) ||
-          students.find((s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()) ||
-          students.find(
-            (s) =>
-              s.name.toLowerCase() === cleanUser ||
-              s.name.toLowerCase().includes(cleanUser) ||
-              cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
-              (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
-          ) ||
-          students.find(
-            (s) =>
-              s.parentName.toLowerCase().includes(cleanUser) ||
-              cleanUser.includes(s.parentName.toLowerCase()) ||
-              (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
-          ) ||
-          students.find((s) => s.nisn === currentUser.username) ||
-          students[0]
+        ? getLinkedStudentsForParent(currentUser, students)[0] || null
         : null;
 
     // 1. Star Awards
     starAwards.forEach((star) => {
       // If Orang Tua, only include stars for their child
       if (currentUser?.role === 'orangtua') {
-        if (linkedStudent && star.studentId !== linkedStudent.id && star.studentName !== linkedStudent.name) {
+        if (!linkedStudent || star.studentId !== linkedStudent.id) {
           return;
         }
       }
@@ -204,7 +187,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       // If Orang Tua, only include if reported to parent and matches child
       if (currentUser?.role === 'orangtua') {
         if (!c.isReportedToParent) return;
-        if (linkedStudent && c.studentId !== linkedStudent.id && c.studentName !== linkedStudent.name) {
+        if (!linkedStudent || c.studentId !== linkedStudent.id) {
           return;
         }
       }

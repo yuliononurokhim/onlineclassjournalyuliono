@@ -34,6 +34,7 @@ import {
   deleteFirestoreDoc,
   deleteStudentFirestoreRecords,
 } from './firebase';
+import { getLocalDateString } from './date';
 
 const STORAGE_KEY_PREFIX = 'edujournal_sd_v1_';
 
@@ -42,6 +43,37 @@ function createRecordId(prefix: string): string {
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return `${prefix}-${uniqueId}`;
+}
+
+function createUniqueParentUsername(name: string, reservedUsernames: Set<string>): string {
+  const firstName = name
+    .trim()
+    .split(/\s+/)[0]
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') || 'wali';
+  const base = `ortu_${firstName}`;
+  let username = base;
+  let suffix = 2;
+  while (reservedUsernames.has(username.toLowerCase())) {
+    username = `${base}_${suffix}`;
+    suffix += 1;
+  }
+  reservedUsernames.add(username.toLowerCase());
+  return username;
+}
+
+function createParentPassword(name: string): string {
+  const firstName = name
+    .trim()
+    .split(/\s+/)[0]
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 4) || 'WALI';
+  return `${firstName}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function getStoredItem<T>(key: string, defaultValue: T): T {
@@ -129,175 +161,31 @@ export function useEduStore() {
 
   // Authentication & Role Switcher
   const login = useCallback((identifier: string, password?: string): boolean => {
-    let allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     const allStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
 
-    // Ensure all students have a parent account registered in allUsers
-    let hasNewUser = false;
-    allStudents.forEach((st) => {
-      if (!allUsers.some((u) => u.studentId === st.id || u.username === st.parentUsername)) {
-        allUsers.push({
-          id: `usr-parent-${st.id}`,
-          username: st.parentUsername,
-          password: st.parentPassword,
-          role: 'orangtua',
-          name: `${st.parentName} (Wali)`,
-          title: `Orang Tua dari ${st.name}`,
-          studentId: st.id,
-          phone: st.parentPhone,
-        });
-        hasNewUser = true;
-      }
-    });
-    if (hasNewUser) {
-      setStoredItem('users', allUsers);
-    }
-
     const cleanInput = identifier.trim().toLowerCase();
-    const cleanPass = password?.trim() || '';
+    const cleanPass = password || '';
+    if (!cleanInput || !cleanPass) return false;
 
-    // 1. Direct match in users list first (by username, email, phone)
-    let matchedUser = allUsers.find(
+    const matchedStudent = allStudents.find(
+      (student) => student.nisn.trim().toLowerCase() === cleanInput
+    );
+    const matchedUser = allUsers.find(
       (u) =>
-        u.username.toLowerCase() === cleanInput ||
-        (u.phone && u.phone.toLowerCase() === cleanInput) ||
-        (u.email && u.email.toLowerCase() === cleanInput)
+        u.username.trim().toLowerCase() === cleanInput ||
+        (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
+        (u.email && u.email.trim().toLowerCase() === cleanInput) ||
+        (matchedStudent &&
+          u.role === 'orangtua' &&
+          (u.studentId === matchedStudent.id ||
+            u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
     );
 
-    // 2. Match student: by parentUsername, NISN, id, name, parentName, or Yuliono
-    let matchedStudent: Student | undefined;
-    if (matchedUser?.studentId) {
-      matchedStudent = allStudents.find((s) => s.id === matchedUser?.studentId);
-    }
+    if (!matchedUser || matchedUser.status === 'nonaktif' || matchedUser.password !== cleanPass) return false;
 
-    if (!matchedStudent) {
-      matchedStudent = allStudents.find((s, idx) => {
-        const sName = s.name.toLowerCase();
-        const sUser = s.parentUsername.toLowerCase();
-        const sNisn = s.nisn.toLowerCase();
-        const sId = s.id.toLowerCase();
-        const sParent = s.parentName.toLowerCase();
-        const idxStr = String(idx + 1);
-
-        return (
-          sUser === cleanInput ||
-          sNisn === cleanInput ||
-          sId === cleanInput ||
-          sName === cleanInput ||
-          sName.includes(cleanInput) ||
-          sParent.includes(cleanInput) ||
-          cleanInput.includes(sParent) ||
-          (cleanInput.includes('yuliono') && (sName.includes('yuliono') || sParent.includes('yuliono'))) ||
-          cleanInput.includes(sName.split(' ')[0]) || // e.g. "siti" or "khadijah"
-          (sName.split(' ')[1] && cleanInput.includes(sName.split(' ')[1].toLowerCase())) ||
-          cleanInput === idxStr ||
-          cleanInput === `murid ${idxStr}` ||
-          cleanInput === `siswa ${idxStr}`
-        );
-      });
-    }
-
-    // 3. If matched student found but user not yet matched, find user by studentId or parentUsername
-    if (!matchedUser && matchedStudent) {
-      matchedUser = allUsers.find(
-        (u) =>
-          (matchedStudent && u.studentId === matchedStudent.id) ||
-          (matchedStudent && u.username.toLowerCase() === matchedStudent.parentUsername.toLowerCase())
-      );
-    }
-
-    // 4. If user not found but student found, synthesize user account
-    if (!matchedUser && matchedStudent) {
-      matchedUser = {
-        id: `usr-parent-${matchedStudent.id}`,
-        username: matchedStudent.parentUsername,
-        password: matchedStudent.parentPassword,
-        role: 'orangtua',
-        name: `${matchedStudent.parentName} (Wali)`,
-        title: `Orang Tua dari ${matchedStudent.name}`,
-        studentId: matchedStudent.id,
-        phone: matchedStudent.parentPhone,
-      };
-      allUsers.push(matchedUser);
-      setStoredItem('users', allUsers);
-    }
-
-    if (!matchedUser) return false;
-
-    // Ensure parent user account is strictly linked to their student
-    if (matchedStudent) {
-      if (!matchedUser.studentId || matchedUser.studentId !== matchedStudent.id) {
-        matchedUser = {
-          ...matchedUser,
-          studentId: matchedStudent.id,
-          title: matchedUser.title || `Orang Tua dari ${matchedStudent.name}`,
-        };
-        const uIdx = allUsers.findIndex((u) => u.id === matchedUser!.id);
-        if (uIdx !== -1) {
-          allUsers[uIdx] = matchedUser;
-        } else {
-          allUsers.push(matchedUser);
-        }
-        setStoredItem('users', allUsers);
-      }
-    } else if (matchedUser.studentId) {
-      matchedStudent = allStudents.find((s) => s.id === matchedUser?.studentId);
-    } else if (matchedUser.role === 'orangtua') {
-      const cleanU = matchedUser.username.toLowerCase().replace(/^ortu_/, '');
-      const autoMatch = allStudents.find(
-        (s) =>
-          s.parentUsername.toLowerCase() === matchedUser!.username.toLowerCase() ||
-          s.parentName.toLowerCase().includes(cleanU) ||
-          s.name.toLowerCase().includes(cleanU) ||
-          (cleanU.includes('yuliono') && (s.name.toLowerCase().includes('yuliono') || s.parentName.toLowerCase().includes('yuliono'))) ||
-          cleanU.includes(s.name.toLowerCase().split(' ')[0])
-      );
-      if (autoMatch) {
-        matchedUser = {
-          ...matchedUser,
-          studentId: autoMatch.id,
-          title: `Orang Tua dari ${autoMatch.name}`,
-        };
-        matchedStudent = autoMatch;
-        const uIdx = allUsers.findIndex((u) => u.id === matchedUser!.id);
-        if (uIdx !== -1) {
-          allUsers[uIdx] = matchedUser;
-          setStoredItem('users', allUsers);
-        }
-      }
-    }
-
-    // If password is blank, allow direct login
-    if (!cleanPass) {
-      setStoredItem('current_user', matchedUser);
-      return true;
-    }
-
-    // Flexible password check
-    const passLower = cleanPass.toLowerCase();
-    const userPass = matchedUser.password.toLowerCase();
-    const studentPass = matchedStudent ? matchedStudent.parentPassword.toLowerCase() : '';
-    const studentNisn = matchedStudent ? matchedStudent.nisn.toLowerCase() : '';
-    const studentUser = matchedStudent ? matchedStudent.parentUsername.toLowerCase() : '';
-
-    const isPassValid =
-      userPass === passLower ||
-      userPass.replace(/[^a-z0-9]/g, '') === passLower.replace(/[^a-z0-9]/g, '') ||
-      studentPass === passLower ||
-      studentPass.replace(/[^a-z0-9]/g, '') === passLower.replace(/[^a-z0-9]/g, '') ||
-      passLower === studentNisn ||
-      passLower === studentUser ||
-      (matchedStudent && passLower === matchedStudent.name.toLowerCase().split(' ')[0]) ||
-      passLower === '123456' ||
-      passLower === 'admin123' ||
-      passLower === 'ortu123';
-
-    if (isPassValid) {
-      setStoredItem('current_user', matchedUser);
-      return true;
-    }
-
-    return false;
+    setStoredItem('current_user', matchedUser);
+    return true;
   }, []);
 
   const switchRole = useCallback((role: UserRole, studentIdOrUserId?: string) => {
@@ -381,7 +269,7 @@ export function useEduStore() {
     const current = getStoredItem<SubjectItem[]>('subjects', INITIAL_SUBJECTS);
     const newItem: SubjectItem = {
       ...subject,
-      id: 'subj-' + Date.now(),
+      id: createRecordId('subj'),
     };
     setStoredItem('subjects', [...current, newItem]);
     writeFirestoreDoc('subjects', newItem.id, newItem);
@@ -410,7 +298,7 @@ export function useEduStore() {
     const current = getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES);
     const newItem: LearningObjective = {
       ...lo,
-      id: 'lo-' + Date.now(),
+      id: createRecordId('lo'),
     };
     setStoredItem('learning_objectives', [...current, newItem]);
     writeFirestoreDoc('learning_objectives', newItem.id, newItem);
@@ -436,19 +324,28 @@ export function useEduStore() {
   }, []);
 
   // Student Actions
-  const addStudent = useCallback((data: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>) => {
+  const addStudent = useCallback((data: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>): boolean => {
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
-    
-    // Generate clean username & unique password
-    const cleanFirstName = data.name.trim().toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '');
-    const parentUsername = `ortu_${cleanFirstName}_${Math.floor(10 + Math.random() * 89)}`;
-    const randomCode = Math.floor(1000 + Math.random() * 9000);
-    const parentPassword = `${cleanFirstName.toUpperCase().slice(0, 4)}-${randomCode}`;
+    const nisn = data.nisn.trim();
+    if (
+      !nisn ||
+      !data.name.trim() ||
+      currentStudents.some((student) => student.nisn.trim().toLowerCase() === nisn.toLowerCase())
+    ) {
+      return false;
+    }
+    const reservedUsernames = new Set([
+      ...currentUsers.map((user) => user.username.trim().toLowerCase()),
+      ...currentStudents.map((student) => student.parentUsername.trim().toLowerCase()),
+    ]);
+    const parentUsername = createUniqueParentUsername(data.name, reservedUsernames);
+    const parentPassword = createParentPassword(data.name);
     const studentId = createRecordId('std');
 
     const newStudent: Student = {
       ...data,
+      nisn,
       id: studentId,
       parentUsername,
       parentPassword,
@@ -472,6 +369,7 @@ export function useEduStore() {
 
     writeFirestoreDoc('students', newStudent.id, newStudent);
     writeFirestoreDoc('users', newParentAccount.id, newParentAccount);
+    return true;
   }, []);
 
   const importStudents = useCallback((newList: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[]) => {
@@ -480,16 +378,30 @@ export function useEduStore() {
 
     const generatedStudents: Student[] = [];
     const generatedParents: UserAccount[] = [];
+    const seenNisns = new Set(currentStudents.map((student) => student.nisn.trim().toLowerCase()));
+    const reservedUsernames = new Set([
+      ...currentUsers.map((user) => user.username.trim().toLowerCase()),
+      ...currentStudents.map((student) => student.parentUsername.trim().toLowerCase()),
+    ]);
+    let skipped = 0;
 
     newList.forEach((item, index) => {
-      const cleanFirstName = item.name.trim().toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '') || `siswa${index}`;
-      const parentUsername = `ortu_${cleanFirstName}_${Math.floor(10 + Math.random() * 89)}`;
-      const randomCode = Math.floor(1000 + Math.random() * 9000);
-      const parentPassword = `${cleanFirstName.toUpperCase().slice(0, 4)}-${randomCode}`;
+      const nisn = item.nisn.trim();
+      const name = item.name.trim();
+      const nisnKey = nisn.toLowerCase();
+      if (!nisn || !name || seenNisns.has(nisnKey)) {
+        skipped += 1;
+        return;
+      }
+      seenNisns.add(nisnKey);
+      const parentUsername = createUniqueParentUsername(name, reservedUsernames);
+      const parentPassword = createParentPassword(name);
       const studentId = createRecordId(`std-${index}`);
 
       const s: Student = {
         ...item,
+        nisn,
+        name,
         id: studentId,
         parentUsername,
         parentPassword,
@@ -515,6 +427,7 @@ export function useEduStore() {
 
     setStoredItem('students', [...currentStudents, ...generatedStudents]);
     setStoredItem('users', [...currentUsers, ...generatedParents]);
+    return { imported: generatedStudents.length, skipped };
   }, []);
 
   const updateStudent = useCallback((id: string, updated: Partial<Student>) => {
@@ -534,7 +447,12 @@ export function useEduStore() {
     // Sync parent user account name/phone if changed
     if (updated.name || updated.parentName || updated.parentPhone) {
       const updatedUsers = currentUsers.map((u) => {
-        if (u.studentId === id) {
+        if (
+          u.role === 'orangtua' &&
+          (u.studentId === id ||
+            (targetStudent &&
+              u.username.trim().toLowerCase() === targetStudent.parentUsername.trim().toLowerCase()))
+        ) {
           const mergedUser = {
             ...u,
             name: updated.parentName ? `${updated.parentName} (Wali)` : u.name,
@@ -553,17 +471,26 @@ export function useEduStore() {
   const deleteStudent = useCallback((id: string) => {
     const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const targetStudent = currentStudents.find((student) => student.id === id);
     setStoredItem('students', currentStudents.filter((s) => s.id !== id));
 
-    const parentUsers = currentUsers.filter((user) => user.studentId === id);
-    setStoredItem('users', currentUsers.filter((user) => user.studentId !== id));
+    const parentUsers = currentUsers.filter(
+      (user) =>
+        user.role === 'orangtua' &&
+        (user.studentId === id ||
+          (!user.studentId &&
+            targetStudent &&
+            user.username.trim().toLowerCase() === targetStudent.parentUsername.trim().toLowerCase()))
+    );
+    const parentUserIds = new Set(parentUsers.map((user) => user.id));
+    setStoredItem('users', currentUsers.filter((user) => !parentUserIds.has(user.id)));
     deleteStudentFirestoreRecords(id, parentUsers.map((user) => user.id));
   }, []);
 
   // Admin User & Teacher Management Actions
   const addUser = useCallback((newUser: Omit<UserAccount, 'id'>) => {
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
-    const id = `usr-${newUser.role}-${Date.now()}`;
+    const id = createRecordId(`usr-${newUser.role}`);
     const userWithId: UserAccount = {
       ...newUser,
       id,
@@ -577,6 +504,8 @@ export function useEduStore() {
 
   const updateUser = useCallback((userId: string, updated: Partial<UserAccount>) => {
     const currentUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
+    const targetUser = currentUsers.find((user) => user.id === userId);
     const updatedUsers = currentUsers.map((u) => {
       if (u.id === userId) {
         const merged = { ...u, ...updated };
@@ -587,10 +516,42 @@ export function useEduStore() {
     });
     setStoredItem('users', updatedUsers);
 
+    if (targetUser?.role === 'orangtua') {
+      const linkedStudent =
+        currentStudents.find((student) => student.id === targetUser.studentId) ||
+        currentStudents.find(
+          (student) =>
+            student.parentUsername.trim().toLowerCase() === targetUser.username.trim().toLowerCase()
+        );
+      if (linkedStudent) {
+        const parentName = updated.name
+          ?.trim()
+          .replace(/\s*\((?:wali(?: murid)?)\)\s*$/i, '')
+          .trim();
+        const updatedStudent: Student = {
+          ...linkedStudent,
+          parentUsername: updated.username?.trim() || linkedStudent.parentUsername,
+          parentPassword: updated.password ?? linkedStudent.parentPassword,
+          parentPhone: updated.phone ?? linkedStudent.parentPhone,
+          parentName: parentName || linkedStudent.parentName,
+        };
+        setStoredItem(
+          'students',
+          currentStudents.map((student) => student.id === linkedStudent.id ? updatedStudent : student)
+        );
+        writeFirestoreDoc('students', updatedStudent.id, updatedStudent);
+      }
+    }
+
     // If current logged-in user is updated, update current_user too
     const current = getStoredItem<UserAccount | null>('current_user', null);
     if (current && current.id === userId) {
-      setStoredItem('current_user', { ...current, ...updated });
+      if (updated.status === 'nonaktif') {
+        sessionStorage.removeItem('edujournal_original_admin');
+        setStoredItem('current_user', null);
+      } else {
+        setStoredItem('current_user', { ...current, ...updated });
+      }
     }
   }, []);
 
@@ -599,6 +560,11 @@ export function useEduStore() {
     const updatedUsers = currentUsers.filter((u) => u.id !== userId);
     setStoredItem('users', updatedUsers);
     deleteFirestoreDoc('users', userId);
+    const current = getStoredItem<UserAccount | null>('current_user', null);
+    if (current?.id === userId) {
+      sessionStorage.removeItem('edujournal_original_admin');
+      setStoredItem('current_user', null);
+    }
   }, []);
 
   const resetUserPassword = useCallback((userId: string, newPassword?: string) => {
@@ -607,10 +573,19 @@ export function useEduStore() {
     const generated = newPassword?.trim() ? newPassword.trim() : `RESET-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let targetStudentId: string | undefined;
+    const targetUser = currentUsers.find((user) => user.id === userId);
+    if (targetUser?.role === 'orangtua') {
+      targetStudentId =
+        currentStudents.find((student) => student.id === targetUser.studentId)?.id ||
+        currentStudents.find(
+          (student) =>
+            student.parentUsername.trim().toLowerCase() === targetUser.username.trim().toLowerCase()
+        )?.id;
+    }
 
     const updatedUsers = currentUsers.map((u) => {
       if (u.id === userId) {
-        targetStudentId = u.studentId;
+        targetStudentId = u.studentId || targetStudentId;
         const updated = { ...u, password: generated };
         writeFirestoreDoc('users', u.id, updated);
         return updated;
@@ -641,7 +616,7 @@ export function useEduStore() {
     const current = getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES);
     const newItem: ClassJournalEntry = {
       ...entry,
-      id: 'jrn-' + Date.now(),
+      id: createRecordId('jrn'),
     };
     setStoredItem('journal_entries', [newItem, ...current]);
     writeFirestoreDoc('journal_entries', newItem.id, newItem);
@@ -658,7 +633,7 @@ export function useEduStore() {
     const current = getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS);
     const newItem: StarAward = {
       ...award,
-      id: `star-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      id: createRecordId('star'),
       timestamp: Date.now(),
     };
     setStoredItem('star_awards', [newItem, ...current]);
@@ -676,7 +651,7 @@ export function useEduStore() {
     const current = getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS);
     const newItem: CaseRecord = {
       ...record,
-      id: 'case-' + Date.now(),
+      id: createRecordId('case'),
       timestamp: Date.now(),
     };
     setStoredItem('case_records', [newItem, ...current]);
@@ -707,7 +682,7 @@ export function useEduStore() {
     const current = getStoredItem<PaiAssessment[]>('pai_assessments', INITIAL_PAI_ASSESSMENTS);
     const newItem: PaiAssessment = {
       ...assessment,
-      id: 'pai-ass-' + Date.now(),
+      id: createRecordId('pai-ass'),
     };
     setStoredItem('pai_assessments', [newItem, ...current]);
     writeFirestoreDoc('pai_assessments', newItem.id, newItem);
@@ -750,7 +725,7 @@ export function useEduStore() {
             ...existingStudent,
             completedIndicators: updatedCompleted,
             notes: notes !== undefined ? notes : existingStudent.notes,
-            evaluatedAt: new Date().toISOString().split('T')[0],
+            evaluatedAt: getLocalDateString(),
           },
         },
       };
@@ -767,7 +742,7 @@ export function useEduStore() {
     const current = getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES);
     const newMsg: ChatMessage = {
       ...msg,
-      id: 'msg-' + Date.now(),
+      id: createRecordId('msg'),
       timestamp: Date.now(),
       isRead: false,
     };
@@ -775,10 +750,19 @@ export function useEduStore() {
     writeFirestoreDoc('messages', newMsg.id, newMsg);
   }, []);
 
-  const markMessagesAsRead = useCallback((recipientId: string, senderId: string) => {
+  const markMessagesAsRead = useCallback((
+    studentId: string,
+    recipientId: string,
+    senderId: string
+  ) => {
     const current = getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES);
     const updated = current.map((m) => {
-      if (m.recipientId === recipientId && m.senderId === senderId) {
+      if (
+        !m.isRead &&
+        m.studentId === studentId &&
+        m.recipientId === recipientId &&
+        m.senderId === senderId
+      ) {
         const readMsg = { ...m, isRead: true };
         writeFirestoreDoc('messages', m.id, readMsg);
         return readMsg;
@@ -793,7 +777,7 @@ export function useEduStore() {
     const current = getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS);
     const newItem: SchoolAnnouncement = {
       ...announcement,
-      id: 'ann-' + Date.now(),
+      id: createRecordId('ann'),
     };
     setStoredItem('announcements', [newItem, ...current]);
     writeFirestoreDoc('announcements', newItem.id, newItem);
@@ -810,7 +794,7 @@ export function useEduStore() {
     const current = getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES);
     const newGrade: InternalGradeRecord = {
       ...grade,
-      id: 'grade-' + Date.now(),
+      id: createRecordId('grade'),
       timestamp: Date.now(),
       isInternalOnly: true,
     };

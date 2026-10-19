@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString, getLocalMonthString } from '../../services/date';
 import { SchoolProfile, UserRole } from '../../types';
 import {
   Printer,
@@ -54,7 +55,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
   // Filter journal entries for Guru Kelas
   const filteredJournalEntries = journalEntries.filter((j) => {
     if (periodFilter === 'current_month') {
-      const currentMonth = new Date().toISOString().substring(0, 7);
+      const currentMonth = getLocalMonthString();
       return j.date.startsWith(currentMonth);
     }
     return true;
@@ -63,7 +64,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
   // Filter case records for Guru BK
   const filteredCaseRecords = caseRecords.filter((c) => {
     if (periodFilter === 'current_month') {
-      const currentMonth = new Date().toISOString().substring(0, 7);
+      const currentMonth = getLocalMonthString();
       return c.date.startsWith(currentMonth);
     }
     return true;
@@ -86,7 +87,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
         csv += `${i + 1},"${j.date}","${j.timeSlot}","${j.subjectName}","${j.tpDescription.replace(/"/g, '""')}","${j.activityDescription.replace(/"/g, '""')}",${j.attendancePresent},${j.attendanceSick},${j.attendancePermit},${j.attendanceAbsent},"${(j.notes || '-').replace(/"/g, '""')}"\n`;
       });
 
-      filename = `Laporan_Jurnal_Kelas_${schoolProfile.classGrade.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `Laporan_Jurnal_Kelas_${schoolProfile.classGrade.replace(/\s+/g, '_')}_${getLocalDateString()}.csv`;
     } else if (teacherRole === 'guru_bk') {
       csv = `LAPORAN LAYANAN BIMBINGAN KONSELING & KASUS SISWA\n`;
       csv += `Sekolah:,"${schoolProfile.name}"\n`;
@@ -100,7 +101,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
         csv += `${i + 1},"${c.date}","${c.studentName}","${category}","${c.severity}","${c.description.replace(/"/g, '""')}","${c.followUpAction.replace(/"/g, '""')}","${status}","${c.isReportedToParent ? 'Ya' : 'Tidak'}"\n`;
       });
 
-      filename = `Laporan_Bimbingan_Konseling_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `Laporan_Bimbingan_Konseling_${getLocalDateString()}.csv`;
     } else {
       // Guru PAI
       csv = `LAPORAN JURNAL & PENILAIAN PENDIDIKAN AGAMA ISLAM (PAI)\n`;
@@ -120,7 +121,7 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
         });
       });
 
-      filename = `Laporan_Jurnal_PAI_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `Laporan_Jurnal_PAI_${getLocalDateString()}.csv`;
     }
 
     const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csv);

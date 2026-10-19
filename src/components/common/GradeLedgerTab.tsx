@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, FileSpreadsheet, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
 import { InternalGradeRecord, UserRole } from '../../types';
 import { FirebaseSyncState, subscribeFirebaseStatus } from '../../services/firebase';
 
@@ -162,7 +163,7 @@ export const GradeLedgerTab: React.FC<GradeLedgerTabProps> = ({ teacherRole }) =
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Leger_Nilai_${roleFilter === 'all' ? 'Semua_Guru' : ROLE_LABELS[roleFilter].replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `Leger_Nilai_${roleFilter === 'all' ? 'Semua_Guru' : ROLE_LABELS[roleFilter].replace(/\s+/g, '_')}_${getLocalDateString()}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();

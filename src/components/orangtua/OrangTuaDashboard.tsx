@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useEduStore } from '../../services/store';
-import { UserRole } from '../../types';
+import { UserAccount, UserRole } from '../../types';
+import { getLinkedStudentsForParent } from '../../services/relationships';
 import {
   Star,
   Sparkles,
@@ -35,12 +36,14 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
     schoolProfile,
     currentUser,
     students,
+    users,
     journalEntries,
     starAwards,
     caseRecords,
     paiAssessments,
     messages,
     sendMessage,
+    markMessagesAsRead,
   } = useEduStore();
 
   const [activeTab, setActiveTabState] = useState<'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat'>((currentTab as any) || 'bintang');
@@ -56,7 +59,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
     if (onTabChange) onTabChange(tab);
   };
 
-  const [selectedTeacherRole, setSelectedTeacherRole] = useState<'guru_kelas' | 'guru_bk' | 'guru_pai'>('guru_kelas');
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [chatInputText, setChatInputText] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -67,59 +70,11 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
   const [starFilter, setStarFilter] = useState<'all' | 'reward' | 'penalty'>('all');
 
-  // Robust student resolution for the logged-in parent
-  const resolvedLinkedStudent = useMemo(() => {
-    if (!currentUser) return students[0];
-    // 1. Direct studentId
-    if (currentUser.studentId) {
-      const match = students.find((s) => s.id === currentUser.studentId);
-      if (match) return match;
-    }
-    const cleanUser = currentUser.username.toLowerCase().replace(/^ortu_/, '');
-    const cleanName = (currentUser.name || '').toLowerCase();
-
-    // Priority for Yuliono
-    if (cleanUser.includes('yuliono') || cleanName.includes('yuliono')) {
-      const yuli = students.find(
-        (s) =>
-          s.name.toLowerCase().includes('yuliono') ||
-          s.parentName.toLowerCase().includes('yuliono') ||
-          s.parentUsername.toLowerCase().includes('yuliono')
-      );
-      if (yuli) return yuli;
-    }
-
-    // 2. Parent username match
-    const byParentUser = students.find(
-      (s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()
-    );
-    if (byParentUser) return byParentUser;
-
-    // 3. Parent name matches user's name or username
-    const byParentName = students.find(
-      (s) =>
-        s.parentName.toLowerCase().includes(cleanUser) ||
-        cleanUser.includes(s.parentName.toLowerCase()) ||
-        (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
-    );
-    if (byParentName) return byParentName;
-
-    // 4. Student name matches user's name or username
-    const byStudentName = students.find(
-      (s) =>
-        s.name.toLowerCase() === cleanUser ||
-        s.name.toLowerCase().includes(cleanUser) ||
-        cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
-        (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
-    );
-    if (byStudentName) return byStudentName;
-
-    // 5. NISN match
-    const byNisn = students.find((s) => s.nisn === currentUser.username);
-    if (byNisn) return byNisn;
-
-    return students[0];
-  }, [students, currentUser]);
+  const linkedStudents = useMemo(
+    () => getLinkedStudentsForParent(currentUser, students),
+    [students, currentUser]
+  );
+  const resolvedLinkedStudent = linkedStudents[0] || null;
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
     try {
@@ -133,6 +88,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
   });
 
   const handleSelectStudent = (newId: string) => {
+    if (!linkedStudents.some((linkedStudent) => linkedStudent.id === newId)) return;
     setSelectedStudentId(newId);
     try {
       if (currentUser?.id) {
@@ -149,9 +105,8 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
   // Active student for this parent portal
   const student =
-    students.find((s) => s.id === (selectedStudentId || resolvedLinkedStudent?.id)) ||
-    resolvedLinkedStudent ||
-    students[0];
+    linkedStudents.find((linkedStudent) => linkedStudent.id === selectedStudentId) ||
+    resolvedLinkedStudent;
 
   // Filter ONLY this student's data!
   const myStars = starAwards.filter((s) => s.studentId === student?.id);
@@ -178,54 +133,63 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
     (c) => c.studentId === student?.id && c.isReportedToParent === true
   );
 
-  // Teacher contacts for chat
-  const teachers = [
-    {
-      role: 'guru_kelas' as const,
-      name: 'Ibu Ratna Kumalasari, S.Pd.',
-      title: 'Wali Kelas 4-A',
-      desc: 'Konsultasi kegiatan belajar harian, tugas tematik & presensi',
-      id: 'usr-guru-kelas',
-      avatar: 'R',
+  const teacherMetadata = {
+    guru_kelas: {
+      title: 'Guru Kelas',
+      desc: 'Konsultasi kegiatan belajar harian, tugas, dan presensi.',
       badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     },
-    {
-      role: 'guru_bk' as const,
-      name: 'Ibu Dian Permatasari, M.Psi.',
+    guru_bk: {
       title: 'Guru Bimbingan Konseling (BK)',
-      desc: 'Konsultasi pendampingan emosi, perilaku & kasus anak',
-      id: 'usr-guru-bk',
-      avatar: 'D',
+      desc: 'Konsultasi pendampingan emosi, perilaku, dan perkembangan anak.',
       badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
     },
-    {
-      role: 'guru_pai' as const,
-      name: 'Ust. Ahmad Fauzan, S.Pd.I.',
+    guru_pai: {
       title: 'Guru PAI & Budi Pekerti',
-      desc: 'Konsultasi praktik ibadah, wudhu, sholat & hafalan Al-Qur’an',
-      id: 'usr-guru-pai',
-      avatar: 'A',
+      desc: 'Konsultasi ibadah, akhlak, dan pembelajaran agama.',
       badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
     },
-  ];
+  } as const;
 
-  const currentTeacherObj = teachers.find((t) => t.role === selectedTeacherRole) || teachers[0];
+  const teachers = users
+    .filter(
+      (user): user is UserAccount & { role: keyof typeof teacherMetadata } =>
+        user.role in teacherMetadata && user.status !== 'nonaktif'
+    )
+    .map((user) => ({
+      ...user,
+      title: user.title.trim() || teacherMetadata[user.role].title,
+      desc: user.subjectAssignment?.trim() || teacherMetadata[user.role].desc,
+      avatar: user.name.trim().charAt(0).toUpperCase() || '?',
+      badgeColor: teacherMetadata[user.role].badgeColor,
+    }));
+  const currentTeacherObj =
+    teachers.find((teacher) => teacher.id === selectedTeacherId) || teachers[0] || null;
+
+  useEffect(() => {
+    if (activeTab === 'chat' && student && currentUser && currentTeacherObj) {
+        markMessagesAsRead(student.id, currentUser.id, currentTeacherObj.id);
+    }
+  }, [activeTab, student?.id, currentUser?.id, currentTeacherObj?.id, markMessagesAsRead]);
 
   // Chat filter: messages concerning this student and this teacher
   const currentChatMessages = messages.filter(
     (m) =>
       m.studentId === student?.id &&
-      (m.senderRole === selectedTeacherRole || m.recipientRole === selectedTeacherRole)
+      currentUser !== null &&
+      currentTeacherObj !== null &&
+      ((m.senderId === currentUser.id && m.recipientId === currentTeacherObj.id) ||
+        (m.senderId === currentTeacherObj.id && m.recipientId === currentUser.id))
   );
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInputText.trim() || !student) return;
+    if (!chatInputText.trim() || !student || !currentUser || !currentTeacherObj) return;
 
     sendMessage({
-      senderId: currentUser?.id || `usr-parent-${student.id}`,
+      senderId: currentUser.id,
       senderRole: 'orangtua',
-      senderName: `${student.parentName} (Wali Murid)`,
+      senderName: currentUser.name,
       recipientId: currentTeacherObj.id,
       recipientRole: currentTeacherObj.role,
       recipientName: currentTeacherObj.name,
@@ -245,7 +209,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
   if (!student) {
     return (
       <div className="max-w-4xl mx-auto p-12 text-center text-slate-500">
-        Data murid tidak ditemukan.
+        Akun orang tua ini belum ditautkan ke data siswa. Hubungi administrator sekolah.
       </div>
     );
   }
@@ -290,7 +254,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   onChange={(e) => handleSelectStudent(e.target.value)}
                   className="bg-white/10 hover:bg-white/15 text-white text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-colors cursor-pointer"
                 >
-                  {students.map((s) => (
+                  {linkedStudents.map((s) => (
                     <option key={s.id} value={s.id} className="bg-slate-900 text-white">
                       {s.name} ({s.nisn}) — Wali: {s.parentName}
                     </option>
@@ -650,9 +614,12 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                       <span>Konselor: <strong>{cs.counselorName}</strong></span>
                       <button
                         onClick={() => {
-                          setSelectedTeacherRole('guru_bk');
+                          const bkTeacher = teachers.find((teacher) => teacher.role === 'guru_bk');
+                          if (bkTeacher) setSelectedTeacherId(bkTeacher.id);
                           setActiveTab('chat');
-                          setChatInputText(`Selamat siang Bu Dian, menanggapi catatan bimbingan tanggal ${cs.date}...`);
+                          setChatInputText(
+                            `Selamat siang${bkTeacher ? ` ${bkTeacher.name.split(',')[0]}` : ''}, menanggapi catatan bimbingan tanggal ${cs.date}...`
+                          );
                         }}
                         className="text-rose-700 hover:text-rose-900 font-semibold underline flex items-center gap-1"
                       >
@@ -774,12 +741,17 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
             </p>
 
             <div className="space-y-2 pt-1">
+              {teachers.length === 0 && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  Belum ada akun guru aktif. Hubungi administrator sekolah untuk mengatur akun pendamping.
+                </p>
+              )}
               {teachers.map((tch) => {
-                const isSelected = selectedTeacherRole === tch.role;
+                const isSelected = currentTeacherObj?.id === tch.id;
                 return (
                   <button
-                    key={tch.role}
-                    onClick={() => setSelectedTeacherRole(tch.role)}
+                    key={tch.id}
+                    onClick={() => setSelectedTeacherId(tch.id)}
                     className={`w-full text-left p-3 rounded-xl transition-all border ${
                       isSelected
                         ? 'bg-white border-indigo-500 shadow-sm'
@@ -813,14 +785,14 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
             <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
-                  {currentTeacherObj.avatar}
+                  {currentTeacherObj?.avatar || '?'}
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 leading-tight">
-                    {currentTeacherObj.name}
+                    {currentTeacherObj?.name || 'Pilih guru pendamping'}
                   </h4>
                   <p className="text-xs text-slate-500 leading-tight">
-                    {currentTeacherObj.title} · Topik: <span className="font-semibold text-indigo-700">{student.name}</span>
+                    {currentTeacherObj?.title || 'Tidak ada guru aktif'} · Topik: <span className="font-semibold text-indigo-700">{student.name}</span>
                   </p>
                 </div>
               </div>
@@ -832,7 +804,12 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
             {/* Messages Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
-              {currentChatMessages.length === 0 ? (
+              {!currentTeacherObj ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
+                  <MessageCircle className="w-8 h-8 mb-2 text-slate-300" />
+                  <p>Chat belum tersedia karena belum ada akun guru yang aktif.</p>
+                </div>
+              ) : currentChatMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
                   <MessageCircle className="w-8 h-8 mb-2 text-slate-300" />
                   <p>Belum ada percakapan dengan {currentTeacherObj.name}.</p>
@@ -871,7 +848,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
             <div className="py-2 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto text-[11px]">
               <span className="text-slate-400 shrink-0 font-medium">Template Cepat:</span>
               <button
-                onClick={() => handleQuickTemplate(`Selamat pagi/siang ${currentTeacherObj.name.split(',')[0]}, mohon izin menanyakan perkembangan ananda ${student.name} di kelas...`)}
+                onClick={() => currentTeacherObj && handleQuickTemplate(`Selamat pagi/siang ${currentTeacherObj.name.split(',')[0]}, mohon izin menanyakan perkembangan ananda ${student.name} di kelas...`)}
                 className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-700 whitespace-nowrap transition-colors"
               >
                 Tanya Perkembangan
@@ -896,11 +873,13 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                 type="text"
                 value={chatInputText}
                 onChange={(e) => setChatInputText(e.target.value)}
-                placeholder={`Tulis pesan untuk ${currentTeacherObj.name}...`}
+                placeholder={`Tulis pesan untuk ${currentTeacherObj?.name || 'guru pendamping'}...`}
+                disabled={!currentTeacherObj}
                 className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
               <button
                 type="submit"
+                disabled={!currentTeacherObj || !chatInputText.trim()}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
               >
                 <Send className="w-3.5 h-3.5" />

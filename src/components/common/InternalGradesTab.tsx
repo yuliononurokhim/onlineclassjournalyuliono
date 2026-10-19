@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
 import { AssessmentType, InternalGradeRecord, UserRole } from '../../types';
 import {
   Lock,
@@ -95,7 +96,7 @@ export const InternalGradesTab: React.FC<InternalGradesTabProps> = ({
     isBk ? (defaultSubjectName || BK_FIELDS[0]) : (defaultSubjectName || subjects[0]?.name || 'Matematika')
   );
   const [newType, setNewType] = useState<AssessmentType>('Formatif Harian');
-  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newDate, setNewDate] = useState(getLocalDateString());
   const [newKkm, setNewKkm] = useState(isBk ? 0 : 75);
   const [newTpDesc, setNewTpDesc] = useState('');
 

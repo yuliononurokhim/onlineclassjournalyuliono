@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
+import { getParentAccountForStudent } from '../../services/relationships';
 import { Student, ClassJournalEntry, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
@@ -45,6 +47,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
     subjects,
     learningObjectives,
     students,
+    users,
     addStudent,
     importStudents,
     updateStudent,
@@ -57,6 +60,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
     deleteStarAward,
     messages,
     sendMessage,
+    markMessagesAsRead,
     currentUser,
     internalGrades,
   } = useEduStore();
@@ -93,10 +97,11 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   // Upload Excel / CSV
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [parsedImportRows, setParsedImportRows] = useState<Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[]>([]);
+  const [parsedImportSkippedRows, setParsedImportSkippedRows] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Journal Form
-  const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [journalDate, setJournalDate] = useState(getLocalDateString());
   const [journalTimeSlot, setJournalTimeSlot] = useState('07:30 - 09:00');
   const [journalSubjectId, setJournalSubjectId] = useState(subjects[0]?.id || '');
   const [journalLoId, setJournalLoId] = useState('');
@@ -123,6 +128,14 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   // Chat with Parents
   const [selectedChatStudentId, setSelectedChatStudentId] = useState<string>(students[0]?.id || '');
   const [chatInputText, setChatInputText] = useState('');
+
+  useEffect(() => {
+    const selectedStudent = students.find((student) => student.id === selectedChatStudentId);
+    const parentAccount = selectedStudent ? getParentAccountForStudent(users, selectedStudent) : undefined;
+    if (activeTab === 'chat' && selectedStudent && parentAccount && currentUser) {
+      markMessagesAsRead(selectedStudent.id, currentUser.id, parentAccount.id);
+    }
+  }, [activeTab, selectedChatStudentId, students, users, currentUser, markMessagesAsRead]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -177,7 +190,10 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
         showToast('NISN tersebut sudah terdaftar.');
         return;
       }
-      addStudent(studentDetails);
+      if (!addStudent(studentDetails)) {
+        showToast('Siswa tidak dapat ditambahkan. Pastikan NISN unik dan nama siswa terisi.');
+        return;
+      }
       showToast(`Siswa ${studentDetails.name} berhasil ditambahkan dan akun orang tua telah dibuat!`);
     }
 
@@ -314,12 +330,21 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       }
 
       const rows: Omit<Student, 'id' | 'parentUsername' | 'parentPassword'>[] = [];
+      const knownNisns = new Set(students.map((student) => student.nisn.trim().toLowerCase()));
+      let skippedRows = 0;
       for (const line of lines.slice(1)) {
         const columns = parseRow(line);
-        const name = columns[nameColumn] || '';
-        if (!name) continue;
+        const name = columns[nameColumn]?.trim() || '';
+        const nisn = columns[nisnColumn]?.trim() || '';
+        if (columns.every((column) => !column.trim())) continue;
+        const nisnKey = nisn.toLowerCase();
+        if (!name || !nisn || knownNisns.has(nisnKey)) {
+          skippedRows += 1;
+          continue;
+        }
+        knownNisns.add(nisnKey);
         rows.push({
-          nisn: columns[nisnColumn] || `014${Math.floor(1000000 + Math.random() * 8999999)}`,
+          nisn,
           name,
           gender: columns[genderColumn]?.toUpperCase() === 'P' ? 'P' : 'L',
           parentName: columns[parentNameColumn] || `Wali dari ${name}`,
@@ -328,11 +353,16 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       }
 
       if (rows.length === 0) {
-        showToast('Tidak ada baris siswa yang dapat diimpor dari file tersebut.');
+        showToast(
+          skippedRows
+            ? `${skippedRows} baris dilewati karena nama/NISN kosong atau NISN sudah terdaftar.`
+            : 'Tidak ada baris siswa yang dapat diimpor dari file tersebut.'
+        );
         return;
       }
 
       setParsedImportRows(rows);
+      setParsedImportSkippedRows(skippedRows);
       setShowUploadModal(true);
     };
     reader.onerror = () => showToast('File CSV tidak dapat dibaca. Silakan coba lagi.');
@@ -342,10 +372,15 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
 
   const handleConfirmImport = () => {
     if (parsedImportRows.length === 0) return;
-    importStudents(parsedImportRows);
+    const result = importStudents(parsedImportRows);
     setShowUploadModal(false);
     setParsedImportRows([]);
-    showToast(`Berhasil mengimpor ${parsedImportRows.length} siswa dan membuat kartu akun orang tua!`);
+    setParsedImportSkippedRows(0);
+    const skippedRows = parsedImportSkippedRows + result.skipped;
+    showToast(
+      `Impor selesai: ${result.imported} akun siswa dibuat` +
+      (skippedRows ? `; ${skippedRows} baris kosong/duplikat dilewati.` : '.')
+    );
   };
 
   // Print Cards
@@ -402,7 +437,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       category: starCategory,
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi atas pelanggaran tata tertib kelas.' : 'Apresiasi perilaku positif dan keaktifan di kelas.'),
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
     }));
 
     setStarStudentIds(students[0] ? [students[0].id] : []);
@@ -423,15 +458,20 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
     if (!chatInputText.trim() || !selectedChatStudentId) return;
 
     const targetStudent = students.find((s) => s.id === selectedChatStudentId);
-    if (!targetStudent) return;
+    if (!targetStudent || !currentUser) return;
+    const parentAccount = getParentAccountForStudent(users, targetStudent);
+    if (!parentAccount) {
+      showToast('Akun orang tua siswa belum terhubung. Periksa data akun siswa sebelum mengirim pesan.');
+      return;
+    }
 
     sendMessage({
-      senderId: currentUser?.id || 'usr-guru-kelas',
+      senderId: currentUser.id,
       senderRole: 'guru_kelas',
-      senderName: currentUser?.name || 'Ibu Ratna Kumalasari, S.Pd.',
-      recipientId: `usr-parent-${targetStudent.id}`,
+      senderName: currentUser.name,
+      recipientId: parentAccount.id,
       recipientRole: 'orangtua',
-      recipientName: `${targetStudent.parentName} (Wali)`,
+      recipientName: parentAccount.name,
       studentId: targetStudent.id,
       studentName: targetStudent.name,
       content: chatInputText.trim(),
@@ -453,8 +493,18 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   );
 
   // Selected student chat messages
-  const activeStudentChat = messages.filter((m) => m.studentId === selectedChatStudentId);
   const activeChatStudentObj = students.find((s) => s.id === selectedChatStudentId);
+  const activeChatParent = activeChatStudentObj
+    ? getParentAccountForStudent(users, activeChatStudentObj)
+    : undefined;
+  const activeStudentChat = messages.filter(
+    (message) =>
+      message.studentId === selectedChatStudentId &&
+      currentUser &&
+      activeChatParent &&
+      ((message.senderId === currentUser.id && message.recipientId === activeChatParent.id) ||
+        (message.senderId === activeChatParent.id && message.recipientId === currentUser.id))
+  );
 
   return (
     <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -1118,8 +1168,13 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
             <div className="space-y-1.5 overflow-y-auto max-h-[460px]">
               {students.map((std) => {
                 const isSelected = selectedChatStudentId === std.id;
+                const parentAccount = getParentAccountForStudent(users, std);
                 const unreadCount = messages.filter(
-                  (m) => m.studentId === std.id && !m.isRead && m.senderRole === 'orangtua'
+                  (message) =>
+                    message.studentId === std.id &&
+                    !message.isRead &&
+                    message.senderId === parentAccount?.id &&
+                    message.recipientId === currentUser?.id
                 ).length;
 
                 return (
@@ -1134,7 +1189,9 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                   >
                     <div>
                       <p className="text-xs font-bold leading-tight">{std.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{std.parentName}</p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {parentAccount?.name || std.parentName}
+                      </p>
                     </div>
                     {unreadCount > 0 && (
                       <span className="w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">
@@ -1154,7 +1211,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                 <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
-                      Percakapan Privat: {activeChatStudentObj.parentName}
+                      Percakapan Privat: {activeChatParent?.name || activeChatStudentObj.parentName}
                     </h4>
                     <p className="text-xs text-slate-500">
                       Topik Murid: <span className="font-semibold text-indigo-700">{activeChatStudentObj.name}</span>
@@ -1208,7 +1265,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                     type="text"
                     value={chatInputText}
                     onChange={(e) => setChatInputText(e.target.value)}
-                    placeholder={`Tulis pesan untuk ${activeChatStudentObj.parentName}...`}
+                    placeholder={`Tulis pesan untuk ${activeChatParent?.name || activeChatStudentObj.parentName}...`}
                     className="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                   <button
@@ -1350,7 +1407,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200">
             <h3 className="text-base font-bold text-slate-900 mb-1">
-              Pratinjau Impor Spreadsheet ({parsedImportRows.length} Siswa Terdeteksi)
+              Pratinjau Impor Spreadsheet ({parsedImportRows.length} Siswa Siap Diimpor)
             </h3>
             <p className="text-xs text-slate-500 mb-4">
               Periksa data berikut sebelum disimpan ke database kelas:
@@ -1380,6 +1437,11 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                 </tbody>
               </table>
             </div>
+            {parsedImportSkippedRows > 0 && (
+              <p className="text-xs text-amber-700">
+                {parsedImportSkippedRows} baris kosong atau NISN duplikat/tidak tersedia akan dilewati.
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-3">
               <button
@@ -1387,6 +1449,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                 onClick={() => {
                   setShowUploadModal(false);
                   setParsedImportRows([]);
+                  setParsedImportSkippedRows(0);
                 }}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
               >

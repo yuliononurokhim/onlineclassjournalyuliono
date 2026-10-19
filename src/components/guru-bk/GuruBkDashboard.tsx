@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
+import { getParentAccountForStudent } from '../../services/relationships';
 import { CaseRecord, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
@@ -35,6 +37,7 @@ interface GuruBkDashboardProps {
 export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     students,
+    users,
     caseRecords,
     addCaseRecord,
     updateCaseRecord,
@@ -44,6 +47,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
     deleteStarAward,
     messages,
     sendMessage,
+    markMessagesAsRead,
     currentUser,
   } = useEduStore();
 
@@ -67,7 +71,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
   // New Case Form
   const [showAddCaseModal, setShowAddCaseModal] = useState(false);
   const [caseStudentId, setCaseStudentId] = useState(students[0]?.id || '');
-  const [caseDate, setCaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [caseDate, setCaseDate] = useState(getLocalDateString());
   const [caseCategory, setCaseCategory] = useState<CaseRecord['category']>('Perlu Perhatian');
   const [caseSeverity, setCaseSeverity] = useState<CaseRecord['severity']>('Ringan');
   const [caseDescription, setCaseDescription] = useState('');
@@ -91,6 +95,14 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
   // Chat
   const [selectedChatStudentId, setSelectedChatStudentId] = useState(students[0]?.id || '');
   const [chatInputText, setChatInputText] = useState('');
+
+  useEffect(() => {
+    const selectedStudent = students.find((student) => student.id === selectedChatStudentId);
+    const parentAccount = selectedStudent ? getParentAccountForStudent(users, selectedStudent) : undefined;
+    if (activeTab === 'chat' && selectedStudent && parentAccount && currentUser) {
+      markMessagesAsRead(selectedStudent.id, currentUser.id, parentAccount.id);
+    }
+  }, [activeTab, selectedChatStudentId, students, users, currentUser, markMessagesAsRead]);
 
   // Filter
   const [filterStudentId, setFilterStudentId] = useState('all');
@@ -163,7 +175,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
       category: starCategory,
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi BK atas pelanggaran perilaku/sikap.' : 'Apresiasi perilaku empati dan budi pekerti luhur.'),
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
     }));
 
     setStarStudentIds(students[0] ? [students[0].id] : []);
@@ -183,15 +195,20 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
     if (!chatInputText.trim() || !selectedChatStudentId) return;
 
     const targetStudent = students.find((s) => s.id === selectedChatStudentId);
-    if (!targetStudent) return;
+    if (!targetStudent || !currentUser) return;
+    const parentAccount = getParentAccountForStudent(users, targetStudent);
+    if (!parentAccount) {
+      showToast('Akun orang tua siswa belum terhubung. Periksa data akun siswa sebelum mengirim pesan.');
+      return;
+    }
 
     sendMessage({
-      senderId: currentUser?.id || 'usr-guru-bk',
+      senderId: currentUser.id,
       senderRole: 'guru_bk',
-      senderName: currentUser?.name || 'Ibu Dian Permatasari, M.Psi.',
-      recipientId: `usr-parent-${targetStudent.id}`,
+      senderName: currentUser.name,
+      recipientId: parentAccount.id,
       recipientRole: 'orangtua',
-      recipientName: `${targetStudent.parentName} (Wali)`,
+      recipientName: parentAccount.name,
       studentId: targetStudent.id,
       studentName: targetStudent.name,
       content: chatInputText.trim(),
@@ -206,8 +223,18 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
     return c.studentId === filterStudentId;
   });
 
-  const activeStudentChat = messages.filter((m) => m.studentId === selectedChatStudentId);
   const activeChatStudentObj = students.find((s) => s.id === selectedChatStudentId);
+  const activeChatParent = activeChatStudentObj
+    ? getParentAccountForStudent(users, activeChatStudentObj)
+    : undefined;
+  const activeStudentChat = messages.filter(
+    (message) =>
+      message.studentId === selectedChatStudentId &&
+      currentUser &&
+      activeChatParent &&
+      ((message.senderId === currentUser.id && message.recipientId === activeChatParent.id) ||
+        (message.senderId === activeChatParent.id && message.recipientId === currentUser.id))
+  );
 
   return (
     <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -474,6 +501,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
             <div className="space-y-1.5 overflow-y-auto max-h-[460px]">
               {students.map((std) => {
                 const isSelected = selectedChatStudentId === std.id;
+                const parentAccount = getParentAccountForStudent(users, std);
                 const hasCase = caseRecords.some((c) => c.studentId === std.id);
 
                 return (
@@ -488,7 +516,9 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                   >
                     <div>
                       <p className="text-xs font-bold leading-tight">{std.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{std.parentName}</p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {parentAccount?.name || std.parentName}
+                      </p>
                     </div>
                     {hasCase && (
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
@@ -507,7 +537,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                 <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
-                      Sesi Konseling: {activeChatStudentObj.parentName}
+                      Sesi Konseling: {activeChatParent?.name || activeChatStudentObj.parentName}
                     </h4>
                     <p className="text-xs text-slate-500">
                       Siswa: <span className="font-semibold text-rose-700">{activeChatStudentObj.name}</span>
@@ -559,7 +589,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
                     type="text"
                     value={chatInputText}
                     onChange={(e) => setChatInputText(e.target.value)}
-                    placeholder={`Tulis pesan pendampingan untuk ${activeChatStudentObj.parentName}...`}
+                    placeholder={`Tulis pesan pendampingan untuk ${activeChatParent?.name || activeChatStudentObj.parentName}...`}
                     className="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                   />
                   <button

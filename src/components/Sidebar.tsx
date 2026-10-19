@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useEduStore } from '../services/store';
 import { subscribeFirebaseStatus, FirebaseSyncState } from '../services/firebase';
+import { getLinkedStudentsForParent } from '../services/relationships';
 import { ImpersonateModal } from './common/ImpersonateModal';
 import { UserRole } from '../types';
 import {
@@ -224,7 +225,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'chat',
           label: 'Chat Konsultasi Ortu',
           icon: <MessageCircle className="w-4 h-4 shrink-0" />,
-          badge: messages.filter((m) => !m.isRead && m.senderRole === 'orangtua').length || undefined,
+          badge: messages.filter(
+            (message) =>
+              !message.isRead &&
+              message.recipientId === currentUser?.id &&
+              message.senderRole === 'orangtua'
+          ).length || undefined,
         },
       ],
     },
@@ -349,42 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Identify linked student and stars if role is orangtua
   const linkedStudent = useMemo(() => {
     if (currentUser?.role !== 'orangtua') return null;
-    if (currentUser.studentId) {
-      const match = students.find((s) => s.id === currentUser.studentId);
-      if (match) return match;
-    }
-    const cleanUser = currentUser.username.toLowerCase().replace(/^ortu_/, '');
-    const cleanName = (currentUser.name || '').toLowerCase();
-
-    // Check specific Yuliono student link
-    if (cleanUser.includes('yuliono') || cleanName.includes('yuliono')) {
-      const yuliMatch = students.find(
-        (s) =>
-          s.name.toLowerCase().includes('yuliono') ||
-          s.parentName.toLowerCase().includes('yuliono') ||
-          s.parentUsername.toLowerCase().includes('yuliono')
-      );
-      if (yuliMatch) return yuliMatch;
-    }
-
-    return (
-      students.find((s) => s.parentUsername.toLowerCase() === currentUser.username.toLowerCase()) ||
-      students.find(
-        (s) =>
-          s.name.toLowerCase() === cleanUser ||
-          s.name.toLowerCase().includes(cleanUser) ||
-          cleanUser.includes(s.name.toLowerCase().split(' ')[0]) ||
-          (cleanName && s.name.toLowerCase().includes(cleanName.split(' ')[0]))
-      ) ||
-      students.find(
-        (s) =>
-          s.parentName.toLowerCase().includes(cleanUser) ||
-          cleanUser.includes(s.parentName.toLowerCase()) ||
-          (cleanName && (s.parentName.toLowerCase().includes(cleanName) || cleanName.includes(s.parentName.toLowerCase())))
-      ) ||
-      students.find((s) => s.nisn === currentUser.username) ||
-      students[0]
-    );
+    return getLinkedStudentsForParent(currentUser, students)[0] || null;
   }, [currentUser, students]);
 
   const studentStars = linkedStudent

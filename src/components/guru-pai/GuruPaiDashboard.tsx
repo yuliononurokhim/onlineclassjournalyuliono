@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
+import { getLocalDateString } from '../../services/date';
+import { getParentAccountForStudent } from '../../services/relationships';
 import { PaiAssessment, PaiSubIndicator, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
@@ -36,6 +38,7 @@ interface GuruPaiDashboardProps {
 export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, onTabChange }) => {
   const {
     students,
+    users,
     paiAssessments,
     addPaiAssessment,
     updatePaiAssessment,
@@ -46,6 +49,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
     deleteStarAward,
     messages,
     sendMessage,
+    markMessagesAsRead,
     currentUser,
   } = useEduStore();
 
@@ -71,7 +75,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
   const [showNewAssModal, setShowNewAssModal] = useState(false);
   const [assTitle, setAssTitle] = useState('');
   const [assAspect, setAssAspect] = useState('Fiqih Ibadah');
-  const [assDate, setAssDate] = useState(new Date().toISOString().split('T')[0]);
+  const [assDate, setAssDate] = useState(getLocalDateString());
   const [dynamicIndicators, setDynamicIndicators] = useState<string[]>([
     'Rukun & Tertib Gerakan',
     'Kefasihan Bacaan & Doa',
@@ -95,6 +99,14 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
   // Chat
   const [selectedChatStudentId, setSelectedChatStudentId] = useState(students[0]?.id || '');
   const [chatInputText, setChatInputText] = useState('');
+
+  useEffect(() => {
+    const selectedStudent = students.find((student) => student.id === selectedChatStudentId);
+    const parentAccount = selectedStudent ? getParentAccountForStudent(users, selectedStudent) : undefined;
+    if (activeTab === 'chat' && selectedStudent && parentAccount && currentUser) {
+      markMessagesAsRead(selectedStudent.id, currentUser.id, parentAccount.id);
+    }
+  }, [activeTab, selectedChatStudentId, students, users, currentUser, markMessagesAsRead]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -203,7 +215,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
       category: starCategory,
       starsCount: starCount,
       note: starNote.trim() || (starActionType === 'penalty' ? 'Konsekuensi atas pelanggaran adab islami dan tata tertib ibadah.' : 'Apresiasi pembiasaan ibadah dan doa harian.'),
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
     }));
 
     setStarStudentIds(students[0] ? [students[0].id] : []);
@@ -223,15 +235,20 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
     if (!chatInputText.trim() || !selectedChatStudentId) return;
 
     const targetStudent = students.find((s) => s.id === selectedChatStudentId);
-    if (!targetStudent) return;
+    if (!targetStudent || !currentUser) return;
+    const parentAccount = getParentAccountForStudent(users, targetStudent);
+    if (!parentAccount) {
+      showToast('Akun orang tua siswa belum terhubung. Periksa data akun siswa sebelum mengirim pesan.');
+      return;
+    }
 
     sendMessage({
-      senderId: currentUser?.id || 'usr-guru-pai',
+      senderId: currentUser.id,
       senderRole: 'guru_pai',
-      senderName: currentUser?.name || 'Ust. Ahmad Fauzan, S.Pd.I.',
-      recipientId: `usr-parent-${targetStudent.id}`,
+      senderName: currentUser.name,
+      recipientId: parentAccount.id,
       recipientRole: 'orangtua',
-      recipientName: `${targetStudent.parentName} (Wali)`,
+      recipientName: parentAccount.name,
       studentId: targetStudent.id,
       studentName: targetStudent.name,
       content: chatInputText.trim(),
@@ -241,8 +258,18 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
     showToast('Pesan terkirim ke orang tua murid.');
   };
 
-  const activeStudentChat = messages.filter((m) => m.studentId === selectedChatStudentId);
   const activeChatStudentObj = students.find((s) => s.id === selectedChatStudentId);
+  const activeChatParent = activeChatStudentObj
+    ? getParentAccountForStudent(users, activeChatStudentObj)
+    : undefined;
+  const activeStudentChat = messages.filter(
+    (message) =>
+      message.studentId === selectedChatStudentId &&
+      currentUser &&
+      activeChatParent &&
+      ((message.senderId === currentUser.id && message.recipientId === activeChatParent.id) ||
+        (message.senderId === activeChatParent.id && message.recipientId === currentUser.id))
+  );
 
   return (
     <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -605,6 +632,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
             <div className="space-y-1.5 overflow-y-auto max-h-[460px]">
               {students.map((std) => {
                 const isSelected = selectedChatStudentId === std.id;
+                const parentAccount = getParentAccountForStudent(users, std);
                 return (
                   <button
                     key={std.id}
@@ -617,7 +645,9 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
                   >
                     <div>
                       <p className="text-xs font-bold leading-tight">{std.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{std.parentName}</p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {parentAccount?.name || std.parentName}
+                      </p>
                     </div>
                   </button>
                 );
@@ -631,7 +661,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
                 <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
-                      Konsultasi Keagamaan: {activeChatStudentObj.parentName}
+                      Konsultasi Keagamaan: {activeChatParent?.name || activeChatStudentObj.parentName}
                     </h4>
                     <p className="text-xs text-slate-500">
                       Siswa: <span className="font-semibold text-teal-700">{activeChatStudentObj.name}</span>
@@ -683,7 +713,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
                     type="text"
                     value={chatInputText}
                     onChange={(e) => setChatInputText(e.target.value)}
-                    placeholder={`Kirim pesan pembiasaan PAI untuk ${activeChatStudentObj.parentName}...`}
+                    placeholder={`Kirim pesan pembiasaan PAI untuk ${activeChatParent?.name || activeChatStudentObj.parentName}...`}
                     className="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                   />
                   <button
