@@ -167,6 +167,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'Rekap Eksekutif Sekolah',
           icon: <FileText className="w-4 h-4 shrink-0" />,
         },
+        {
+          id: 'leger',
+          label: 'Leger Nilai Semua Guru',
+          icon: <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />,
+          badge: internalGrades.length + paiAssessments.length,
+        },
       ],
     },
     {
@@ -209,6 +215,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: <FileText className="w-4 h-4 text-emerald-600 shrink-0" />,
         },
         {
+          id: 'leger',
+          label: 'Rekap Leger Nilai',
+          icon: <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />,
+          badge: internalGrades.filter((grade) => grade.teacherRole === 'guru_kelas').length,
+        },
+        {
           id: 'chat',
           label: 'Chat Konsultasi Ortu',
           icon: <MessageCircle className="w-4 h-4 shrink-0" />,
@@ -245,6 +257,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: <FileText className="w-4 h-4 text-emerald-600 shrink-0" />,
         },
         {
+          id: 'leger',
+          label: 'Rekap Leger Nilai BK',
+          icon: <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />,
+          badge: internalGrades.filter((grade) => grade.teacherRole === 'guru_bk').length,
+        },
+        {
           id: 'chat',
           label: 'Konseling Chat Ortu',
           icon: <MessageCircle className="w-4 h-4 shrink-0" />,
@@ -278,6 +296,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'rekap',
           label: 'Rekap & Unduh Berkas PAI',
           icon: <FileText className="w-4 h-4 text-emerald-600 shrink-0" />,
+        },
+        {
+          id: 'leger',
+          label: 'Rekap Leger Nilai PAI',
+          icon: <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />,
+          badge: internalGrades.filter((grade) => grade.teacherRole === 'guru_pai').length + paiAssessments.length,
         },
         {
           id: 'chat',

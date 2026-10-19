@@ -314,6 +314,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         guru: 'Manajemen Guru & Akun',
         password: 'Reset Password',
         laporan: 'Rekap Eksekutif',
+        leger: 'Leger Nilai',
         murid: 'Daftar Murid',
         kartu: 'Kartu Akses Login Ortu',
         jurnal: 'Jurnal Harian Mengajar',

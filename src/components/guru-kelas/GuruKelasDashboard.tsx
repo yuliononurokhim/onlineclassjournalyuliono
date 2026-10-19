@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { Student, ClassJournalEntry, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
+import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
 import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
@@ -60,17 +61,17 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
     internalGrades,
   } = useEduStore();
 
-  const [activeTab, setActiveTabState] = useState<'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'chat'>(
+  const [activeTab, setActiveTabState] = useState<'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'leger' | 'chat'>(
     (currentTab as any) || 'murid'
   );
 
   useEffect(() => {
-    if (currentTab && ['murid', 'kartu', 'jurnal', 'penilaian', 'bintang', 'rekap', 'chat'].includes(currentTab)) {
+    if (currentTab && ['murid', 'kartu', 'jurnal', 'penilaian', 'bintang', 'rekap', 'leger', 'chat'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'chat') => {
+  const setActiveTab = (tab: 'murid' | 'kartu' | 'jurnal' | 'penilaian' | 'bintang' | 'rekap' | 'leger' | 'chat') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -490,7 +491,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
         </div>
       </div>
 
-
+      {activeTab === 'leger' && <GradeLedgerTab teacherRole="guru_kelas" />}
 
       {/* Tab 1: Daftar Murid (Manual & Excel Import) */}
       {activeTab === 'murid' && (

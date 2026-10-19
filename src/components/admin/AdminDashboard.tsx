@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEduStore } from '../../services/store';
 import { ImpersonateModal } from '../common/ImpersonateModal';
+import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
 import {
   School,
@@ -85,7 +86,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   } = useEduStore();
 
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
-  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan'>(
+  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
     (currentTab as any) || 'profil'
   );
 
@@ -93,7 +94,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [teacherSubTab, setTeacherSubTab] = useState<'guru' | 'password'>('guru');
 
   useEffect(() => {
-    if (currentTab && ['profil', 'landing', 'kurikulum', 'guru', 'password', 'laporan'].includes(currentTab)) {
+    if (currentTab && ['profil', 'landing', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
         setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
@@ -103,7 +104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan') => {
+  const setActiveTab = (tab: 'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -623,6 +624,8 @@ Terima kasih.`;
           </div>
         </div>
       </div>
+
+      {activeTab === 'leger' && <GradeLedgerTab />}
 
       {/* Tab 1: Profil & Kop Surat */}
       {activeTab === 'profil' && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { CaseRecord, StarActionType } from '../../types';
 import { InternalGradesTab } from '../common/InternalGradesTab';
+import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
 import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
 import {
@@ -46,17 +47,17 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
     currentUser,
   } = useEduStore();
 
-  const [activeTab, setActiveTabState] = useState<'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'chat'>(
+  const [activeTab, setActiveTabState] = useState<'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat'>(
     (currentTab as any) || 'kasus'
   );
 
   useEffect(() => {
-    if (currentTab && ['kasus', 'bintang', 'penilaian', 'rekap', 'chat'].includes(currentTab)) {
+    if (currentTab && ['kasus', 'bintang', 'penilaian', 'rekap', 'leger', 'chat'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'chat') => {
+  const setActiveTab = (tab: 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -237,6 +238,8 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
           </div>
         </div>
       </div>
+
+      {activeTab === 'leger' && <GradeLedgerTab teacherRole="guru_bk" />}
 
       {/* Tab 1: Catatan Kasus & Real-time Pelaporan ke Ortu */}
       {activeTab === 'kasus' && (
