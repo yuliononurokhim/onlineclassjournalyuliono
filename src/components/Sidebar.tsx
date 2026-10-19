@@ -84,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     users,
     starAwards,
     messages,
+    announcements,
     isImpersonating,
     stopImpersonating
   } = useEduStore();
@@ -151,6 +152,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'landing',
           label: 'Pengaturan Landing Page',
           icon: <Eye className="w-4 h-4 shrink-0" />,
+        },
+        {
+          id: 'pengumuman',
+          label: 'Kelola Pengumuman',
+          icon: <Bell className="w-4 h-4 shrink-0" />,
+          badge: announcements.length,
         },
         {
           id: 'kurikulum',
@@ -272,6 +279,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'chat',
           label: 'Konseling Chat Ortu',
           icon: <MessageCircle className="w-4 h-4 shrink-0" />,
+          badge: messages.filter(
+            (message) =>
+              !message.isRead &&
+              message.recipientId === currentUser?.id &&
+              message.senderRole === 'orangtua'
+          ).length || undefined,
         },
       ],
     },
@@ -313,6 +326,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'chat',
           label: 'Chat Pembiasaan Ibadah',
           icon: <MessageCircle className="w-4 h-4 shrink-0" />,
+          badge: messages.filter(
+            (message) =>
+              !message.isRead &&
+              message.recipientId === currentUser?.id &&
+              message.senderRole === 'orangtua'
+          ).length || undefined,
         },
       ],
     },

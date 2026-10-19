@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../../services/store';
 import { UserAccount, UserRole } from '../../types';
 import { getLinkedStudentsForParent } from '../../services/relationships';
@@ -70,43 +70,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
   const [starFilter, setStarFilter] = useState<'all' | 'reward' | 'penalty'>('all');
 
-  const linkedStudents = useMemo(
-    () => getLinkedStudentsForParent(currentUser, students),
-    [students, currentUser]
-  );
-  const resolvedLinkedStudent = linkedStudents[0] || null;
-
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
-    try {
-      if (currentUser?.id) {
-        return localStorage.getItem(`edujournal_parent_student_${currentUser.id}`) || '';
-      }
-    } catch {
-      // fallback
-    }
-    return '';
-  });
-
-  const handleSelectStudent = (newId: string) => {
-    if (!linkedStudents.some((linkedStudent) => linkedStudent.id === newId)) return;
-    setSelectedStudentId(newId);
-    try {
-      if (currentUser?.id) {
-        localStorage.setItem(`edujournal_parent_student_${currentUser.id}`, newId);
-      }
-    } catch {
-      // ignore
-    }
-    const found = students.find((s) => s.id === newId);
-    if (found) {
-      showToast(`Beralih ke pemantauan putra/putri: ${found.name}`);
-    }
-  };
-
-  // Active student for this parent portal
-  const student =
-    linkedStudents.find((linkedStudent) => linkedStudent.id === selectedStudentId) ||
-    resolvedLinkedStudent;
+  const student = getLinkedStudentsForParent(currentUser, students)[0] || null;
 
   // Filter ONLY this student's data!
   const myStars = starAwards.filter((s) => s.studentId === student?.id);
@@ -180,7 +144,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       currentTeacherObj !== null &&
       ((m.senderId === currentUser.id && m.recipientId === currentTeacherObj.id) ||
         (m.senderId === currentTeacherObj.id && m.recipientId === currentUser.id))
-  );
+  ).sort((left, right) => left.timestamp - right.timestamp);
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,20 +211,6 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
               <p className="text-xs text-indigo-200 mt-1">
                 {schoolProfile.name} · {schoolProfile.classGrade} · Wali: {student.parentName}
               </p>
-              <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-white/10">
-                <span className="text-[11px] text-amber-200 font-medium">Beralih Profil Anak:</span>
-                <select
-                  value={student.id}
-                  onChange={(e) => handleSelectStudent(e.target.value)}
-                  className="bg-white/10 hover:bg-white/15 text-white text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-colors cursor-pointer"
-                >
-                  {linkedStudents.map((s) => (
-                    <option key={s.id} value={s.id} className="bg-slate-900 text-white">
-                      {s.name} ({s.nisn}) — Wali: {s.parentName}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
 

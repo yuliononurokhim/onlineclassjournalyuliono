@@ -172,6 +172,7 @@ export interface SchoolAnnouncement {
   date: string;
   category: 'Akademik' | 'Kegiatan' | 'Libur' | 'Penting';
   author: string;
+  imageUrl?: string;
 }
 
 export type AssessmentType =

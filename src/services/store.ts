@@ -169,9 +169,11 @@ export function useEduStore() {
     if (!cleanInput || !cleanPass) return false;
 
     const matchedStudent = allStudents.find(
-      (student) => student.nisn.trim().toLowerCase() === cleanInput
+      (student) =>
+        student.nisn.trim().toLowerCase() === cleanInput ||
+        student.parentUsername.trim().toLowerCase() === cleanInput
     );
-    const matchedUser = allUsers.find(
+    let matchedUser = allUsers.find(
       (u) =>
         u.username.trim().toLowerCase() === cleanInput ||
         (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
@@ -182,8 +184,27 @@ export function useEduStore() {
             u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
     );
 
+    let isLegacyParentAccount = false;
+    if (!matchedUser && matchedStudent) {
+      matchedUser = {
+        id: createRecordId('usr-parent'),
+        username: matchedStudent.parentUsername,
+        password: matchedStudent.parentPassword,
+        role: 'orangtua',
+        name: `${matchedStudent.parentName} (Wali Murid)`,
+        title: `Orang Tua dari ${matchedStudent.name}`,
+        studentId: matchedStudent.id,
+        phone: matchedStudent.parentPhone,
+      };
+      isLegacyParentAccount = true;
+    }
+
     if (!matchedUser || matchedUser.status === 'nonaktif' || matchedUser.password !== cleanPass) return false;
 
+    if (isLegacyParentAccount) {
+      setStoredItem('users', [...allUsers, matchedUser]);
+      writeFirestoreDoc('users', matchedUser.id, matchedUser);
+    }
     setStoredItem('current_user', matchedUser);
     return true;
   }, []);
@@ -484,6 +505,11 @@ export function useEduStore() {
     );
     const parentUserIds = new Set(parentUsers.map((user) => user.id));
     setStoredItem('users', currentUsers.filter((user) => !parentUserIds.has(user.id)));
+    const currentUser = getStoredItem<UserAccount | null>('current_user', null);
+    if (currentUser && parentUserIds.has(currentUser.id)) {
+      sessionStorage.removeItem('edujournal_original_admin');
+      setStoredItem('current_user', null);
+    }
     deleteStudentFirestoreRecords(id, parentUsers.map((user) => user.id));
   }, []);
 
@@ -783,6 +809,15 @@ export function useEduStore() {
     writeFirestoreDoc('announcements', newItem.id, newItem);
   }, []);
 
+  const updateAnnouncement = useCallback((id: string, updates: Omit<SchoolAnnouncement, 'id'>) => {
+    const current = getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS);
+    const updated = current.map((announcement) =>
+      announcement.id === id ? { ...announcement, ...updates, id } : announcement
+    );
+    setStoredItem('announcements', updated);
+    writeFirestoreDoc('announcements', id, { ...updates, id });
+  }, []);
+
   const deleteAnnouncement = useCallback((id: string) => {
     const current = getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS);
     setStoredItem('announcements', current.filter((a) => a.id !== id));
@@ -933,6 +968,7 @@ export function useEduStore() {
     markMessagesAsRead,
     announcements,
     addAnnouncement,
+    updateAnnouncement,
     deleteAnnouncement,
     resetToDefaultData,
   };

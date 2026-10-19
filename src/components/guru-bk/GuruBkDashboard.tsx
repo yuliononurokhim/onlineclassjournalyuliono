@@ -234,7 +234,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
       activeChatParent &&
       ((message.senderId === currentUser.id && message.recipientId === activeChatParent.id) ||
         (message.senderId === activeChatParent.id && message.recipientId === currentUser.id))
-  );
+  ).sort((left, right) => left.timestamp - right.timestamp);
 
   return (
     <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

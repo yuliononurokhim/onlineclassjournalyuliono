@@ -3,7 +3,7 @@ import { useEduStore } from '../../services/store';
 import { getLocalDateString } from '../../services/date';
 import { ImpersonateModal } from '../common/ImpersonateModal';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
-import { SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
+import { SchoolAnnouncement, SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
 import {
   School,
   FileText,
@@ -40,7 +40,9 @@ import {
   Filter,
   AlertTriangle,
   BadgeCheck,
-  Info
+  Info,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
 
 const LANDING_FEATURES: {
@@ -52,6 +54,51 @@ const LANDING_FEATURES: {
   { key: 'agenda', label: 'Agenda & tugas' },
 ];
 type LandingFeatureSettings = NonNullable<SchoolProfile['landingFeatures']>;
+
+type AnnouncementForm = Omit<SchoolAnnouncement, 'id'>;
+
+async function compressAnnouncementImage(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Pilih berkas gambar yang valid.');
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Ukuran foto maksimal 10 MB.');
+  }
+
+  const bitmap = await createImageBitmap(file);
+  try {
+    let scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Foto tidak dapat diproses pada perangkat ini.');
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', Math.max(0.5, 0.82 - attempt * 0.06))
+      );
+      if (!blob) throw new Error('Gagal mengolah foto. Silakan pilih foto lain.');
+      if (blob.size <= 350 * 1024) {
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () =>
+            typeof reader.result === 'string'
+              ? resolve(reader.result)
+              : reject(new Error('Gagal membaca hasil foto.'));
+          reader.onerror = () => reject(new Error('Gagal membaca hasil foto.'));
+          reader.readAsDataURL(blob);
+        });
+      }
+      scale *= 0.8;
+    }
+    throw new Error('Foto terlalu besar setelah dikompres. Pilih foto dengan resolusi lebih kecil.');
+  } finally {
+    bitmap.close();
+  }
+}
 
 interface AdminDashboardProps {
   currentTab?: string;
@@ -84,10 +131,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     paiAssessments,
     starAwards,
     impersonateUser,
+    announcements,
+    addAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
   } = useEduStore();
 
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
-  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
+  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'pengumuman' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
     (currentTab as any) || 'profil'
   );
 
@@ -95,7 +146,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [teacherSubTab, setTeacherSubTab] = useState<'guru' | 'password'>('guru');
 
   useEffect(() => {
-    if (currentTab && ['profil', 'landing', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
+    if (currentTab && ['profil', 'landing', 'pengumuman', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
         setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
@@ -105,7 +156,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'profil' | 'landing' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
+  const setActiveTab = (tab: 'profil' | 'landing' | 'pengumuman' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -117,6 +168,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     agenda: schoolProfile.landingFeatures?.agenda ?? true,
   }));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [announcementForm, setAnnouncementForm] = useState<AnnouncementForm>({
+    title: '',
+    content: '',
+    date: getLocalDateString(),
+    category: 'Penting',
+    author: currentUser?.name || schoolProfile.name,
+    imageUrl: '',
+  });
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
+  const [isCompressingAnnouncementImage, setIsCompressingAnnouncementImage] = useState(false);
   const isProfileDirtyRef = useRef(false);
   const lastProfileJsonRef = useRef(JSON.stringify(schoolProfile));
 
@@ -219,6 +280,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const resetAnnouncementForm = () => {
+    setAnnouncementForm({
+      title: '',
+      content: '',
+      date: getLocalDateString(),
+      category: 'Penting',
+      author: currentUser?.name || schoolProfile.name,
+      imageUrl: '',
+    });
+    setEditingAnnouncementId(null);
+  };
+
+  const handleAnnouncementSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const cleanAnnouncement = {
+      ...announcementForm,
+      title: announcementForm.title.trim(),
+      content: announcementForm.content.trim(),
+      author: announcementForm.author.trim(),
+    };
+    if (!cleanAnnouncement.title || !cleanAnnouncement.content || !cleanAnnouncement.author) {
+      showToast('Judul, deskripsi, dan penerbit wajib diisi.');
+      return;
+    }
+
+    if (editingAnnouncementId) {
+      updateAnnouncement(editingAnnouncementId, cleanAnnouncement);
+      showToast('Pengumuman berhasil diperbarui dan disinkronkan.');
+    } else {
+      addAnnouncement(cleanAnnouncement);
+      showToast('Pengumuman berhasil diterbitkan dan disinkronkan.');
+    }
+    resetAnnouncementForm();
+  };
+
+  const handleAnnouncementImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsCompressingAnnouncementImage(true);
+    try {
+      const imageUrl = await compressAnnouncementImage(file);
+      setAnnouncementForm((current) => ({ ...current, imageUrl }));
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Foto gagal diproses.');
+    } finally {
+      setIsCompressingAnnouncementImage(false);
+    }
+  };
+
+  const handleEditAnnouncement = (announcement: SchoolAnnouncement) => {
+    setAnnouncementForm({
+      title: announcement.title,
+      content: announcement.content,
+      date: announcement.date,
+      category: announcement.category,
+      author: announcement.author,
+      imageUrl: announcement.imageUrl || '',
+    });
+    setEditingAnnouncementId(announcement.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -977,6 +1102,236 @@ Terima kasih.`;
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {activeTab === 'pengumuman' && (
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          <form
+            onSubmit={handleAnnouncementSubmit}
+            className="xl:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4 self-start"
+          >
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                {editingAnnouncementId ? 'Edit Pengumuman' : 'Buat Pengumuman Sekolah'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Pengumuman dan foto akan tersimpan pada data bersama dan tampil pada papan informasi seluruh pengguna.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="announcement-title" className="block text-xs font-semibold text-slate-700 mb-1">
+                Judul Pengumuman
+              </label>
+              <input
+                id="announcement-title"
+                value={announcementForm.title}
+                onChange={(event) => setAnnouncementForm({ ...announcementForm, title: event.target.value })}
+                required
+                maxLength={160}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="Contoh: Jadwal Penilaian Tengah Semester"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="announcement-category" className="block text-xs font-semibold text-slate-700 mb-1">
+                  Kategori
+                </label>
+                <select
+                  id="announcement-category"
+                  value={announcementForm.category}
+                  onChange={(event) =>
+                    setAnnouncementForm({
+                      ...announcementForm,
+                      category: event.target.value as SchoolAnnouncement['category'],
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white"
+                >
+                  <option>Akademik</option>
+                  <option>Kegiatan</option>
+                  <option>Libur</option>
+                  <option>Penting</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="announcement-date" className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tanggal
+                </label>
+                <input
+                  id="announcement-date"
+                  type="date"
+                  value={announcementForm.date}
+                  onChange={(event) => setAnnouncementForm({ ...announcementForm, date: event.target.value })}
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="announcement-content" className="block text-xs font-semibold text-slate-700 mb-1">
+                Deskripsi / Isi Pengumuman
+              </label>
+              <textarea
+                id="announcement-content"
+                value={announcementForm.content}
+                onChange={(event) => setAnnouncementForm({ ...announcementForm, content: event.target.value })}
+                required
+                rows={6}
+                maxLength={5000}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y"
+                placeholder="Tuliskan informasi lengkap yang perlu diketahui warga sekolah..."
+              />
+              <p className="text-[10px] text-slate-400 text-right mt-1">
+                {announcementForm.content.length}/5000 karakter
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="announcement-author" className="block text-xs font-semibold text-slate-700 mb-1">
+                Penerbit
+              </label>
+              <input
+                id="announcement-author"
+                value={announcementForm.author}
+                onChange={(event) => setAnnouncementForm({ ...announcementForm, author: event.target.value })}
+                required
+                maxLength={120}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <span className="block text-xs font-semibold text-slate-700 mb-1">Foto Pengumuman (opsional)</span>
+              <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 hover:bg-indigo-50 text-xs font-semibold text-indigo-700 cursor-pointer transition-colors">
+                {isCompressingAnnouncementImage ? (
+                  <RotateCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {isCompressingAnnouncementImage ? 'Mengolah foto...' : 'Pilih foto dari perangkat'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAnnouncementImageChange}
+                  disabled={isCompressingAnnouncementImage}
+                  className="sr-only"
+                />
+              </label>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Foto otomatis diperkecil agar mudah disimpan dan disinkronkan (maksimal 10 MB sebelum diproses).
+              </p>
+              {announcementForm.imageUrl && (
+                <div className="relative mt-3">
+                  <img
+                    src={announcementForm.imageUrl}
+                    alt="Pratinjau foto pengumuman"
+                    className="w-full max-h-56 object-cover rounded-xl border border-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAnnouncementForm({ ...announcementForm, imageUrl: '' })}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/95 text-rose-600 shadow hover:bg-rose-50"
+                    aria-label="Hapus foto pengumuman"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              {editingAnnouncementId && (
+                <button
+                  type="button"
+                  onClick={resetAnnouncementForm}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50"
+                >
+                  Batal Edit
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={isCompressingAnnouncementImage}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                {editingAnnouncementId ? 'Simpan Perubahan' : 'Terbitkan Pengumuman'}
+              </button>
+            </div>
+          </form>
+
+          <div className="xl:col-span-3 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Daftar Pengumuman</h3>
+                <p className="text-xs text-slate-500 mt-1">{announcements.length} pengumuman ditampilkan pada papan informasi</p>
+              </div>
+              <span className="shrink-0 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold">
+                {announcements.length} item
+              </span>
+            </div>
+            {announcements.length === 0 ? (
+              <div className="py-12 text-center text-sm text-slate-400">
+                Belum ada pengumuman. Buat pengumuman pertama melalui formulir ini.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {announcements.map((announcement) => (
+                  <article key={announcement.id} className="flex flex-col sm:flex-row gap-4 rounded-xl border border-slate-200 p-4">
+                    {announcement.imageUrl ? (
+                      <img
+                        src={announcement.imageUrl}
+                        alt=""
+                        className="w-full sm:w-28 h-32 sm:h-24 rounded-lg object-cover bg-slate-100 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-full sm:w-28 h-24 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center shrink-0">
+                        <ImageIcon className="w-7 h-7" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
+                          {announcement.category}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{announcement.date}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900">{announcement.title}</h4>
+                      <p className="text-xs text-slate-500 mt-1 whitespace-pre-wrap line-clamp-3">{announcement.content}</p>
+                      <p className="text-[10px] text-slate-400 mt-2">Penerbit: {announcement.author}</p>
+                    </div>
+                    <div className="flex sm:flex-col gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleEditAnnouncement(announcement)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteAnnouncement(announcement.id);
+                          if (editingAnnouncementId === announcement.id) resetAnnouncementForm();
+                          showToast('Pengumuman telah dihapus.');
+                        }}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Hapus
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

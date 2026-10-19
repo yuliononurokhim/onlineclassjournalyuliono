@@ -656,6 +656,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
             >
               <div>
+                {ann.imageUrl && (
+                  <img
+                    src={ann.imageUrl}
+                    alt={`Foto pengumuman: ${ann.title}`}
+                    loading="lazy"
+                    className="w-full max-h-56 object-cover rounded-xl mb-4 border border-slate-100"
+                  />
+                )}
                 <div className="flex items-center justify-between mb-3 text-xs">
                   <span className={`px-2.5 py-0.5 rounded-full font-semibold ${
                     ann.category === 'Akademik'
@@ -673,7 +681,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <h4 className="text-sm font-bold text-slate-900 mb-2 leading-snug">
                   {ann.title}
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-4">
+                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
                   {ann.content}
                 </p>
               </div>
