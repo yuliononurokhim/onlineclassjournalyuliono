@@ -412,7 +412,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     : null;
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white text-slate-800 border-r border-slate-200 select-none">
+    <div className="sidebar-panel flex flex-col h-full bg-white text-slate-800 border-r border-slate-200 select-none">
       {/* 1. School Header Strip */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3 bg-gradient-to-b from-slate-50/80 to-white">
         <div
@@ -877,7 +877,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Desktop Sidebar: Fixed on the left */}
       <aside
-        className={`hidden lg:block fixed top-0 bottom-0 left-0 z-40 transition-all duration-200 ease-in-out ${
+        className={`app-sidebar hidden lg:block fixed top-0 bottom-0 left-0 z-40 transition-all duration-200 ease-in-out ${
           isCollapsedDesktop ? 'w-20' : 'w-72'
         }`}
       >
@@ -895,7 +895,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Mobile Off-canvas Drawer */}
       <aside
-        className={`lg:hidden fixed top-0 bottom-0 left-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-200 ease-in-out ${
+        className={`app-sidebar lg:hidden fixed top-0 bottom-0 left-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-200 ease-in-out ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

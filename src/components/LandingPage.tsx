@@ -155,34 +155,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+    <div className="landing-page min-h-screen bg-slate-50 text-slate-900 pb-16">
       {/* Hero Section with Official School Header */}
-      <section className="bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 border-b border-indigo-800">
+      <section className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 text-slate-900 pt-12 pb-20 px-4 sm:px-6 lg:px-8 border-b border-indigo-100">
         <div className="max-w-7xl mx-auto">
           {/* Official Letterhead / Kop Surat Mockup */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/15 mb-10 shadow-xl">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-100 mb-10 shadow-sm">
             <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-              <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center p-3 text-indigo-900 shadow-lg shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center p-3 text-indigo-900 shadow-sm shrink-0">
                 <School className="w-12 h-12 text-indigo-700" />
               </div>
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-widest text-indigo-300 font-semibold mb-1">
+                <p className="text-xs uppercase tracking-widest text-indigo-600 font-semibold mb-1">
                   {schoolProfile.kopLine1}
                 </p>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
                   {schoolProfile.name}
                 </h1>
-                <p className="text-xs sm:text-sm text-indigo-200 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
                   {schoolProfile.address}, {schoolProfile.district}, {schoolProfile.city} · NPSN: {schoolProfile.npsn}
                 </p>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-3 text-xs text-indigo-300">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-3 text-xs text-slate-600">
                   <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-indigo-400" /> {schoolProfile.phone}
+                    <Phone className="w-3.5 h-3.5 text-indigo-500" /> {schoolProfile.phone}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-indigo-400" /> {schoolProfile.email}
+                    <Mail className="w-3.5 h-3.5 text-indigo-500" /> {schoolProfile.email}
                   </span>
-                  <span className="bg-indigo-500/30 text-indigo-200 px-2.5 py-0.5 rounded-full border border-indigo-400/30">
+                  <span className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
                     Akreditasi A Unggul
                   </span>
                 </div>
@@ -194,20 +194,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Col: Portal Highlights & Values */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>{schoolProfile.heroTagline || 'Portal Jurnal Belajar & Karakter Siswa Real-Time'}</span>
               </div>
-              <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight text-balance">
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
                 {schoolProfile.heroTitle || 'Pantau Tumbuh Kembang dan Aktivitas Belajar Si Kecil Setiap Hari'}
               </h2>
               {/* Hero Description */}
               <div className="space-y-2">
-                <p className="text-slate-200 text-sm sm:text-base leading-relaxed max-w-xl">
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
                   {schoolProfile.heroDescription ||
                     'Jurnal digital interaktif dari guru untuk menghubungkan sekolah dan rumah dengan mudah. Lihat laporan belajar, perkembangan anak, dan agenda sekolah melalui satu portal.'}
                 </p>
-                <div className="flex items-center gap-2 text-[11px] text-indigo-300/80">
+                <div className="flex items-center gap-2 text-[11px] text-slate-500">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   <span>Teks sambutan resmi dikelola oleh Admin SIM (dapat diubah di panel admin)</span>
                 </div>
@@ -216,30 +216,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Parent portal feature overview */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                 {landingFeatures.dailyReports && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-400/20 text-indigo-200 flex items-center justify-center mb-2.5">
+                  <div className="bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2.5">
                       <BookOpen className="w-4 h-4" />
                     </div>
-                    <h4 className="text-sm font-bold text-white">Laporan Harian/Mingguan</h4>
-                    <p className="text-xs text-slate-300 mt-1">Catatan aktivitas belajar dan perkembangan anak di kelas.</p>
+                    <h4 className="text-sm font-bold text-slate-900">Laporan Harian/Mingguan</h4>
+                    <p className="text-xs text-slate-500 mt-1">Catatan aktivitas belajar dan perkembangan anak di kelas.</p>
                   </div>
                 )}
                 {landingFeatures.gallery && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                    <div className="w-8 h-8 rounded-lg bg-rose-400/20 text-rose-200 flex items-center justify-center mb-2.5">
+                  <div className="bg-white border border-rose-100 rounded-2xl p-4 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center mb-2.5">
                       <Images className="w-4 h-4" />
                     </div>
-                    <h4 className="text-sm font-bold text-white">Galeri Foto & Video</h4>
-                    <p className="text-xs text-slate-300 mt-1">Momen belajar dan kegiatan anak yang dibagikan guru.</p>
+                    <h4 className="text-sm font-bold text-slate-900">Galeri Foto & Video</h4>
+                    <p className="text-xs text-slate-500 mt-1">Momen belajar dan kegiatan anak yang dibagikan guru.</p>
                   </div>
                 )}
                 {landingFeatures.agenda && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                    <div className="w-8 h-8 rounded-lg bg-teal-400/20 text-teal-200 flex items-center justify-center mb-2.5">
+                  <div className="bg-white border border-teal-100 rounded-2xl p-4 shadow-sm">
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center mb-2.5">
                       <ClipboardList className="w-4 h-4" />
                     </div>
-                    <h4 className="text-sm font-bold text-white">Agenda & Tugas</h4>
-                    <p className="text-xs text-slate-300 mt-1">Informasi kegiatan sekolah, jadwal, dan tugas yang akan datang.</p>
+                    <h4 className="text-sm font-bold text-slate-900">Agenda & Tugas</h4>
+                    <p className="text-xs text-slate-500 mt-1">Informasi kegiatan sekolah, jadwal, dan tugas yang akan datang.</p>
                   </div>
                 )}
               </div>

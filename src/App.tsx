@@ -101,7 +101,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#1e293b] flex font-sans selection:bg-indigo-600 selection:text-white antialiased">
+    <div className="app-shell min-h-screen bg-[#faf8f5] text-[#1e293b] flex font-sans selection:bg-indigo-600 selection:text-white antialiased">
       {/* 1. Left Vertical Sidebar (Desktop Fixed & Mobile Drawer) */}
       <Sidebar
         isOpenMobile={isOpenMobile}
@@ -132,7 +132,7 @@ export default function App() {
         />
 
         {/* Dynamic View Body */}
-        <main className="flex-1">
+        <main className="app-main flex-1">
           {activeView === 'landing' || activeView === 'pengumuman' || activeView === 'kontak' ? (
             <LandingPage activeView={activeView} onLoginSuccess={handleLoginSuccess} />
           ) : (
@@ -141,7 +141,7 @@ export default function App() {
         </main>
 
         {/* School Footer */}
-        <footer className="no-print bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mt-auto">
+        <footer className="app-footer no-print bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mt-auto">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <School className="w-4 h-4 text-indigo-600" />

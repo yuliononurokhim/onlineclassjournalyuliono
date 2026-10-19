@@ -336,7 +336,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   };
 
   return (
-    <header className="no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="app-top-header no-print sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       {/* Impersonation Active Banner */}
       {isImpersonating && (
         <div className="bg-amber-400 text-amber-950 px-3 sm:px-6 py-2 text-xs font-bold flex items-center justify-between border-b border-amber-500 shadow-2xs animate-in fade-in">

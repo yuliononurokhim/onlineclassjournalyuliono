@@ -2,22 +2,24 @@
 
 @layer base {
   :root {
-    --bg-warm: #faf8f5;
+    --bg-warm: #eef0f8;
     --surface-warm: #ffffff;
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --border-warm: #e2e8f0;
+    --text-primary: #20243a;
+    --text-secondary: #60677f;
+    --border-warm: #e3e5f1;
+    --surface-lilac: #f4f5fc;
+    --accent-blue: #2463eb;
   }
 
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    color: #1e293b;
-    background-color: #faf8f5;
+    color: var(--text-primary);
+    background-color: var(--bg-warm);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 15px;
     line-height: 1.62;
-    letter-spacing: -0.011em;
+    letter-spacing: -0.012em;
   }
 
   /* Smooth UI Transitions across interactive controls to prevent abrupt flashes */
@@ -26,7 +28,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: #1e293b;
+    color: var(--text-primary);
     letter-spacing: -0.02em;
     font-weight: 700;
   }
@@ -52,20 +54,152 @@
   }
 }
 
+/* Shared application shell and dashboard surfaces */
+.app-shell {
+  background: var(--bg-warm) !important;
+  color: var(--text-primary);
+}
+
+.app-main {
+  min-width: 0;
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(217, 222, 255, 0.34), transparent 34rem),
+    var(--bg-warm);
+}
+
+.app-top-header {
+  border-color: rgba(222, 225, 239, 0.9) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 6px 22px rgba(61, 69, 109, 0.045) !important;
+}
+
+.app-sidebar .sidebar-panel {
+  background: #fff !important;
+  border-color: var(--border-warm) !important;
+  box-shadow: 8px 0 28px rgba(62, 71, 112, 0.035);
+}
+
+.app-footer {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: var(--border-warm) !important;
+}
+
+.dashboard-page {
+  width: 100%;
+  max-width: 1440px !important;
+  padding: 28px clamp(16px, 2.5vw, 36px) 36px !important;
+  color: var(--text-primary);
+}
+
+.dashboard-page [class~="bg-white"] {
+  border-color: var(--border-warm);
+  box-shadow: 0 8px 24px rgba(58, 67, 110, 0.045);
+}
+
+.dashboard-page > [class~="bg-white"]:first-of-type {
+  border-radius: 26px;
+  box-shadow: 0 12px 30px rgba(58, 67, 110, 0.065);
+}
+
+.dashboard-page [class*="bg-slate-50"] {
+  --tw-bg-opacity: 1;
+  background-color: #f6f7fc;
+}
+
+.dashboard-page [class*="border-slate-200"],
+.dashboard-page [class*="border-slate-300"] {
+  border-color: #e4e6f1;
+}
+
+.dashboard-page table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.dashboard-page table thead th {
+  background: #f2f3fb;
+  color: #4d5570;
+  border-color: #e6e8f2;
+}
+
+.dashboard-page table tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+.dashboard-page table tbody tr:hover {
+  background-color: #f8f8fd;
+}
+
+.dashboard-page table td,
+.dashboard-page table th {
+  border-color: #ebedf5;
+}
+
+.dashboard-page input:not([type="checkbox"]):not([type="radio"]),
+.dashboard-page select,
+.dashboard-page textarea {
+  border-color: #dfe2ef;
+  border-radius: 12px;
+  background-color: #fff;
+}
+
+.dashboard-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.dashboard-page select:focus,
+.dashboard-page textarea:focus {
+  border-color: #8aa9f8;
+  box-shadow: 0 0 0 3px rgba(65, 113, 232, 0.12);
+}
+
+.dashboard-page button:not([class*="rounded-full"]) {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.2s ease;
+}
+
+.dashboard-page button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.landing-page {
+  background: var(--bg-warm);
+}
+
+.landing-page > section:first-child {
+  border-radius: 0 0 36px 36px;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f2f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c9cde0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aeb5d1;
+}
+
 /* Custom scrollbars for clean table horizontal scrolling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+
+@media (max-width: 640px) {
+  .dashboard-page {
+    padding: 18px 14px 28px !important;
+  }
+
+  .landing-page > section:first-child {
+    border-radius: 0 0 26px 26px;
+  }
 }
 
 @media print {
@@ -92,6 +226,16 @@
     color: #000000 !important;
     font-size: 11pt !important;
     line-height: 1.4 !important;
+  }
+
+  .dashboard-page {
+    width: auto !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-page [class~="bg-white"] {
+    box-shadow: none !important;
   }
 
   .print-only {
