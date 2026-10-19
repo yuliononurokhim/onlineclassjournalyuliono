@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useEduStore } from '../../services/store';
 import { ClassJournalEntry } from '../../types';
 import { getLocalDateString } from '../../services/date';
-import { BookOpen, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, ChevronDown, Plus, Trash2 } from 'lucide-react';
 
 type AttendanceStatus = NonNullable<ClassJournalEntry['attendanceByStudent']>[string];
 
@@ -206,8 +206,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             />
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-bold text-slate-800">Rincian jam pelajaran</h4>
                 <p className="mt-0.5 text-[10px] text-slate-500">Baris kosong tidak akan disimpan.</p>
@@ -216,100 +216,98 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                 {rows.length} baris
               </span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1160px] border-collapse text-left text-xs">
-              <thead className="bg-slate-100 text-slate-600">
-                <tr>
-                  <th className="w-12 border-b border-r border-slate-200 px-3 py-3 text-center font-bold">No</th>
-                  <th className="min-w-40 border-b border-r border-slate-200 px-3 py-3 font-bold">Hari/Tanggal</th>
-                  <th className="min-w-20 border-b border-r border-slate-200 px-3 py-3 font-bold">Jam</th>
-                  <th className="min-w-48 border-b border-r border-slate-200 px-3 py-3 font-bold">Mata Pelajaran</th>
-                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Capaian Pembelajaran (CP)</th>
-                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Tujuan Pembelajaran / Materi (TP)</th>
-                  <th className="min-w-56 border-b border-r border-slate-200 px-3 py-3 font-bold">Kegiatan</th>
-                  <th className="w-14 border-b border-slate-200 px-3 py-3 text-center font-bold">Hapus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => {
-                  const objectives = learningObjectives.filter(
-                    (objective) => objective.subjectId === row.subjectId
-                  );
-                  const selectedObjective = objectives.find((objective) => objective.id === row.objectiveId);
-                  return (
-                    <tr key={index} className="align-top transition-colors hover:bg-indigo-50/40">
-                      <td className="border-b border-r border-slate-200 px-3 py-3 text-center font-semibold text-slate-500">{index + 1}</td>
-                      <td className="border-b border-r border-slate-200 px-3 py-3 whitespace-nowrap text-slate-600">{formatJournalDate(date)}</td>
-                      <td className="border-b border-r border-slate-200 px-3 py-3">
-                        <span className="inline-flex rounded-md bg-indigo-100 px-2 py-1 font-bold text-indigo-700">ke-{index + 1}</span>
-                      </td>
-                      <td className="border-b border-r border-slate-200 p-2">
-                        <select
-                          value={row.subjectId}
-                          onChange={(event) => updateRow(index, { subjectId: event.target.value, objectiveId: '' })}
-                          className="w-full min-w-44 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        >
-                          <option value="">Pilih mata pelajaran</option>
-                          {availableSubjects.map((subject) => (
-                            <option key={subject.id} value={subject.id}>{subject.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="border-b border-r border-slate-200 px-3 py-3 leading-relaxed text-slate-600">
-                        <div className={`min-h-12 rounded-lg p-2.5 ${selectedObjective ? 'bg-violet-50 text-slate-700' : 'text-slate-400'}`}>
-                          {selectedObjective?.capaianPembelajaran || 'CP dari kurikulum Admin akan tampil setelah TP dipilih.'}
-                        </div>
-                      </td>
-                      <td className="border-b border-r border-slate-200 p-2">
-                        <select
-                          value={row.objectiveId}
-                          onChange={(event) => updateRow(index, { objectiveId: event.target.value })}
-                          disabled={!row.subjectId}
-                          className="w-full min-w-52 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
-                        >
-                          <option value="">Pilih TP dari kurikulum Admin</option>
-                          {objectives.map((objective) => (
-                            <option key={objective.id} value={objective.id}>{objective.tujuanPembelajaran}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="border-b border-r border-slate-200 p-2">
-                        <textarea
-                          rows={3}
-                          value={row.activity}
-                          onChange={(event) => updateRow(index, { activity: event.target.value })}
-                          placeholder="Ceritakan kegiatan belajar..."
-                          className="w-full min-w-52 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </td>
-                      <td className="border-b border-slate-200 px-2 py-3 text-center">
-                        <button
-                          type="button"
-                          disabled={rows.length === 1}
-                          onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))}
-                          aria-label={`Hapus baris jam ke-${index + 1}`}
-                          title={rows.length === 1 ? 'Minimal harus ada satu baris' : 'Hapus baris'}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              </table>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setRows((current) => [...current, createJournalRow()])}
-            className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-xs font-bold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-100"
-          >
-            <Plus className="h-4 w-4" /> Tambah baris jam pelajaran
-          </button>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            {rows.map((row, index) => {
+              const objectives = learningObjectives.filter(
+                (objective) => objective.subjectId === row.subjectId
+              );
+              const selectedObjective = objectives.find((objective) => objective.id === row.objectiveId);
+              return (
+                <article key={index} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-200">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-3 py-2.5 sm:px-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-extrabold text-white">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">Jam ke-{index + 1}</p>
+                        <p className="text-[10px] text-slate-500">{formatJournalDate(date)}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={rows.length === 1}
+                      onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))}
+                      aria-label={`Hapus baris jam ke-${index + 1}`}
+                      title={rows.length === 1 ? 'Minimal harus ada satu baris' : 'Hapus baris'}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4">
+                    <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      Mata pelajaran
+                      <select
+                        value={row.subjectId}
+                        onChange={(event) => updateRow(index, { subjectId: event.target.value, objectiveId: '' })}
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      >
+                        <option value="">Pilih mata pelajaran</option>
+                        {availableSubjects.map((subject) => (
+                          <option key={subject.id} value={subject.id}>{subject.name}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      Tujuan pembelajaran / materi
+                      <select
+                        value={row.objectiveId}
+                        onChange={(event) => updateRow(index, { objectiveId: event.target.value })}
+                        disabled={!row.subjectId}
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
+                      >
+                        <option value="">Pilih TP dari kurikulum Admin</option>
+                        {objectives.map((objective) => (
+                          <option key={objective.id} value={objective.id}>{objective.tujuanPembelajaran}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="rounded-lg bg-violet-50/80 p-3 sm:col-span-2">
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">Capaian Pembelajaran (CP)</p>
+                      <p className={`text-xs leading-relaxed ${selectedObjective ? 'text-slate-700' : 'text-slate-400'}`}>
+                        {selectedObjective?.capaianPembelajaran || 'CP otomatis tampil setelah TP dipilih.'}
+                      </p>
+                    </div>
+
+                    <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:col-span-2">
+                      Kegiatan pembelajaran
+                      <textarea
+                        rows={2}
+                        value={row.activity}
+                        onChange={(event) => updateRow(index, { activity: event.target.value })}
+                        placeholder="Tuliskan kegiatan pembelajaran pada jam ini..."
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </label>
+                  </div>
+                </article>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setRows((current) => [...current, createJournalRow()])}
+              className="inline-flex items-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/60 px-3.5 py-2.5 text-xs font-bold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+            >
+              <Plus className="h-4 w-4" /> Tambah jam pelajaran
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
@@ -375,20 +373,27 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md"
-          >
-            Simpan & Terbitkan Jurnal Terisi
-          </button>
+          <div className="sticky bottom-3 z-10 flex justify-end rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700 sm:min-w-56"
+            >
+              <BookOpen className="h-4 w-4" />
+              Simpan Jurnal Terisi
+            </button>
+          </div>
         </form>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">Riwayat Jurnal Harian ({journalEntries.length})</h3>
-          <span className="text-xs text-slate-500">Tersinkron ke dashboard orang tua</span>
-        </div>
+      <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 transition hover:bg-slate-50 sm:px-5 [&::-webkit-details-marker]:hidden">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Riwayat Jurnal Harian</h3>
+            <p className="mt-0.5 text-[11px] text-slate-500">{journalEntries.length} catatan · tersinkron ke dashboard orang tua</p>
+          </div>
+          <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180" />
+        </summary>
+        <section className="space-y-3 border-t border-slate-100 p-3 sm:p-4">
         {journalEntries.map((entry) => (
           <article key={entry.id} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -427,12 +432,13 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
           </article>
         ))}
         {journalEntries.length === 0 && (
-          <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
             <BookOpen className="w-6 h-6 mx-auto mb-2 text-slate-400" />
             Belum ada jurnal harian.
           </div>
         )}
-      </section>
+        </section>
+      </details>
     </div>
   );
 };
