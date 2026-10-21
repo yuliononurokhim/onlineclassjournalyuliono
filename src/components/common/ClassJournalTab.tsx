@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useEduStore } from '../../services/store';
-import { ClassJournalEntry } from '../../types';
+import { ClassJournalEntry, WeeklyScheduleDay } from '../../types';
 import { getLocalDateString } from '../../services/date';
-import { BookOpen, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronDown, Plus, Save, Trash2 } from 'lucide-react';
 
 type AttendanceStatus = NonNullable<ClassJournalEntry['attendanceByStudent']>[string];
 
@@ -29,6 +29,13 @@ const ATTENDANCE_OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: 'alpa', label: 'Alpha' },
 ];
 
+const WEEKDAYS: WeeklyScheduleDay[] = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+
+function getWeekday(date: string): WeeklyScheduleDay | null {
+  const dayIndex = new Date(`${date}T12:00:00`).getDay();
+  return WEEKDAYS[dayIndex - 1] || null;
+}
+
 function isEffectiveWeekday(date: string): boolean {
   const day = new Date(`${date}T12:00:00`).getDay();
   return day !== 0 && day !== 6;
@@ -51,6 +58,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
     journalEntries,
     addJournalEntries,
     deleteJournalEntry,
+    weeklySchedule,
+    replaceWeeklyScheduleDay,
     currentUser,
   } = useEduStore();
   const availableSubjects = useMemo(() => {
@@ -64,10 +73,95 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
   const [rows, setRows] = useState<JournalRow[]>(
     () => [createJournalRow()]
   );
+  const [selectedScheduleDay, setSelectedScheduleDay] = useState<WeeklyScheduleDay>('Senin');
+  const [scheduleRows, setScheduleRows] = useState<JournalRow[]>([createJournalRow()]);
+  const [scheduleMessage, setScheduleMessage] = useState('');
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
+
+  const savedRowsForSelectedDay = weeklySchedule
+    .filter((entry) => entry.scope === subjectScope && entry.day === selectedScheduleDay)
+    .map(({ subjectId, objectiveId, activity }) => ({ subjectId, objectiveId, activity }));
+  const scheduleEditorSyncKey = `${subjectScope}:${selectedScheduleDay}:${JSON.stringify(savedRowsForSelectedDay)}`;
+
+  useEffect(() => {
+    setScheduleRows(savedRowsForSelectedDay.length > 0 ? savedRowsForSelectedDay : [createJournalRow()]);
+  }, [scheduleEditorSyncKey]);
+
+  const updateScheduleRow = (index: number, patch: Partial<JournalRow>) => {
+    setScheduleRows((current) => current.map((row, rowIndex) =>
+      rowIndex === index ? { ...row, ...patch } : row
+    ));
+  };
+
+  const handleSaveWeeklySchedule = (event: React.FormEvent) => {
+    event.preventDefault();
+    setScheduleMessage('');
+
+    const populatedRows = scheduleRows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => row.subjectId || row.objectiveId || row.activity.trim());
+    if (populatedRows.length === 0) {
+      setScheduleMessage('Isi minimal satu jam pelajaran sebelum menyimpan jadwal.');
+      return;
+    }
+
+    for (const { row, index } of populatedRows) {
+      if (!availableSubjects.some((subject) => subject.id === row.subjectId)) {
+        setScheduleMessage(`Jam ke-${index + 1}: pilih mata pelajaran.`);
+        return;
+      }
+      const objective = learningObjectives.find(
+        (item) => item.id === row.objectiveId && item.subjectId === row.subjectId
+      );
+      if (!objective) {
+        setScheduleMessage(`Jam ke-${index + 1}: pilih TP sesuai mata pelajaran.`);
+        return;
+      }
+      if (!row.activity.trim()) {
+        setScheduleMessage(`Jam ke-${index + 1}: isi kegiatan pembelajaran.`);
+        return;
+      }
+    }
+
+    replaceWeeklyScheduleDay(
+      subjectScope,
+      selectedScheduleDay,
+      populatedRows.map(({ row }) => ({
+        subjectId: row.subjectId,
+        objectiveId: row.objectiveId,
+        activity: row.activity.trim(),
+      }))
+    );
+    setScheduleMessage(`Jadwal hari ${selectedScheduleDay} berhasil disimpan.`);
+  };
+
+  const handleClearWeeklySchedule = () => {
+    if (!window.confirm(`Hapus semua jadwal pembelajaran hari ${selectedScheduleDay}?`)) return;
+    replaceWeeklyScheduleDay(subjectScope, selectedScheduleDay, []);
+    setScheduleRows([createJournalRow()]);
+    setScheduleMessage(`Jadwal hari ${selectedScheduleDay} berhasil dikosongkan.`);
+  };
+
+  const handleLoadScheduleToJournal = () => {
+    const weekday = getWeekday(date);
+    if (!weekday) {
+      setFormError('Jadwal hanya tersedia untuk hari sekolah Senin–Jumat.');
+      return;
+    }
+    const savedRows = weeklySchedule
+      .filter((entry) => entry.scope === subjectScope && entry.day === weekday)
+      .map(({ subjectId, objectiveId, activity }) => ({ subjectId, objectiveId, activity }));
+    if (savedRows.length === 0) {
+      setFormError(`Belum ada jadwal tersimpan untuk hari ${weekday}.`);
+      return;
+    }
+    setRows(savedRows);
+    setFormError('');
+    setSavedMessage(`Jadwal hari ${weekday} dimuat ke formulir jurnal. Lengkapi presensi, lalu simpan jurnal.`);
+  };
 
   const updateRow = (index: number, patch: Partial<JournalRow>) => {
     setRows((current) => current.map((row, rowIndex) =>
@@ -179,6 +273,154 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
           </div>
         </div>
 
+        <section className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Jadwal Pembelajaran Mingguan</h4>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Pilih tab hari, atur jam pelajaran, lalu simpan sebagai jadwal rutin mingguan.
+                </p>
+              </div>
+              <span className="text-[10px] font-medium text-slate-500">Jadwal ini terpisah dari jurnal harian bertanggal.</span>
+            </div>
+
+            <div role="tablist" aria-label="Hari jadwal pembelajaran" className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+              {WEEKDAYS.map((day) => {
+                const dayCount = weeklySchedule.filter(
+                  (entry) => entry.scope === subjectScope && entry.day === day
+                ).length;
+                const isSelected = selectedScheduleDay === day;
+                return (
+                  <button
+                    key={day}
+                    id={`schedule-tab-${subjectScope}-${day}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelected}
+                    aria-controls={`schedule-panel-${subjectScope}`}
+                    onClick={() => {
+                      setSelectedScheduleDay(day);
+                      setScheduleMessage('');
+                    }}
+                    className={`flex min-w-20 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      isSelected
+                        ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200'
+                        : 'text-slate-600 hover:bg-white/70 hover:text-indigo-700'
+                    }`}
+                  >
+                    {day}
+                    {dayCount > 0 && (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>
+                        {dayCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <form
+              id={`schedule-panel-${subjectScope}`}
+              role="tabpanel"
+              aria-labelledby={`schedule-tab-${subjectScope}-${selectedScheduleDay}`}
+              onSubmit={handleSaveWeeklySchedule}
+              className="space-y-3"
+            >
+              {scheduleMessage && (
+                <p role="status" className={`rounded-lg border p-3 text-xs ${scheduleMessage.includes('berhasil') || scheduleMessage.includes('dimuat') ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+                  {scheduleMessage}
+                </p>
+              )}
+              {scheduleRows.map((row, index) => {
+                const objectives = learningObjectives.filter(
+                  (objective) => objective.subjectId === row.subjectId
+                );
+                return (
+                  <article key={index} className="rounded-xl border border-slate-200 bg-white">
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
+                      <span className="text-xs font-bold text-slate-800">Jam ke-{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => setScheduleRows((current) => current.filter((_, rowIndex) => rowIndex !== index))}
+                        aria-label={`Hapus jadwal jam ke-${index + 1}`}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="grid gap-3 p-3 sm:grid-cols-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        Mata pelajaran
+                        <select
+                          value={row.subjectId}
+                          onChange={(event) => updateScheduleRow(index, { subjectId: event.target.value, objectiveId: '' })}
+                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        >
+                          <option value="">Pilih mata pelajaran</option>
+                          {availableSubjects.map((subject) => (
+                            <option key={subject.id} value={subject.id}>{subject.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        Tujuan pembelajaran / materi
+                        <select
+                          value={row.objectiveId}
+                          onChange={(event) => updateScheduleRow(index, { objectiveId: event.target.value })}
+                          disabled={!row.subjectId}
+                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
+                        >
+                          <option value="">Pilih TP dari kurikulum Admin</option>
+                          {objectives.map((objective) => (
+                            <option key={objective.id} value={objective.id}>{objective.tujuanPembelajaran}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:col-span-2">
+                        Kegiatan pembelajaran
+                        <textarea
+                          rows={2}
+                          value={row.activity}
+                          onChange={(event) => updateScheduleRow(index, { activity: event.target.value })}
+                          placeholder="Tuliskan kegiatan yang direncanakan pada jam ini..."
+                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        />
+                      </label>
+                    </div>
+                  </article>
+                );
+              })}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setScheduleRows((current) => [...current, createJournalRow()])}
+                  className="inline-flex items-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50"
+                >
+                  <Plus className="h-4 w-4" /> Tambah jam
+                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {savedRowsForSelectedDay.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearWeeklySchedule}
+                      className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-3 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Hapus jadwal
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700"
+                  >
+                    <Save className="h-4 w-4" /> Simpan jadwal {selectedScheduleDay}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
         <form onSubmit={handleSave} className="space-y-5 p-4 sm:p-6">
           {formError && (
             <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
@@ -204,6 +446,13 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
               required
               className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:w-56"
             />
+            <button
+              type="button"
+              onClick={handleLoadScheduleToJournal}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50 sm:w-auto"
+            >
+              <CalendarDays className="h-4 w-4" /> Muat jadwal hari ini
+            </button>
           </div>
 
           <div className="space-y-3">

@@ -13,6 +13,9 @@ import {
   SchoolAnnouncement,
   UserRole,
   InternalGradeRecord,
+  WeeklyScheduleDay,
+  WeeklyScheduleEntry,
+  WeeklyScheduleScope,
 } from '../types';
 import {
   INITIAL_SCHOOL_PROFILE,
@@ -27,6 +30,7 @@ import {
   INITIAL_MESSAGES,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_INTERNAL_GRADES,
+  INITIAL_WEEKLY_SCHEDULE,
 } from './mockData';
 import {
   initFirebaseSync,
@@ -158,6 +162,7 @@ export function useEduStore() {
   const messages = useMemo(() => getStoredItem<ChatMessage[]>('messages', INITIAL_MESSAGES), [version]);
   const announcements = useMemo(() => getStoredItem<SchoolAnnouncement[]>('announcements', INITIAL_ANNOUNCEMENTS), [version]);
   const internalGrades = useMemo(() => getStoredItem<InternalGradeRecord[]>('internal_grades', INITIAL_INTERNAL_GRADES), [version]);
+  const weeklySchedule = useMemo(() => getStoredItem<WeeklyScheduleEntry[]>('weekly_schedules', INITIAL_WEEKLY_SCHEDULE), [version]);
 
   // Authentication & Role Switcher
   const login = useCallback((identifier: string, password?: string): boolean => {
@@ -691,6 +696,26 @@ export function useEduStore() {
     deleteFirestoreDoc('journal_entries', id);
   }, []);
 
+  const replaceWeeklyScheduleDay = useCallback((
+    scope: WeeklyScheduleScope,
+    day: WeeklyScheduleDay,
+    entries: Omit<WeeklyScheduleEntry, 'id' | 'scope' | 'day'>[]
+  ) => {
+    const current = getStoredItem<WeeklyScheduleEntry[]>('weekly_schedules', INITIAL_WEEKLY_SCHEDULE);
+    const entriesToRemove = current.filter((entry) => entry.scope === scope && entry.day === day);
+    const remaining = current.filter((entry) => entry.scope !== scope || entry.day !== day);
+    const newEntries = entries.map((entry) => ({
+      ...entry,
+      id: createRecordId('schedule'),
+      scope,
+      day,
+    }));
+
+    setStoredItem('weekly_schedules', [...remaining, ...newEntries]);
+    entriesToRemove.forEach((entry) => deleteFirestoreDoc('weekly_schedules', entry.id));
+    newEntries.forEach((entry) => writeFirestoreDoc('weekly_schedules', entry.id, entry));
+  }, []);
+
   // Star Rewards Actions
   const addStarAward = useCallback((award: Omit<StarAward, 'id' | 'timestamp'>) => {
     const current = getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS);
@@ -984,6 +1009,8 @@ export function useEduStore() {
     addJournalEntry,
     addJournalEntries,
     deleteJournalEntry,
+    weeklySchedule,
+    replaceWeeklyScheduleDay,
     starAwards,
     addStarAward,
     deleteStarAward,

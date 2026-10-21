@@ -23,6 +23,7 @@ import {
   ChatMessage,
   SchoolAnnouncement,
   InternalGradeRecord,
+  WeeklyScheduleEntry,
 } from '../types';
 import {
   INITIAL_SCHOOL_PROFILE,
@@ -37,6 +38,7 @@ import {
   INITIAL_MESSAGES,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_INTERNAL_GRADES,
+  INITIAL_WEEKLY_SCHEDULE,
 } from './mockData';
 
 // User's exact Firebase Project Configuration
@@ -300,6 +302,7 @@ export function initFirebaseSync() {
     syncCollection<SubjectItem>('subjects', 'subjects', INITIAL_SUBJECTS);
     syncCollection<LearningObjective>('learning_objectives', 'learning_objectives', INITIAL_LEARNING_OBJECTIVES);
     syncCollection<SchoolAnnouncement>('announcements', 'announcements', INITIAL_ANNOUNCEMENTS);
+    syncCollection<WeeklyScheduleEntry>('weekly_schedules', 'weekly_schedules', INITIAL_WEEKLY_SCHEDULE);
 
   } catch (error: any) {
     console.error('Firebase initialization error:', error);

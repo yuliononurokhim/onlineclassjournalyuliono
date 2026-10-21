@@ -101,6 +101,18 @@ export interface ClassJournalEntry {
   teacherName: string;
 }
 
+export type WeeklyScheduleDay = 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat';
+export type WeeklyScheduleScope = 'all' | 'pai';
+
+export interface WeeklyScheduleEntry {
+  id: string;
+  day: WeeklyScheduleDay;
+  scope: WeeklyScheduleScope;
+  subjectId: string;
+  objectiveId: string;
+  activity: string;
+}
+
 export type StarActionType = 'reward' | 'penalty';
 
 export interface StarAward {

@@ -45,6 +45,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     gallery: schoolProfile.landingFeatures?.gallery ?? true,
     agenda: schoolProfile.landingFeatures?.agenda ?? true,
   };
+  const accreditationLabel = schoolProfile.kopSubtext.match(
+    /\b(?:terakreditasi|akreditasi)\s*[A-E](?:\s*\([^)]*\))?/i
+  )?.[0];
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -206,9 +209,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <span className="flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-indigo-500" /> {schoolProfile.email}
                   </span>
-                  <span className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                    Akreditasi A Unggul
-                  </span>
+                  {accreditationLabel && (
+                    <span className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                      {accreditationLabel}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

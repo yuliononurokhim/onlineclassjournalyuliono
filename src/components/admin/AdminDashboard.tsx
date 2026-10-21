@@ -814,7 +814,7 @@ Terima kasih.`;
                   type="text"
                   value={profileForm.kopSubtext}
                   onChange={(e) => setProfileForm({ ...profileForm, kopSubtext: e.target.value })}
-                  placeholder="Terakreditasi A · NSS: ... · Alamat lengkap"
+                  placeholder="Contoh: Terakreditasi B · NPSN: ... · Kode Pos: ..."
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>

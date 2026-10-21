@@ -11,6 +11,7 @@ import {
   ChatMessage,
   SchoolAnnouncement,
   InternalGradeRecord,
+  WeeklyScheduleEntry,
 } from '../types';
 
 export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
@@ -29,7 +30,7 @@ export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
   classGrade: 'Kelas 4-A',
   kopLine1: 'PEMERINTAH PROVINSI DKI JAKARTA · DINAS PENDIDIKAN',
   kopLine2: 'SEKOLAH DASAR NEGERI NUSANTARA 01 JAKARTA SELATAN',
-  kopSubtext: 'Terakreditasi A (Unggul) · NSS: 101036402001 · NPSN: 20108742 · Kode Pos: 12160',
+  kopSubtext: 'NSS: 101036402001 · NPSN: 20108742 · Kode Pos: 12160',
   principalName: 'Dra. Hj. Siti Nurjanah, M.Pd.',
   principalNip: '',
   principalPhone: '',
@@ -738,3 +739,5 @@ export const INITIAL_INTERNAL_GRADES: InternalGradeRecord[] = [
     timestamp: Date.now() - 3600000 * 72,
   },
 ];
+
+export const INITIAL_WEEKLY_SCHEDULE: WeeklyScheduleEntry[] = [];
