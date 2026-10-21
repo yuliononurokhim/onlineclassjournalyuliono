@@ -100,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       name: 'Dra. Hj. Siti Nurjanah, M.Pd.',
       role: 'Kepala Sekolah',
       desc: 'Penanggung jawab mutu pendidikan dan kepemimpinan sekolah SDN Nusantara 01.',
-      phone: '(021) 7208492',
+      phone: schoolProfile.principalPhone || '',
       email: 'kepsek@sdnnusantara01.sch.id',
       avatar: 'S',
       badgeColor: 'bg-slate-100 text-slate-800 border-slate-300',
@@ -108,7 +108,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
   ].map((teacher) => {
     if (teacher.roleKey === 'admin') {
-      return { ...teacher, name: schoolProfile.principalName || teacher.name };
+      return {
+        ...teacher,
+        name: schoolProfile.principalName || teacher.name,
+        phone: schoolProfile.principalPhone || '',
+      };
     }
 
     const activeRoleUsers = users.filter(
@@ -736,13 +740,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-100 space-y-2 text-xs">
-                <a
-                  href={`tel:${tch.phone.replace(/[^0-9]/g, '')}`}
-                  className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors"
-                >
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-mono">{tch.phone}</span>
-                </a>
+                {tch.phone && (
+                  <a
+                    href={`tel:${tch.phone.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '')}`}
+                    className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="font-mono">{tch.phone}</span>
+                  </a>
+                )}
                 <a
                   href={`mailto:${tch.email}`}
                   className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors truncate"

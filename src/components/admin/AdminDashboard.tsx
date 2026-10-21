@@ -851,7 +851,7 @@ Terima kasih.`;
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Kepala Sekolah</label>
                   <input
@@ -859,6 +859,18 @@ Terima kasih.`;
                     value={profileForm.principalName}
                     onChange={(e) => setProfileForm({ ...profileForm, principalName: e.target.value })}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nomor HP Kepala Sekolah</label>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={profileForm.principalPhone || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, principalPhone: e.target.value })}
+                    placeholder="08xx-xxxx-xxxx"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
                   />
                 </div>
                 <div>

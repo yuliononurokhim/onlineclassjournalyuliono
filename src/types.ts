@@ -56,6 +56,7 @@ export interface SchoolProfile {
   kopSubtext: string;
   principalName: string;
   principalNip: string;
+  principalPhone?: string;
   logoUrl?: string;
   heroTagline?: string;
   heroTitle?: string;

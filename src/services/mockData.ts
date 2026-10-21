@@ -32,6 +32,7 @@ export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
   kopSubtext: 'Terakreditasi A (Unggul) · NSS: 101036402001 · NPSN: 20108742 · Kode Pos: 12160',
   principalName: 'Dra. Hj. Siti Nurjanah, M.Pd.',
   principalNip: '19740512 199803 2 004',
+  principalPhone: '',
   logoUrl: '',
   heroTagline: 'Portal Jurnal Belajar & Karakter Siswa Real-Time',
   heroTitle: 'Pantau Tumbuh Kembang dan Aktivitas Belajar Si Kecil Setiap Hari',
