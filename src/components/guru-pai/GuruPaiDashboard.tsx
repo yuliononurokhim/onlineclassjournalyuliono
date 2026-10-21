@@ -273,7 +273,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
   ).sort((left, right) => left.timestamp - right.timestamp);
 
   return (
-    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2">
@@ -283,19 +283,19 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
       )}
 
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold shadow-md shadow-teal-200">
-            <Sparkles className="w-6 h-6" />
+      <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold shadow-md shadow-teal-200 shrink-0">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <div>
-            <span className="text-[11px] font-bold text-teal-600 uppercase tracking-wider">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">
               RUANG GURU PAI DAN ISLAMIC LITERACY
             </span>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
               Penilaian Harian Khusus & Pembiasaan Ibadah
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
               Format fleksibel: Nama Penilaian · Sub Indikator / Aspek · Ceklist Ketuntasan Siswa & Bintang Ibadah
             </p>
           </div>
@@ -751,6 +751,7 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
         <TeacherJournalReportView
           teacherRole="guru_pai"
           teacherName={currentUser?.name || 'Ust. Ahmad Fauzan, S.Pd.I.'}
+          teacherNip={currentUser?.nip}
           reportTitle="Laporan Jurnal & Penilaian Pendidikan Agama Islam"
           reportSubtitle="Rekapitulasi Capaian Fiqih Ibadah, Al-Qur'an Hadits & Pembiasaan Sholat"
         />

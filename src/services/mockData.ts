@@ -31,7 +31,7 @@ export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
   kopLine2: 'SEKOLAH DASAR NEGERI NUSANTARA 01 JAKARTA SELATAN',
   kopSubtext: 'Terakreditasi A (Unggul) · NSS: 101036402001 · NPSN: 20108742 · Kode Pos: 12160',
   principalName: 'Dra. Hj. Siti Nurjanah, M.Pd.',
-  principalNip: '19740512 199803 2 004',
+  principalNip: '',
   principalPhone: '',
   logoUrl: '',
   heroTagline: 'Portal Jurnal Belajar & Karakter Siswa Real-Time',

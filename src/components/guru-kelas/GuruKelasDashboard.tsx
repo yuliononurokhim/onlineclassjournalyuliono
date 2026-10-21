@@ -508,7 +508,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   ).sort((left, right) => left.timestamp - right.timestamp);
 
   return (
-    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2">
@@ -518,24 +518,24 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       )}
 
       {/* Header Banner */}
-      <div className="no-print bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-200 shrink-0">
-            <BookOpen className="w-7 h-7" />
+      <div className="no-print bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-200 shrink-0">
+            <BookOpen className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200 tracking-wider uppercase">
+              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 tracking-wider uppercase">
                 RUANG WALI KELAS · {schoolProfile.classGrade}
               </span>
-              <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
                 {schoolProfile.name}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight mt-0.5 leading-snug">
               Jurnal Kelas, Penilaian & Laporan
             </h2>
-            <p className="text-sm text-slate-600 mt-0.5 max-w-2xl">
+            <p className="text-[11px] text-slate-600 mt-0.5 max-w-2xl leading-snug">
               Manajemen murid, cetak kartu ortu, jurnal CP/TP harian, buku nilai internal, dan rekap berkas laporan siap cetak.
             </p>
           </div>
@@ -1303,6 +1303,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
         <TeacherJournalReportView
           teacherRole="guru_kelas"
           teacherName={currentUser?.name || 'Ibu Ratna Kumalasari, S.Pd.'}
+          teacherNip={currentUser?.nip}
           reportTitle="Laporan Jurnal Harian Pembelajaran Kelas"
           reportSubtitle="Rekapitulasi Jurnal Mengajar, Capaian TP, Presensi & Catatan Guru Kelas"
         />

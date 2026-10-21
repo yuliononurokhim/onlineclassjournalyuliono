@@ -18,6 +18,7 @@ import {
 interface TeacherJournalReportViewProps {
   teacherRole: 'guru_kelas' | 'guru_bk' | 'guru_pai';
   teacherName: string;
+  teacherNip?: string;
   reportTitle: string;
   reportSubtitle: string;
 }
@@ -25,6 +26,7 @@ interface TeacherJournalReportViewProps {
 export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> = ({
   teacherRole,
   teacherName,
+  teacherNip,
   reportTitle,
   reportSubtitle,
 }) => {
@@ -480,9 +482,11 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
             <p className="font-extrabold text-slate-950 underline underline-offset-2">
               {schoolProfile.principalName}
             </p>
-            <p className="font-mono text-xs text-slate-600">
-              NIP. {schoolProfile.principalNip}
-            </p>
+            {schoolProfile.principalNip?.trim() && schoolProfile.principalNip.trim() !== '-' && (
+              <p className="font-mono text-xs text-slate-600">
+                NIP. {schoolProfile.principalNip}
+              </p>
+            )}
           </div>
 
           <div>
@@ -500,9 +504,11 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
             <p className="font-extrabold text-slate-950 underline underline-offset-2">
               {teacherName}
             </p>
-            <p className="font-mono text-xs text-slate-600">
-              NIP. 19880415 201101 2 003
-            </p>
+            {teacherNip?.trim() && teacherNip.trim() !== '-' && (
+              <p className="font-mono text-xs text-slate-600">
+                NIP. {teacherNip}
+              </p>
+            )}
           </div>
         </div>
       </div>

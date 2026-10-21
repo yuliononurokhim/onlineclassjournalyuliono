@@ -237,7 +237,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
   ).sort((left, right) => left.timestamp - right.timestamp);
 
   return (
-    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2">
@@ -247,19 +247,19 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
       )}
 
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shadow-md shadow-rose-200">
-            <HeartHandshake className="w-6 h-6" />
+      <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shadow-md shadow-rose-200 shrink-0">
+            <HeartHandshake className="w-5 h-5" />
           </div>
-          <div>
-            <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
               RUANG BIMBINGAN KONSELING & PENDAMPINGAN KARAKTER
             </span>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
               Jurnal Kasus Siswa & Pemantauan Real-Time
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
               Catat perkembangan perilaku, solusi tindak lanjut, pelaporan langsung ke wali murid, dan bintang empati
             </p>
           </div>
@@ -625,6 +625,7 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
         <TeacherJournalReportView
           teacherRole="guru_bk"
           teacherName={currentUser?.name || 'Ibu Dian Permatasari, M.Psi.'}
+          teacherNip={currentUser?.nip}
           reportTitle="Laporan Layanan Bimbingan Konseling & Kasus Siswa"
           reportSubtitle="Rekapitulasi Layanan BK, Pemantauan Siswa & Riwayat Konseling"
         />

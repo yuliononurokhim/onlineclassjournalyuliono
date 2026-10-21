@@ -2299,7 +2299,9 @@ Terima kasih.`;
                 </div>
                 <div>
                   <p className="text-xs font-bold underline text-slate-900">{schoolProfile.principalName}</p>
-                  <p className="text-[11px] font-mono text-slate-600">NIP. {schoolProfile.principalNip}</p>
+                  {schoolProfile.principalNip?.trim() && schoolProfile.principalNip.trim() !== '-' && (
+                    <p className="text-[11px] font-mono text-slate-600">NIP. {schoolProfile.principalNip}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -3087,7 +3089,9 @@ Terima kasih.`;
                   <p className="text-[11px] font-medium text-slate-700">Kepala {schoolProfile.name}</p>
                   <div>
                     <p className="font-bold text-xs underline text-slate-900">{schoolProfile.principalName}</p>
-                    <p className="text-[10px] font-mono text-slate-500">NIP. {schoolProfile.principalNip}</p>
+                    {schoolProfile.principalNip?.trim() && schoolProfile.principalNip.trim() !== '-' && (
+                      <p className="text-[10px] font-mono text-slate-500">NIP. {schoolProfile.principalNip}</p>
+                    )}
                   </div>
                 </div>
               </div>
