@@ -19,6 +19,7 @@ import {
   Download,
   Printer,
   Trash2,
+  Save,
   Edit2,
   Search,
   CheckCircle2,
