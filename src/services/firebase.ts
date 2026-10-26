@@ -7,7 +7,6 @@ import {
   onSnapshot,
   getDocs,
   getDoc,
-  enableIndexedDbPersistence,
   writeBatch,
 } from 'firebase/firestore';
 import {
@@ -74,6 +73,7 @@ let syncState: FirebaseSyncState = {
 };
 
 const listeners: ((state: FirebaseSyncState) => void)[] = [];
+const syncedCollectionNames = new Set<string>();
 
 export function subscribeFirebaseStatus(listener: (state: FirebaseSyncState) => void) {
   listeners.push(listener);
@@ -87,6 +87,9 @@ export function subscribeFirebaseStatus(listener: (state: FirebaseSyncState) => 
 let syncStateTimeout: ReturnType<typeof setTimeout> | null = null;
 function updateSyncStatus(partial: Partial<FirebaseSyncState>) {
   syncState = { ...syncState, ...partial };
+  if (partial.syncedCollectionsCount === undefined) {
+    syncState.syncedCollectionsCount = syncedCollectionNames.size;
+  }
   if (!syncStateTimeout) {
     syncStateTimeout = setTimeout(() => {
       syncStateTimeout = null;
@@ -203,6 +206,7 @@ export function initFirebaseSync() {
           if (!snapshot.empty) {
             hasSyncedItems = true;
             hasAttemptedSeed = true;
+            syncedCollectionNames.add(collectionName);
             const items: T[] = [];
             snapshot.forEach((docSnap) => {
               items.push({ ...(docSnap.data() as T), id: docSnap.id });
@@ -220,13 +224,14 @@ export function initFirebaseSync() {
             updateSyncStatus({
               lastSyncTime: new Date(),
               isConnected: true,
-              syncedCollectionsCount: syncState.syncedCollectionsCount + 1,
+              syncedCollectionsCount: syncedCollectionNames.size,
             });
           } else if (hasSyncedItems) {
+            syncedCollectionNames.add(collectionName);
             isRemoteUpdating = true;
             saveLocal(storageKey, []);
             isRemoteUpdating = false;
-            updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+            updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, syncedCollectionsCount: syncedCollectionNames.size });
           } else if (!hasAttemptedSeed) {
             hasAttemptedSeed = true;
             const seedCollection = () => {
@@ -259,6 +264,7 @@ export function initFirebaseSync() {
             Promise.all([getDoc(initializationRef), isExistingInstallation])
               .then(([marker, existingInstallation]) => {
                 if (marker.exists() || existingInstallation) {
+                  syncedCollectionNames.add(collectionName);
                   setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
                     console.warn(`Failed marking empty ${collectionName} as initialized:`, error);
                     updateSyncStatus({
@@ -269,7 +275,7 @@ export function initFirebaseSync() {
                   isRemoteUpdating = true;
                   saveLocal(storageKey, []);
                   isRemoteUpdating = false;
-                  updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+                  updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, syncedCollectionsCount: syncedCollectionNames.size });
                 } else {
                   seedCollection();
                 }
