@@ -5,12 +5,12 @@ const email = process.argv[2]?.trim();
 const password = process.argv[3]?.trim() || process.env.ADMIN_PASSWORD;
 const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-if (!email || !password) {
-  console.error('Usage: GOOGLE_APPLICATION_CREDENTIALS=/path/service-account.json node set-admin-claim.js admin@example.com "password"');
+if (!email) {
+  console.error('Usage: GOOGLE_APPLICATION_CREDENTIALS=/path/service-account.json node set-admin-claim.js admin@example.com ["optional-password"]');
   process.exit(1);
 }
 
-if (password.length < 6) {
+if (password && password.length < 6) {
   console.error('Password Firebase Auth minimal 6 karakter.');
   process.exit(1);
 }
@@ -36,10 +36,15 @@ try {
   let user;
   try {
     user = await admin.auth().getUserByEmail(email);
-    user = await admin.auth().updateUser(user.uid, { password });
-    console.log(`Updated existing Firebase user: ${email}`);
+    if (password) {
+      user = await admin.auth().updateUser(user.uid, { password });
+      console.log(`Updated password for Firebase user: ${email}`);
+    }
   } catch (error) {
     if (error?.code !== 'auth/user-not-found') throw error;
+    if (!password) {
+      throw new Error('Akun belum ada. Berikan password awal saat menjalankan skrip ini.');
+    }
     user = await admin.auth().createUser({ email, password, emailVerified: true });
     console.log(`Created Firebase user: ${email}`);
   }
