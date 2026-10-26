@@ -2,10 +2,16 @@ import fs from 'node:fs';
 import admin from 'firebase-admin';
 
 const email = process.argv[2]?.trim();
+const password = process.argv[3]?.trim() || process.env.ADMIN_PASSWORD;
 const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-if (!email) {
-  console.error('Usage: GOOGLE_APPLICATION_CREDENTIALS=/path/service-account.json node set-admin-claim.js admin@example.com');
+if (!email || !password) {
+  console.error('Usage: GOOGLE_APPLICATION_CREDENTIALS=/path/service-account.json node set-admin-claim.js admin@example.com "password"');
+  process.exit(1);
+}
+
+if (password.length < 6) {
+  console.error('Password Firebase Auth minimal 6 karakter.');
   process.exit(1);
 }
 
@@ -27,11 +33,21 @@ admin.initializeApp({
 });
 
 try {
-  const user = await admin.auth().getUserByEmail(email);
+  let user;
+  try {
+    user = await admin.auth().getUserByEmail(email);
+    user = await admin.auth().updateUser(user.uid, { password });
+    console.log(`Updated existing Firebase user: ${email}`);
+  } catch (error) {
+    if (error?.code !== 'auth/user-not-found') throw error;
+    user = await admin.auth().createUser({ email, password, emailVerified: true });
+    console.log(`Created Firebase user: ${email}`);
+  }
+
   await admin.auth().setCustomUserClaims(user.uid, { admin: true });
   await admin.auth().revokeRefreshTokens(user.uid);
-  console.log(`Admin claim set for ${email}. The user must sign in again to receive the refreshed token.`);
+  console.log(`Admin claim set for ${email}. Sign in again to receive the refreshed token.`);
 } catch (error) {
-  console.error('Failed to set admin claim:', error instanceof Error ? error.message : error);
+  console.error('Failed to configure admin account:', error instanceof Error ? error.message : error);
   process.exit(1);
 }

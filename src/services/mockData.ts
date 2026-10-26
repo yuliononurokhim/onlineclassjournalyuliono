@@ -209,13 +209,13 @@ export const INITIAL_USERS: UserAccount[] = [
   {
     id: 'usr-admin',
     username: 'admin',
-    password: 'admin123',
+    password: 'Hizamku333221#',
     role: 'admin',
     name: 'Bpk. Bambang Sujatmiko, S.Kom.',
     title: 'Administrator SIM Sekolah',
     nip: '19850314 200902 1 002',
     phone: '0812-9999-0001',
-    email: 'admin@sdnnusantara01.sch.id',
+    email: 'yuliono172@guru.sd.belajar.id',
   },
   {
     id: 'usr-guru-kelas',

@@ -176,16 +176,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     const cleanInput = username.trim().toLowerCase();
     const adminUser = users.find((user) => user.role === 'admin');
-    const isAdminAttempt = cleanInput === 'admin' || cleanInput === adminUser?.email?.toLowerCase();
+    const isAdminAttempt = cleanInput === 'admin' || cleanInput === adminUser?.email?.toLowerCase() || cleanInput.includes('@');
 
     if (isAdminAttempt) {
       try {
-        const email = adminUser?.email || cleanInput;
+        const email = cleanInput.includes('@') ? cleanInput : (adminUser?.email || cleanInput);
         await signInAdmin(email, password);
         switchRole('admin');
         onLoginSuccess();
       } catch (error: any) {
-        const message = error?.message || 'Login administrator gagal.';
+        const code = error?.code;
+        const message = code === 'auth/invalid-credential'
+          ? 'Email atau password salah, atau akun belum terdaftar di Firebase Authentication.'
+          : code === 'auth/too-many-requests'
+            ? 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.'
+            : error?.message || 'Login administrator gagal.';
         setLoginError(message);
       }
       return;
