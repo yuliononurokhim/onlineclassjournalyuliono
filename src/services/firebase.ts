@@ -40,10 +40,11 @@ import {
 } from './mockData';
 
 const isBrowser = typeof window !== 'undefined';
+const safeWindow = isBrowser ? window : undefined;
 const safeLocalStorage = isBrowser ? window.localStorage : undefined;
 
 // User's exact Firebase Project Configuration.
-// Config is kept in code only for backward compatibility with this demo project.
+// Kept here only for this demo project; production apps should use env vars.
 export const firebaseConfig = {
   apiKey: 'AIzaSyDv6DTgcc2xVteqMq-D4k7sQ7KLCFzrp8Q',
   authDomain: 'onlineclassjournalyuliono.firebaseapp.com',
@@ -55,7 +56,6 @@ export const firebaseConfig = {
   measurementId: 'G-B2QVVJ6ZCN',
 };
 
-// Initialize Firebase App instance
 export const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(firebaseApp);
 
@@ -93,6 +93,7 @@ function updateSyncStatus(partial: Partial<FirebaseSyncState>) {
   if (partial.syncedCollectionsCount === undefined) {
     syncState.syncedCollectionsCount = syncedCollectionNames.size;
   }
+
   if (!syncStateTimeout) {
     syncStateTimeout = setTimeout(() => {
       syncStateTimeout = null;
@@ -101,28 +102,27 @@ function updateSyncStatus(partial: Partial<FirebaseSyncState>) {
   }
 }
 
-// LocalStorage helpers to coordinate with store.ts
 const STORAGE_PREFIX = 'edujournal_sd_v1_';
 
 let storageDispatchTimeout: ReturnType<typeof setTimeout> | null = null;
 function scheduleStorageDispatch() {
-  if (!isBrowser || !window.dispatchEvent) return;
+  if (!safeWindow || !safeWindow.dispatchEvent) return;
   if (storageDispatchTimeout) return;
+
   storageDispatchTimeout = setTimeout(() => {
     storageDispatchTimeout = null;
-    window.dispatchEvent(new Event('edujournal_storage_change'));
+    safeWindow.dispatchEvent(new Event('edujournal_storage_change'));
   }, 40);
 }
 
 function saveLocal<T>(key: string, data: T) {
   if (!safeLocalStorage) return;
+
   try {
     const serialized = JSON.stringify(data);
     const existing = safeLocalStorage.getItem(STORAGE_PREFIX + key);
-    if (existing === serialized) {
-      // Data is unchanged; skip writing and dispatching to avoid redundant re-renders
-      return;
-    }
+    if (existing === serialized) return;
+
     safeLocalStorage.setItem(STORAGE_PREFIX + key, serialized);
     scheduleStorageDispatch();
   } catch (err) {
@@ -145,17 +145,18 @@ function removeUndefinedFields<T>(value: T): T {
   return value;
 }
 
-// Flag to prevent echo loops when remote snapshot updates local storage
 let isRemoteUpdating = false;
-
-/**
- * Real-time Two-Way Synchronizer:
- * Sets up Firestore real-time onSnapshot listeners on all collections.
- * Automatically seeds Firestore if collections are newly initialized.
- */
 let isInitialized = false;
 
 export function initFirebaseSync() {
+  if (!isBrowser) {
+    updateSyncStatus({
+      isConnected: false,
+      error: 'Firebase sync can only run in a browser environment.',
+    });
+    return;
+  }
+
   if (isInitialized) return;
   isInitialized = true;
 
@@ -194,11 +195,7 @@ export function initFirebaseSync() {
       }
     );
 
-    function syncCollection<T extends { id: string }>(
-      collectionName: string,
-      storageKey: string,
-      initialData: T[]
-    ) {
+    function syncCollection<T extends { id: string }>(collectionName: string, storageKey: string, initialData: T[]) {
       const colRef = collection(db, collectionName);
       const initializationRef = doc(db, 'settings', `${collectionName}_initialized`);
       let hasAttemptedSeed = false;
@@ -246,6 +243,7 @@ export function initFirebaseSync() {
             });
           } else if (!hasAttemptedSeed) {
             hasAttemptedSeed = true;
+
             const seedCollection = () => {
               try {
                 const batch = writeBatch(db);
@@ -280,9 +278,11 @@ export function initFirebaseSync() {
                       error: error instanceof Error ? error.message : String(error),
                     });
                   });
+
                   isRemoteUpdating = true;
                   saveLocal(storageKey, []);
                   isRemoteUpdating = false;
+
                   updateSyncStatus({
                     lastSyncTime: new Date(),
                     isConnected: true,
@@ -308,7 +308,6 @@ export function initFirebaseSync() {
       );
     }
 
-    // Sync all key educational collections
     syncCollection<Student>('students', 'students', INITIAL_STUDENTS);
     syncCollection<ClassJournalEntry>('journal_entries', 'journal_entries', INITIAL_JOURNAL_ENTRIES);
     syncCollection<InternalGradeRecord>('internal_grades', 'internal_grades', INITIAL_INTERNAL_GRADES);
@@ -327,11 +326,9 @@ export function initFirebaseSync() {
   }
 }
 
-/**
- * Direct write helper to persist any document change directly to Firestore
- */
 export async function writeFirestoreDoc(collectionName: string, id: string, data: any) {
-  if (isRemoteUpdating) return;
+  if (!isBrowser || isRemoteUpdating) return;
+
   try {
     await setDoc(doc(db, collectionName, id), removeUndefinedFields(data), { merge: true });
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
@@ -343,17 +340,17 @@ export async function writeFirestoreDoc(collectionName: string, id: string, data
   }
 }
 
-/**
- * Direct delete helper to remove a document in Firestore
- */
 export async function deleteFirestoreDoc(collectionName: string, id: string) {
-  if (isRemoteUpdating) return;
+  if (!isBrowser || isRemoteUpdating) return;
+
   try {
     const batch = writeBatch(db);
     batch.delete(doc(db, collectionName, id));
+
     if (collectionName !== 'settings') {
-      batch.set(doc(db, 'settings', `${collectionName}_initialized`), { initialized: true }, { merge: true));
+      batch.set(doc(db, 'settings', `${collectionName}_initialized`), { initialized: true }, { merge: true });
     }
+
     await batch.commit();
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
@@ -365,6 +362,8 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
 }
 
 export async function deleteStudentFirestoreRecords(studentId: string, parentUserIds: string[]) {
+  if (!isBrowser) return;
+
   try {
     const batch = writeBatch(db);
     batch.set(doc(db, 'settings', 'students_initialized'), { initialized: true }, { merge: true });
