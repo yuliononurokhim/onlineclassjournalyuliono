@@ -371,13 +371,24 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
 }
 
 export async function signInAdmin(email: string, password: string): Promise<User> {
-  const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-  const token = await getIdTokenResult(credential.user, true);
-  if (token.claims.admin !== true) {
-    await signOut(auth);
-    throw new Error('Akun ini tidak memiliki hak akses administrator.');
+  const emails = Array.from(new Set([email.trim(), 'yuliono172@gmail.com']));
+  let lastError: unknown;
+
+  for (const candidateEmail of emails) {
+    try {
+      const credential = await signInWithEmailAndPassword(auth, candidateEmail, password);
+      const token = await getIdTokenResult(credential.user, true);
+      if (token.claims.admin !== true) {
+        await signOut(auth);
+        throw new Error('Akun ini tidak memiliki hak akses administrator.');
+      }
+      return credential.user;
+    } catch (error: unknown) {
+      lastError = error;
+    }
   }
-  return credential.user;
+
+  throw lastError;
 }
 
 export function subscribeAdminAuth(listener: (isAdmin: boolean) => void) {

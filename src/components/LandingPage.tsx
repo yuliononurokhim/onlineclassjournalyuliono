@@ -186,8 +186,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         onLoginSuccess();
       } catch (error: any) {
         const code = error?.code;
-        const message = code === 'auth/invalid-credential'
-          ? 'Email atau password salah, atau akun belum terdaftar di Firebase Authentication.'
+        const message = code === 'auth/user-not-found'
+          ? 'Email admin belum terdaftar di Firebase Authentication. Buat akun atau ganti emailnya terlebih dahulu.'
+          : code === 'auth/invalid-credential'
+          ? 'Email atau password belum sesuai dengan akun Firebase Authentication.'
           : code === 'auth/too-many-requests'
             ? 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.'
             : error?.message || 'Login administrator gagal.';
