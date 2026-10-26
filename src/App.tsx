@@ -9,7 +9,6 @@ import { GuruBkDashboard } from './components/guru-bk/GuruBkDashboard';
 import { GuruPaiDashboard } from './components/guru-pai/GuruPaiDashboard';
 import { OrangTuaDashboard } from './components/orangtua/OrangTuaDashboard';
 import { School } from 'lucide-react';
-import { subscribeAdminAuth } from './services/firebase';
 
 export default function App() {
   const { currentUser, schoolProfile } = useEduStore();
@@ -19,9 +18,6 @@ export default function App() {
   // Responsive Sidebar States
   const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
   const [isCollapsedDesktop, setIsCollapsedDesktop] = useState<boolean>(false);
-  const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
-
-  useEffect(() => subscribeAdminAuth(setIsAdminAuthorized), []);
 
   // Synchronize default sub-tab when currentUser role changes
   useEffect(() => {
@@ -65,9 +61,6 @@ export default function App() {
 
     switch (currentUser.role) {
       case 'admin':
-        if (!isAdminAuthorized) {
-          return <LandingPage onLoginSuccess={handleLoginSuccess} />;
-        }
         return (
           <AdminDashboard
             currentTab={activeSubTab}

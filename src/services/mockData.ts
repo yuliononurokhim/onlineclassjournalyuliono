@@ -208,8 +208,8 @@ export const INITIAL_STUDENTS: Student[] = [
 export const INITIAL_USERS: UserAccount[] = [
   {
     id: 'usr-admin',
-    username: 'admin',
-    password: 'Hizamku333221#',
+    username: 'admin333221',
+    password: 'admin333221',
     role: 'admin',
     name: 'Bpk. Bambang Sujatmiko, S.Kom.',
     title: 'Administrator SIM Sekolah',
