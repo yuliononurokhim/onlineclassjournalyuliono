@@ -187,9 +187,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       } catch (error: any) {
         const code = error?.code;
         const message = code === 'auth/user-not-found'
-          ? 'Email admin belum terdaftar di Firebase Authentication. Buat akun atau ganti emailnya terlebih dahulu.'
-          : code === 'auth/invalid-credential'
+          ? 'Email admin belum terdaftar di Firebase Authentication. Buat akun atau sesuaikan email admin terlebih dahulu.'
+          : code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-password'
           ? 'Email atau password belum sesuai dengan akun Firebase Authentication.'
+          : code === 'auth/admin-claim-missing'
+          ? 'Email dan password benar, tetapi akun belum memiliki hak akses administrator (custom claim admin). Jalankan set-admin-claim.js untuk akun tersebut.'
           : code === 'auth/too-many-requests'
             ? 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.'
             : error?.message || 'Login administrator gagal.';

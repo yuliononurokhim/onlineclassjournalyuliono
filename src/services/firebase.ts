@@ -371,24 +371,24 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
 }
 
 export async function signInAdmin(email: string, password: string): Promise<User> {
-  const emails = Array.from(new Set([email.trim(), 'yuliono172@gmail.com']));
-  let lastError: unknown;
-
-  for (const candidateEmail of emails) {
-    try {
-      const credential = await signInWithEmailAndPassword(auth, candidateEmail, password);
-      const token = await getIdTokenResult(credential.user, true);
-      if (token.claims.admin !== true) {
-        await signOut(auth);
-        throw new Error('Akun ini tidak memiliki hak akses administrator.');
-      }
-      return credential.user;
-    } catch (error: unknown) {
-      lastError = error;
-    }
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new Error('Email administrator belum dikonfigurasi pada akun pengguna.');
   }
 
-  throw lastError;
+  try {
+    const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    const token = await getIdTokenResult(credential.user, true);
+    if (token.claims.admin !== true) {
+      await signOut(auth);
+      const error = new Error('Akun ini belum memiliki hak akses administrator. Jalankan set-admin-claim.js untuk akun tersebut.');
+      (error as Error & { code?: string }).code = 'auth/admin-claim-missing';
+      throw error;
+    }
+    return credential.user;
+  } catch (error: unknown) {
+    throw error;
+  }
 }
 
 export function subscribeAdminAuth(listener: (isAdmin: boolean) => void) {
