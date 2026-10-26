@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../services/store';
+import { signInAdmin } from '../services/firebase';
 import { UserRole } from '../types';
 import {
   School,
@@ -165,11 +166,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     guru_pai: starAwards.filter((s) => s.awarderRole === 'guru_pai' && s.type !== 'penalty').reduce((sum, s) => sum + s.starsCount, 0),
   };
 
-  const handleManualLogin = (e: React.FormEvent) => {
+  const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     if (!username.trim() || !password.trim()) {
       setLoginError('Harap masukkan username dan password.');
+      return;
+    }
+
+    const cleanInput = username.trim().toLowerCase();
+    const adminUser = users.find((user) => user.role === 'admin');
+    const isAdminAttempt = cleanInput === 'admin' || cleanInput === adminUser?.email?.toLowerCase();
+
+    if (isAdminAttempt) {
+      try {
+        const email = adminUser?.email || cleanInput;
+        await signInAdmin(email, password);
+        switchRole('admin');
+        onLoginSuccess();
+      } catch (error: any) {
+        const message = error?.message || 'Login administrator gagal.';
+        setLoginError(message);
+      }
       return;
     }
 
