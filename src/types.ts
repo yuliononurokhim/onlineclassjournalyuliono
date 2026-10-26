@@ -18,6 +18,7 @@ export interface UserAccount {
   avatar?: string;
   status?: 'aktif' | 'nonaktif';
   subjectAssignment?: string;
+  subjectIds?: string[];
 }
 
 export interface SubjectItem {
