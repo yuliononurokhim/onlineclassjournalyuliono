@@ -40,7 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
   onLoginSuccess,
 }) => {
-  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students, users } = useEduStore();
+  const { schoolProfile, announcements, login, logout, switchRole, currentUser, starAwards, students, users } = useEduStore();
   const landingFeatures = {
     dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
     gallery: schoolProfile.landingFeatures?.gallery ?? true,

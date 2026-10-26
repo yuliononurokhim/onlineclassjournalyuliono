@@ -129,8 +129,10 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
     replaceWeeklyScheduleDay(
       subjectScope,
       selectedScheduleDay,
-      populatedRows.map(({ row }) => ({
+      populatedRows.map(({ row }, index) => ({
+        period: index + 1,
         subjectId: row.subjectId,
+        subjectName: subjects.find((subject) => subject.id === row.subjectId)?.name || '',
         objectiveId: row.objectiveId,
         activity: row.activity.trim(),
       }))

@@ -1,5 +1,13 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  getAuth,
+  getIdTokenResult,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  User,
+} from 'firebase/auth';
+import {
   getFirestore,
   collection,
   doc,
@@ -58,6 +66,7 @@ export const firebaseConfig = {
 
 export const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(firebaseApp);
+export const auth = getAuth(firebaseApp);
 
 export interface FirebaseSyncState {
   isConnected: boolean;
@@ -359,6 +368,35 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
       error: err.message || 'Gagal menghapus data di Firebase',
     });
   }
+}
+
+export async function signInAdmin(email: string, password: string): Promise<User> {
+  const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+  const token = await getIdTokenResult(credential.user, true);
+  if (token.claims.admin !== true) {
+    await signOut(auth);
+    throw new Error('Akun ini tidak memiliki hak akses administrator.');
+  }
+  return credential.user;
+}
+
+export function subscribeAdminAuth(listener: (isAdmin: boolean) => void) {
+  return onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      listener(false);
+      return;
+    }
+    try {
+      const token = await getIdTokenResult(user);
+      listener(token.claims.admin === true);
+    } catch {
+      listener(false);
+    }
+  });
+}
+
+export async function signOutAdmin() {
+  await signOut(auth);
 }
 
 export async function deleteStudentFirestoreRecords(studentId: string, parentUserIds: string[]) {
