@@ -82,6 +82,14 @@ export interface Student {
   classRoleDuty?: string;
 }
 
+export interface WeeklyScheduleEntry {
+  id: string;
+  day: 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat';
+  period: number;
+  subjectId: string;
+  subjectName: string;
+}
+
 export interface ClassJournalEntry {
   id: string;
   date: string; // YYYY-MM-DD
