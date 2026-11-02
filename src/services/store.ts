@@ -142,9 +142,11 @@ export function useEduStore() {
       });
     };
     window.addEventListener('edujournal_storage_change', handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('edujournal_storage_change', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
