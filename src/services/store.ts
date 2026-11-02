@@ -133,7 +133,7 @@ export function useEduStore() {
   useEffect(() => {
     const savedUser = getStoredItem<UserAccount | null>('current_user', null);
     const hadAdminSession = hasOriginalAdminSession();
-    if (savedUser?.role === 'admin' || hadAdminSession) {
+    if (hadAdminSession && savedUser?.role !== 'admin') {
       setStoredItem('current_user', null);
     }
     sessionStorage.removeItem('edujournal_original_admin');
@@ -162,8 +162,7 @@ export function useEduStore() {
   const students = useMemo(() => getStoredItem<Student[]>('students', INITIAL_STUDENTS), [version]);
   const users = useMemo(() => getStoredItem<UserAccount[]>('users', INITIAL_USERS), [version]);
   const currentUser = useMemo(() => {
-    const user = getStoredItem<UserAccount | null>('current_user', null);
-    return user?.role === 'admin' ? null : user;
+    return getStoredItem<UserAccount | null>('current_user', null);
   }, [version]);
   const journalEntries = useMemo(() => getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES), [version]);
   const starAwards = useMemo(() => getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS), [version]);
@@ -178,27 +177,31 @@ export function useEduStore() {
   const login = useCallback((identifier: string, password?: string): boolean => {
     const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     const allStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
+    const initialAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
 
     const cleanInput = identifier.trim().toLowerCase();
     const cleanPass = password || '';
     if (!cleanInput || !cleanPass) return false;
+
+    const matchedAdmin = initialAdmin && (
+      initialAdmin.username.trim().toLowerCase() === cleanInput ||
+      initialAdmin.email?.trim().toLowerCase() === cleanInput
+    ) ? initialAdmin : undefined;
 
     const matchedStudent = allStudents.find(
       (student) =>
         student.nisn.trim().toLowerCase() === cleanInput ||
         student.parentUsername.trim().toLowerCase() === cleanInput
     );
-    let matchedUser = allUsers.find(
+    let matchedUser = matchedAdmin || allUsers.find(
       (u) =>
-        u.role !== 'admin' && (
-          u.username.trim().toLowerCase() === cleanInput ||
-          (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
-          (u.email && u.email.trim().toLowerCase() === cleanInput) ||
-          (matchedStudent &&
-            u.role === 'orangtua' &&
-            (u.studentId === matchedStudent.id ||
-              u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
-        )
+        u.username.trim().toLowerCase() === cleanInput ||
+        (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
+        (u.email && u.email.trim().toLowerCase() === cleanInput) ||
+        (matchedStudent &&
+          u.role === 'orangtua' &&
+          (u.studentId === matchedStudent.id ||
+            u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
     );
 
     let isLegacyParentAccount = false;
@@ -222,6 +225,7 @@ export function useEduStore() {
       setStoredItem('users', [...allUsers, matchedUser]);
       writeFirestoreDoc('users', matchedUser.id, matchedUser);
     }
+    sessionStorage.removeItem('edujournal_original_admin');
     setStoredItem('current_user', matchedUser);
     return true;
   }, []);

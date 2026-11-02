@@ -173,18 +173,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       return;
     }
 
-    const cleanInput = username.trim().toLowerCase();
-    const adminUser = users.find((user) => user.role === 'admin');
-    const isAdminAttempt = cleanInput === 'admin'
-      || cleanInput === adminUser?.username?.trim().toLowerCase()
-      || cleanInput === adminUser?.email?.trim().toLowerCase()
-      || cleanInput.includes('@');
-
-    if (isAdminAttempt) {
-      setLoginError('Login administrator dinonaktifkan sementara. Akun non-admin tetap dapat masuk seperti biasa.');
-      return;
-    }
-
     const success = login(username, password);
     if (success) {
       onLoginSuccess();

@@ -208,15 +208,16 @@ export const INITIAL_STUDENTS: Student[] = [
 export const INITIAL_USERS: UserAccount[] = [
   {
     id: 'usr-admin',
-    username: 'admin333221',
-    password: '',
+    username: 'yuliono172@guru.sd.belajar.id',
+    password: 'passwordbebas123',
     role: 'admin',
-    name: 'Bpk. Bambang Sujatmiko, S.Kom.',
-    title: 'Administrator SIM Sekolah',
+    name: 'Yuliono (Super Admin)',
+    title: 'Administrator Utama',
     nip: '19850314 200902 1 002',
     phone: '0812-9999-0001',
     email: 'yuliono172@guru.sd.belajar.id',
   },
+  // ... letakkan user lainnya di bawahnya
   {
     id: 'usr-guru-kelas',
     username: 'gurukelas',
