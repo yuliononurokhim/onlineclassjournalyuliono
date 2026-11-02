@@ -173,32 +173,6 @@ export function useEduStore() {
     const cleanPass = password || '';
     if (!cleanInput || !cleanPass) return false;
 
-    const defaultAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
-    if (
-      defaultAdmin &&
-      cleanInput === defaultAdmin.username.trim().toLowerCase() &&
-      cleanPass === defaultAdmin.password
-    ) {
-      const existingAdmin = allUsers.find((user) => user.id === defaultAdmin.id)
-        || allUsers.find((user) => user.role === 'admin');
-      const adminAccount: UserAccount = {
-        ...defaultAdmin,
-        ...existingAdmin,
-        username: defaultAdmin.username,
-        password: defaultAdmin.password,
-        role: 'admin',
-        status: 'aktif',
-      };
-      const updatedUsers = existingAdmin
-        ? allUsers.map((user) => user.id === existingAdmin.id ? adminAccount : user)
-        : [...allUsers, adminAccount];
-
-      setStoredItem('users', updatedUsers);
-      writeFirestoreDoc('users', adminAccount.id, adminAccount);
-      setStoredItem('current_user', adminAccount);
-      return true;
-    }
-
     const matchedStudent = allStudents.find(
       (student) =>
         student.nisn.trim().toLowerCase() === cleanInput ||
@@ -206,13 +180,15 @@ export function useEduStore() {
     );
     let matchedUser = allUsers.find(
       (u) =>
-        u.username.trim().toLowerCase() === cleanInput ||
-        (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
-        (u.email && u.email.trim().toLowerCase() === cleanInput) ||
-        (matchedStudent &&
-          u.role === 'orangtua' &&
-          (u.studentId === matchedStudent.id ||
-            u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
+        u.role !== 'admin' && (
+          u.username.trim().toLowerCase() === cleanInput ||
+          (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
+          (u.email && u.email.trim().toLowerCase() === cleanInput) ||
+          (matchedStudent &&
+            u.role === 'orangtua' &&
+            (u.studentId === matchedStudent.id ||
+              u.username.trim().toLowerCase() === matchedStudent.parentUsername.trim().toLowerCase()))
+        )
     );
 
     let isLegacyParentAccount = false;
@@ -237,6 +213,23 @@ export function useEduStore() {
       writeFirestoreDoc('users', matchedUser.id, matchedUser);
     }
     setStoredItem('current_user', matchedUser);
+    return true;
+  }, []);
+
+  const setAuthenticatedAdmin = useCallback((): boolean => {
+    const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
+    const adminUser = allUsers.find((user) => user.role === 'admin')
+      || INITIAL_USERS.find((user) => user.role === 'admin');
+    if (!adminUser) return false;
+
+    const sanitizedUsers = allUsers.map((user) =>
+      user.role === 'admin' ? { ...user, password: '' } : user
+    );
+    const sanitizedAdmin = { ...adminUser, password: '' };
+    setStoredItem('users', sanitizedUsers);
+    setStoredItem('current_user', sanitizedAdmin);
+    sessionStorage.removeItem('edujournal_original_admin');
+    writeFirestoreDoc('users', sanitizedAdmin.id, sanitizedAdmin);
     return true;
   }, []);
 
@@ -999,6 +992,7 @@ export function useEduStore() {
     deleteUser,
     currentUser,
     login,
+    setAuthenticatedAdmin,
     switchRole,
     impersonateUser,
     stopImpersonating,

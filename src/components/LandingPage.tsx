@@ -40,7 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
   onLoginSuccess,
 }) => {
-  const { schoolProfile, announcements, login, logout, switchRole, currentUser, starAwards, students, users } = useEduStore();
+  const { schoolProfile, announcements, login, logout, setAuthenticatedAdmin, currentUser, starAwards, students, users } = useEduStore();
   const landingFeatures = {
     dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
     gallery: schoolProfile.landingFeatures?.gallery ?? true,
@@ -176,13 +176,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     const cleanInput = username.trim().toLowerCase();
     const adminUser = users.find((user) => user.role === 'admin');
-    const isAdminAttempt = cleanInput === 'admin' || cleanInput === adminUser?.email?.toLowerCase() || cleanInput.includes('@');
+    const isAdminAttempt = cleanInput === 'admin'
+      || cleanInput === adminUser?.username?.trim().toLowerCase()
+      || cleanInput === adminUser?.email?.trim().toLowerCase()
+      || cleanInput.includes('@');
 
     if (isAdminAttempt) {
       try {
         const email = cleanInput.includes('@') ? cleanInput : (adminUser?.email || cleanInput);
         await signInAdmin(email, password);
-        switchRole('admin');
+        if (!setAuthenticatedAdmin()) {
+          throw new Error('Data akun administrator belum tersedia.');
+        }
         onLoginSuccess();
       } catch (error: any) {
         const code = error?.code;

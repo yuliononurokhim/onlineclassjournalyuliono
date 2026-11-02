@@ -7,7 +7,7 @@ export type UserRole = 'admin' | 'guru_kelas' | 'guru_bk' | 'guru_pai' | 'orangt
 export interface UserAccount {
   id: string;
   username: string;
-  password: string; // Plaintext for school demo & admin recovery
+  password: string; // Local non-admin accounts only; admin authentication uses Firebase
   role: UserRole;
   name: string;
   title: string; // e.g. "Wali Kelas 4-A", "Guru BK", "Orang Tua dari Adam"
