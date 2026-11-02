@@ -131,13 +131,6 @@ export function useEduStore() {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    const savedUser = getStoredItem<UserAccount | null>('current_user', null);
-    const hadAdminSession = hasOriginalAdminSession();
-    if (hadAdminSession && savedUser?.role !== 'admin') {
-      setStoredItem('current_user', null);
-    }
-    sessionStorage.removeItem('edujournal_original_admin');
-
     // Start two-way real-time Firestore sync
     initFirebaseSync();
 
