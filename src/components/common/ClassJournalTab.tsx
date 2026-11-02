@@ -1,10 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useEduStore } from '../../services/store';
-import { ClassJournalEntry, WeeklyScheduleDay, WeeklyScheduleScope } from '../../types';
+import { ClassJournalEntry, LearningObjective, WeeklyScheduleDay, WeeklyScheduleScope } from '../../types';
 import { getLocalDateString } from '../../services/date';
 import { BookOpen, CalendarDays, ChevronDown, Plus, Save, Trash2 } from 'lucide-react';
 
 type AttendanceStatus = NonNullable<ClassJournalEntry['attendanceByStudent']>[string];
+
+function getObjectiveTpList(objective: LearningObjective): string[] {
+  const tujuanList = objective.tujuanPembelajaranList?.map((item) => item.trim()).filter(Boolean) || [];
+  return tujuanList.length > 0 ? tujuanList : [objective.tujuanPembelajaran];
+}
+
+function resolveObjectiveSelection(
+  objectives: LearningObjective[],
+  selectionId: string,
+  subjectId?: string
+): { objective: LearningObjective; tujuanPembelajaran: string } | null {
+  const [objectiveId, indexValue] = selectionId.split('::');
+  const objective = objectives.find((item) => item.id === objectiveId && (!subjectId || item.subjectId === subjectId));
+  if (!objective) return null;
+
+  const tujuanList = getObjectiveTpList(objective);
+  const index = indexValue === undefined ? 0 : Number(indexValue);
+  const tujuanPembelajaran = tujuanList[index] || tujuanList[0];
+  return tujuanPembelajaran ? { objective, tujuanPembelajaran } : null;
+}
 
 interface ClassJournalTabProps {
   subjectScope?: WeeklyScheduleScope;
@@ -129,10 +149,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
         setScheduleMessage(`Jam ke-${index + 1}: pilih mata pelajaran.`);
         return;
       }
-      const objective = learningObjectives.find(
-        (item) => item.id === row.objectiveId && item.subjectId === row.subjectId
-      );
-      if (!objective) {
+      const selectedObjective = resolveObjectiveSelection(learningObjectives, row.objectiveId, row.subjectId);
+      if (!selectedObjective) {
         setScheduleMessage(`Jam ke-${index + 1}: pilih TP sesuai mata pelajaran.`);
         return;
       }
@@ -235,10 +253,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
         setFormError(`Baris ${index + 1}: pilih mata pelajaran.`);
         return;
       }
-      const objective = learningObjectives.find(
-        (item) => item.id === row.objectiveId && item.subjectId === row.subjectId
-      );
-      if (!objective) {
+      const selectedObjective = resolveObjectiveSelection(learningObjectives, row.objectiveId, row.subjectId);
+      if (!selectedObjective) {
         setFormError(`Baris ${index + 1}: pilih TP dari kurikulum Admin sesuai mata pelajaran.`);
         return;
       }
@@ -260,15 +276,15 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
 
     addJournalEntries(populatedRows.map(({ row, index }) => {
       const subject = availableSubjects.find((item) => item.id === row.subjectId)!;
-      const objective = learningObjectives.find((item) => item.id === row.objectiveId)!;
+      const selectedObjective = resolveObjectiveSelection(learningObjectives, row.objectiveId, row.subjectId)!;
       return {
         date,
         timeSlot: `ke-${index + 1}`,
         subjectId: subject.id,
         subjectName: subject.name,
-        learningObjectiveId: objective.id,
-        cpDescription: objective.capaianPembelajaran,
-        tpDescription: objective.tujuanPembelajaran,
+        learningObjectiveId: selectedObjective.objective.id,
+        cpDescription: selectedObjective.objective.capaianPembelajaran,
+        tpDescription: selectedObjective.tujuanPembelajaran,
         activityDescription: row.activity.trim(),
         ...counts,
         attendanceByStudent,
@@ -407,9 +423,11 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                           className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
                         >
                           <option value="">Pilih TP dari kurikulum Admin</option>
-                          {objectives.map((objective) => (
-                            <option key={objective.id} value={objective.id}>{objective.tujuanPembelajaran}</option>
-                          ))}
+                          {objectives.flatMap((objective) =>
+                            getObjectiveTpList(objective).map((tujuanPembelajaran, tpIndex) => (
+                              <option key={`${objective.id}-tp-${tpIndex}`} value={`${objective.id}::${tpIndex}`}>{tujuanPembelajaran}</option>
+                            ))
+                          )}
                         </select>
                       </label>
                       <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:col-span-2">
@@ -506,7 +524,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
               const objectives = learningObjectives.filter(
                 (objective) => objective.subjectId === row.subjectId
               );
-              const selectedObjective = objectives.find((objective) => objective.id === row.objectiveId);
+              const selectedObjective = resolveObjectiveSelection(objectives, row.objectiveId, row.subjectId);
               return (
                 <article key={index} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-200">
                   <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-3 py-2.5 sm:px-4">
@@ -555,16 +573,18 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                         className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case tracking-normal text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
                       >
                         <option value="">Pilih TP dari kurikulum Admin</option>
-                        {objectives.map((objective) => (
-                          <option key={objective.id} value={objective.id}>{objective.tujuanPembelajaran}</option>
-                        ))}
+                        {objectives.flatMap((objective) =>
+                          getObjectiveTpList(objective).map((tujuanPembelajaran, tpIndex) => (
+                            <option key={`${objective.id}-tp-${tpIndex}`} value={`${objective.id}::${tpIndex}`}>{tujuanPembelajaran}</option>
+                          ))
+                        )}
                       </select>
                     </label>
 
                     <div className="rounded-lg bg-violet-50/80 p-3 sm:col-span-2">
                       <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">Capaian Pembelajaran (CP)</p>
                       <p className={`text-xs leading-relaxed ${selectedObjective ? 'text-slate-700' : 'text-slate-400'}`}>
-                        {selectedObjective?.capaianPembelajaran || 'CP otomatis tampil setelah TP dipilih.'}
+                        {selectedObjective?.objective.capaianPembelajaran || 'CP otomatis tampil setelah TP dipilih.'}
                       </p>
                     </div>
 

@@ -168,6 +168,14 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
 
   // Filter CP/TP based on selected subject in journal form
   const availableLoForSubject = learningObjectives.filter((lo) => lo.subjectId === journalSubjectId);
+  const availableTpForSubject = availableLoForSubject.flatMap((lo) =>
+    (lo.tujuanPembelajaranList?.length ? lo.tujuanPembelajaranList : [lo.tujuanPembelajaran])
+      .map((tujuanPembelajaran, index) => ({
+        value: `${lo.id}::${index}`,
+        objective: lo,
+        tujuanPembelajaran,
+      }))
+  );
 
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,16 +405,20 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
     const subj = subjects.find((s) => s.id === journalSubjectId);
-    const lo = learningObjectives.find((l) => l.id === journalLoId);
+    const [objectiveId, indexValue] = journalLoId.split('::');
+    const lo = learningObjectives.find((item) => item.id === objectiveId);
+    const tpList = lo?.tujuanPembelajaranList?.length ? lo.tujuanPembelajaranList : lo ? [lo.tujuanPembelajaran] : [];
+    const tpIndex = indexValue === undefined ? 0 : Number(indexValue);
+    const selectedTp = tpList[tpIndex] || tpList[0];
 
     addJournalEntry({
       date: journalDate,
       timeSlot: journalTimeSlot,
       subjectId: journalSubjectId,
       subjectName: subj ? subj.name : 'Mata Pelajaran',
-      learningObjectiveId: journalLoId || undefined,
+      learningObjectiveId: lo?.id,
       cpDescription: lo ? lo.capaianPembelajaran : 'Mengikuti alur capaian kompetensi tematik harian.',
-      tpDescription: lo ? lo.tujuanPembelajaran : 'Tujuan pembelajaran harian tercapai sesuai modul ajar.',
+      tpDescription: selectedTp || 'Tujuan pembelajaran harian tercapai sesuai modul ajar.',
       activityDescription: journalActivity,
       attendancePresent: Number(journalAttendancePresent),
       attendanceSick: Number(journalAttendanceSick),
@@ -925,9 +937,9 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
                 >
                   <option value="">-- Gunakan TP Umum Modul Ajar --</option>
-                  {availableLoForSubject.map((lo) => (
-                    <option key={lo.id} value={lo.id}>
-                      {lo.tujuanPembelajaran.slice(0, 75)}...
+                  {availableTpForSubject.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.tujuanPembelajaran.slice(0, 75)}{option.tujuanPembelajaran.length > 75 ? '...' : ''}
                     </option>
                   ))}
                 </select>

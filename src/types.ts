@@ -33,6 +33,7 @@ export interface LearningObjective {
   subjectName: string;
   capaianPembelajaran: string; // CP
   tujuanPembelajaran: string; // TP
+  tujuanPembelajaranList?: string[];
   semester: 'Ganjil' | 'Genap';
   grade: string;
 }

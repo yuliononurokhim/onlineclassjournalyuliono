@@ -67,70 +67,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   }, [activeView]);
 
-  // Companion teachers
-  const companionTeachers = [
-    {
-      name: 'Ibu Ratna Kumalasari, S.Pd.',
-      role: 'Guru Kelas / Wali Kelas 4-A',
-      desc: 'Penanggung jawab kegiatan belajar harian, pencatatan jurnal umum, dan presensi murid.',
-      phone: '0813-7722-1133',
-      email: 'ratna.k@sdnnusantara01.sch.id',
-      avatar: 'R',
+  const contactRoleDetails: Partial<Record<UserRole, { label: string; description: string; badgeColor: string }>> = {
+    guru_kelas: {
+      label: 'Guru Kelas / Wali Kelas',
+      description: 'Penanggung jawab kegiatan belajar harian, jurnal kelas, dan presensi murid.',
       badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      roleKey: 'guru_kelas' as UserRole,
     },
-    {
-      name: 'Ibu Dian Permatasari, M.Psi.',
-      role: 'Guru Bimbingan Konseling (BK)',
-      desc: 'Pendampingan psikologis siswa, penanganan kasus khusus, dan pemantauan perkembangan karakter.',
-      phone: '0812-5544-7788',
-      email: 'dian.bk@sdnnusantara01.sch.id',
-      avatar: 'D',
+    guru_bk: {
+      label: 'Guru Bimbingan Konseling (BK)',
+      description: 'Pendampingan siswa, penanganan kasus, dan pemantauan perkembangan karakter.',
       badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
-      roleKey: 'guru_bk' as UserRole,
     },
-    {
-      name: 'Ust. Ahmad Fauzan, S.Pd.I.',
-      role: 'Guru Pendidikan Agama Islam (PAI)',
-      desc: 'Penilaian praktik ibadah harian, pembiasaan thaharah/sholat, dan hafalan Al-Qur’an Juz 30.',
-      phone: '0815-6677-8800',
-      email: 'ahmad.fauzan@sdnnusantara01.sch.id',
-      avatar: 'A',
+    guru_pai: {
+      label: 'Guru Pendidikan Agama Islam (PAI)',
+      description: 'Pembelajaran agama, praktik ibadah, dan pembiasaan akhlak siswa.',
       badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-      roleKey: 'guru_pai' as UserRole,
     },
-    {
-      name: 'Dra. Hj. Siti Nurjanah, M.Pd.',
-      role: 'Kepala Sekolah',
-      desc: 'Penanggung jawab mutu pendidikan dan kepemimpinan sekolah SDN Nusantara 01.',
-      phone: schoolProfile.principalPhone || '',
-      email: 'kepsek@sdnnusantara01.sch.id',
-      avatar: 'S',
-      badgeColor: 'bg-slate-100 text-slate-800 border-slate-300',
-      roleKey: 'admin' as UserRole,
-    },
-  ].map((teacher) => {
-    if (teacher.roleKey === 'admin') {
+  };
+  const companionTeachers = users
+    .filter((user) => user.status !== 'nonaktif' && contactRoleDetails[user.role])
+    .map((account) => {
+      const details = contactRoleDetails[account.role]!;
       return {
-        ...teacher,
-        name: schoolProfile.principalName || teacher.name,
-        phone: schoolProfile.principalPhone || '',
+        id: account.id,
+        name: account.name,
+        role: account.title || details.label,
+        desc: details.description,
+        phone: account.phone?.trim() || '',
+        email: account.email?.trim() || '',
+        avatar: account.name.charAt(0),
+        badgeColor: details.badgeColor,
       };
-    }
-
-    const activeRoleUsers = users.filter(
-      (user) => user.role === teacher.roleKey && user.status !== 'nonaktif'
-    );
-    if (activeRoleUsers.length !== 1) return teacher;
-
-    const account = activeRoleUsers[0];
-    return {
-      ...teacher,
-      name: account.name,
-      phone: account.phone || teacher.phone,
-      email: account.email || teacher.email,
-    };
-  });
+    });
 
   // Current Week's Total Star Distribution Statistics
   const rewardsList = starAwards.filter((s) => s.type !== 'penalty');
@@ -756,9 +724,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {companionTeachers.map((tch, idx) => (
+          {companionTeachers.map((tch) => (
             <div
-              key={idx}
+              key={tch.id}
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between"
             >
               <div>
@@ -786,23 +754,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <span className="font-mono">{tch.phone}</span>
                   </a>
                 )}
-                <a
-                  href={`mailto:${tch.email}`}
-                  className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors truncate"
-                >
-                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{tch.email}</span>
-                </a>
-                <a
-                  href={`mailto:${tch.email}?subject=${encodeURIComponent(`Konsultasi dengan ${tch.name}`)}`}
-                  className="w-full mt-2 py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Kirim Pesan</span>
-                </a>
+                {tch.email && (
+                  <a
+                    href={`mailto:${tch.email}`}
+                    className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors truncate"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{tch.email}</span>
+                  </a>
+                )}
+                {!tch.phone && !tch.email && (
+                  <p className="text-[11px] text-slate-400">Kontak belum diatur oleh admin.</p>
+                )}
+                {tch.email && (
+                  <a
+                    href={`mailto:${tch.email}?subject=${encodeURIComponent(`Konsultasi dengan ${tch.name}`)}`}
+                    className="w-full mt-2 py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Kirim Pesan</span>
+                  </a>
+                )}
               </div>
             </div>
           ))}
+          {companionTeachers.length === 0 && (
+            <p className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">
+              Kontak guru pendamping belum tersedia.
+            </p>
+          )}
         </div>
       </section>
 

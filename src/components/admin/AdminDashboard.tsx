@@ -261,7 +261,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [showAddLoModal, setShowAddLoModal] = useState(false);
   const [loSubjectId, setLoSubjectId] = useState(subjects[0]?.id || '');
   const [loCp, setLoCp] = useState('');
-  const [loTp, setLoTp] = useState('');
+  const [loTpList, setLoTpList] = useState<string[]>(['']);
   const [loSemester, setLoSemester] = useState<'Ganjil' | 'Genap'>('Ganjil');
 
   // Learning Objective (CP & TP) Edit Form
@@ -269,7 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [loToEdit, setLoToEdit] = useState<LearningObjective | null>(null);
   const [editLoSubjectId, setEditLoSubjectId] = useState('');
   const [editLoCp, setEditLoCp] = useState('');
-  const [editLoTp, setEditLoTp] = useState('');
+  const [editLoTpList, setEditLoTpList] = useState<string[]>(['']);
   const [editLoSemester, setEditLoSemester] = useState<'Ganjil' | 'Genap'>('Ganjil');
 
   // Teacher Management State
@@ -419,19 +419,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
 
   const handleCreateLo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loSubjectId || !loCp.trim() || !loTp.trim()) return;
+    const tujuanPembelajaranList = loTpList.map((item) => item.trim()).filter(Boolean);
+    if (!loSubjectId || !loCp.trim() || tujuanPembelajaranList.length === 0) return;
     const subj = subjects.find((s) => s.id === loSubjectId);
     if (!subj) return;
     addLearningObjective({
       subjectId: loSubjectId,
       subjectName: subj.name,
       capaianPembelajaran: loCp.trim(),
-      tujuanPembelajaran: loTp.trim(),
+      tujuanPembelajaran: tujuanPembelajaranList[0],
+      tujuanPembelajaranList,
       semester: loSemester,
       grade: schoolProfile.classGrade,
     });
     setLoCp('');
-    setLoTp('');
+    setLoTpList(['']);
     setShowAddLoModal(false);
     showToast('Capaian (CP) & Tujuan Pembelajaran (TP) berhasil ditambahkan!');
   };
@@ -439,7 +441,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const handleOpenCreateLo = (subjectId: string) => {
     setLoSubjectId(subjectId);
     setLoCp('');
-    setLoTp('');
+    setLoTpList(['']);
     setLoSemester('Ganjil');
     setShowAddLoModal(true);
   };
@@ -470,7 +472,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     setLoToEdit(lo);
     setEditLoSubjectId(lo.subjectId);
     setEditLoCp(lo.capaianPembelajaran);
-    setEditLoTp(lo.tujuanPembelajaran);
+    setEditLoTpList(lo.tujuanPembelajaranList?.length ? [...lo.tujuanPembelajaranList] : [lo.tujuanPembelajaran]);
     setEditLoSemester(lo.semester);
     setShowEditLoModal(true);
   };
@@ -478,13 +480,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   // Save Edit CP & TP
   const handleSaveEditLo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loToEdit || !editLoCp.trim() || !editLoTp.trim()) return;
+    const tujuanPembelajaranList = editLoTpList.map((item) => item.trim()).filter(Boolean);
+    if (!loToEdit || !editLoCp.trim() || tujuanPembelajaranList.length === 0) return;
     const subj = subjects.find((s) => s.id === editLoSubjectId);
     updateLearningObjective(loToEdit.id, {
       subjectId: editLoSubjectId,
       subjectName: subj ? subj.name : loToEdit.subjectName,
       capaianPembelajaran: editLoCp.trim(),
-      tujuanPembelajaran: editLoTp.trim(),
+      tujuanPembelajaran: tujuanPembelajaranList[0],
+      tujuanPembelajaranList,
       semester: editLoSemester,
     });
     setShowEditLoModal(false);
@@ -1561,7 +1565,11 @@ Terima kasih.`;
                           </div>
                           <div>
                             <p className="mb-1 text-[10px] font-bold uppercase text-indigo-600">Tujuan Pembelajaran (TP)</p>
-                            <p className="text-xs leading-relaxed text-slate-700">{objective.tujuanPembelajaran}</p>
+                            <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-slate-700">
+                              {(objective.tujuanPembelajaranList?.length ? objective.tujuanPembelajaranList : [objective.tujuanPembelajaran]).map((tujuan, index) => (
+                                <li key={`${objective.id}-tp-${index}`}>{tujuan}</li>
+                              ))}
+                            </ol>
                             <p className="mt-2 text-[10px] text-slate-500">Semester {objective.semester} · {objective.grade}</p>
                           </div>
                         </article>
@@ -1633,7 +1641,11 @@ Terima kasih.`;
                             </div>
                             <div>
                               <p className="text-[10px] font-bold uppercase text-indigo-600">TP · {objective.grade}</p>
-                              <p className="mt-1 text-xs text-slate-700">{objective.tujuanPembelajaran}</p>
+                              <ol className="mt-1 list-decimal space-y-1 pl-4 text-xs text-slate-700">
+                                {(objective.tujuanPembelajaranList?.length ? objective.tujuanPembelajaranList : [objective.tujuanPembelajaran]).map((tujuan, index) => (
+                                  <li key={`${objective.id}-tp-${index}`}>{tujuan}</li>
+                                ))}
+                              </ol>
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
@@ -3432,17 +3444,35 @@ Terima kasih.`;
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tujuan Pembelajaran (TP)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Tujuan spesifik yang ditargetkan dalam pertemuan..."
-                  value={loTp}
-                  onChange={(e) => setLoTp(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
+                <p className="mb-1 text-xs font-semibold text-slate-700">Tujuan Pembelajaran (TP)</p>
+                <div className="space-y-2">
+                  {loTpList.map((tp, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <label className="min-w-0 flex-1 text-[11px] font-medium text-slate-500">
+                        TP {index + 1}
+                        <textarea
+                          rows={2}
+                          placeholder={`Tujuan pembelajaran ke-${index + 1}...`}
+                          value={tp}
+                          onChange={(event) => setLoTpList((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))}
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={loTpList.length === 1}
+                        onClick={() => setLoTpList((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                        className="mt-5 rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
+                        aria-label={`Hapus TP ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setLoTpList((current) => [...current, ''])} className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
+                  <Plus className="h-3.5 w-3.5" /> Tambah TP
+                </button>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3">
@@ -3620,17 +3650,35 @@ Terima kasih.`;
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tujuan Pembelajaran (TP)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Tujuan spesifik yang ditargetkan dalam pertemuan..."
-                  value={editLoTp}
-                  onChange={(e) => setEditLoTp(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none leading-relaxed transition-all duration-200"
-                />
+                <p className="mb-1 text-xs font-semibold text-slate-700">Tujuan Pembelajaran (TP)</p>
+                <div className="space-y-2">
+                  {editLoTpList.map((tp, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <label className="min-w-0 flex-1 text-[11px] font-medium text-slate-500">
+                        TP {index + 1}
+                        <textarea
+                          rows={2}
+                          placeholder={`Tujuan pembelajaran ke-${index + 1}...`}
+                          value={tp}
+                          onChange={(event) => setEditLoTpList((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))}
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={editLoTpList.length === 1}
+                        onClick={() => setEditLoTpList((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                        className="mt-5 rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
+                        aria-label={`Hapus TP ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setEditLoTpList((current) => [...current, ''])} className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
+                  <Plus className="h-3.5 w-3.5" /> Tambah TP
+                </button>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
