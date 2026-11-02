@@ -46,13 +46,13 @@ export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
 };
 
 export const INITIAL_SUBJECTS: SubjectItem[] = [
-  { id: 'subj-1', name: 'Pendidikan Agama Islam (PAI)', code: 'PAI', teacherName: 'Ust. Ahmad Fauzan, S.Pd.I.' },
-  { id: 'subj-2', name: 'Bahasa Indonesia', code: 'BIN', teacherName: 'Ibu Ratna Kumalasari, S.Pd.' },
-  { id: 'subj-3', name: 'Matematika', code: 'MTK', teacherName: 'Ibu Ratna Kumalasari, S.Pd.' },
-  { id: 'subj-4', name: 'IPAS (Sains & Sosial)', code: 'IPAS', teacherName: 'Ibu Ratna Kumalasari, S.Pd.' },
-  { id: 'subj-5', name: 'Pendidikan Pancasila', code: 'PPN', teacherName: 'Ibu Ratna Kumalasari, S.Pd.' },
-  { id: 'subj-6', name: 'Pendidikan Jasmani & Olahraga (PJOK)', code: 'PJK', teacherName: 'Bpk. Hendra Gunawan, S.Or.' },
-  { id: 'subj-7', name: 'Seni Rupa & Prakarya', code: 'SNR', teacherName: 'Ibu Ratna Kumalasari, S.Pd.' },
+  { id: 'subj-1', name: 'Pendidikan Agama Islam (PAI)', code: 'PAI' },
+  { id: 'subj-2', name: 'Bahasa Indonesia', code: 'BIN' },
+  { id: 'subj-3', name: 'Matematika', code: 'MTK' },
+  { id: 'subj-4', name: 'IPAS (Sains & Sosial)', code: 'IPAS' },
+  { id: 'subj-5', name: 'Pendidikan Pancasila', code: 'PPN' },
+  { id: 'subj-6', name: 'Pendidikan Jasmani & Olahraga (PJOK)', code: 'PJK' },
+  { id: 'subj-7', name: 'Seni Rupa & Prakarya', code: 'SNR' },
 ];
 
 export const INITIAL_LEARNING_OBJECTIVES: LearningObjective[] = [

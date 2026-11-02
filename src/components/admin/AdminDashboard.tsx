@@ -211,14 +211,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
   const [newSubjName, setNewSubjName] = useState('');
   const [newSubjCode, setNewSubjCode] = useState('');
-  const [newSubjTeacher, setNewSubjTeacher] = useState('');
 
   // Subject Edit Modal / Form
   const [showEditSubjectModal, setShowEditSubjectModal] = useState(false);
   const [subjectToEdit, setSubjectToEdit] = useState<SubjectItem | null>(null);
   const [editSubjName, setEditSubjName] = useState('');
   const [editSubjCode, setEditSubjCode] = useState('');
-  const [editSubjTeacher, setEditSubjTeacher] = useState('');
 
   // Learning Objective (CP & TP) Add Form
   const [showAddLoModal, setShowAddLoModal] = useState(false);
@@ -373,11 +371,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     addSubject({
       name: newSubjName.trim(),
       code: newSubjCode.trim().toUpperCase(),
-      teacherName: newSubjTeacher.trim() || 'Guru Pengampu',
     });
     setNewSubjName('');
     setNewSubjCode('');
-    setNewSubjTeacher('');
     setShowAddSubjectModal(false);
     showToast('Mata Pelajaran berhasil ditambahkan!');
   };
@@ -405,7 +401,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     setSubjectToEdit(subj);
     setEditSubjName(subj.name);
     setEditSubjCode(subj.code);
-    setEditSubjTeacher(subj.teacherName);
     setShowEditSubjectModal(true);
   };
 
@@ -416,7 +411,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     updateSubject(subjectToEdit.id, {
       name: editSubjName.trim(),
       code: editSubjCode.trim().toUpperCase(),
-      teacherName: editSubjTeacher.trim() || 'Guru Pengampu',
     });
     setShowEditSubjectModal(false);
     setSubjectToEdit(null);
@@ -1383,7 +1377,6 @@ Terima kasih.`;
                         </span>
                         <h4 className="text-xs font-bold text-slate-900">{sub.name}</h4>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Pengampu: {sub.teacherName}</p>
                     </div>
 
                     <div className="flex items-center gap-1">
@@ -1511,7 +1504,6 @@ Terima kasih.`;
                 <div>
                   <span className="text-xs font-mono font-bold text-indigo-700">{subject.code}</span>
                   <p className="text-sm font-bold text-slate-900">{subject.name}</p>
-                  <p className="text-xs text-slate-500">Guru utama: {subject.teacherName}</p>
                 </div>
                 <button onClick={() => handleOpenEditSubject(subject)} className="p-2 text-slate-400 hover:text-indigo-600" title="Edit mata pelajaran">
                   <Edit2 className="w-4 h-4" />
@@ -3210,19 +3202,6 @@ Terima kasih.`;
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Guru Pengampu Utama
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Bpk. Hendra Gunawan, S.Or."
-                  value={newSubjTeacher}
-                  onChange={(e) => setNewSubjTeacher(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
@@ -3352,7 +3331,7 @@ Terima kasih.`;
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Edit Mata Pelajaran</h3>
-                  <p className="text-[11px] text-slate-500">Perbarui nama, kode mapel, atau guru pengampu</p>
+                  <p className="text-[11px] text-slate-500">Perbarui nama atau kode mapel</p>
                 </div>
               </div>
               <button
@@ -3393,19 +3372,6 @@ Terima kasih.`;
                   onChange={(e) => setEditSubjCode(e.target.value)}
                   required
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono uppercase transition-all duration-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Guru Pengampu Utama
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Bpk. Hendra Gunawan, S.Or."
-                  value={editSubjTeacher}
-                  onChange={(e) => setEditSubjTeacher(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all duration-200"
                 />
               </div>
 
