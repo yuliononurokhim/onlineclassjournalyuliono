@@ -172,17 +172,23 @@ export function useEduStore() {
   const login = useCallback((identifier: string, password?: string): boolean => {
     const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
     const allStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
+    const initialAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
 
     const cleanInput = identifier.trim().toLowerCase();
     const cleanPass = password || '';
     if (!cleanInput || !cleanPass) return false;
+
+    const matchedAdmin = initialAdmin && (
+      initialAdmin.username.trim().toLowerCase() === cleanInput ||
+      initialAdmin.email?.trim().toLowerCase() === cleanInput
+    ) ? initialAdmin : undefined;
 
     const matchedStudent = allStudents.find(
       (student) =>
         student.nisn.trim().toLowerCase() === cleanInput ||
         student.parentUsername.trim().toLowerCase() === cleanInput
     );
-    let matchedUser = allUsers.find(
+    let matchedUser = matchedAdmin || allUsers.find(
       (u) =>
         u.username.trim().toLowerCase() === cleanInput ||
         (u.phone && u.phone.trim().toLowerCase() === cleanInput) ||
