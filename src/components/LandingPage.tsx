@@ -186,15 +186,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         onLoginSuccess();
       } catch (error: any) {
         const code = error?.code;
-        const message = code === 'auth/user-not-found'
-          ? 'Email admin belum terdaftar di Firebase Authentication. Buat akun atau sesuaikan email admin terlebih dahulu.'
-          : code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-password'
-          ? 'Email atau password belum sesuai dengan akun Firebase Authentication.'
-          : code === 'auth/admin-claim-missing'
-          ? 'Email dan password benar, tetapi akun belum memiliki hak akses administrator (custom claim admin). Jalankan set-admin-claim.js untuk akun tersebut.'
-          : code === 'auth/too-many-requests'
-            ? 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.'
-            : error?.message || 'Login administrator gagal.';
+        const messages: Record<string, string> = {
+          'auth/user-not-found': 'Email admin belum terdaftar di Firebase Authentication. Buat akun dengan email tersebut atau sesuaikan email admin di data pengguna.',
+          'auth/invalid-credential': 'Firebase menolak email atau password. Pastikan akun admin sudah dibuat di Firebase Authentication dan password yang digunakan benar.',
+          'auth/invalid-login-credentials': 'Firebase menolak email atau password. Pastikan akun admin sudah dibuat di Firebase Authentication dan password yang digunakan benar.',
+          'auth/wrong-password': 'Password tidak sesuai dengan akun Firebase Authentication.',
+          'auth/invalid-password': 'Password tidak sesuai dengan akun Firebase Authentication.',
+          'auth/user-disabled': 'Akun admin dinonaktifkan di Firebase Authentication. Aktifkan kembali akun tersebut.',
+          'auth/invalid-email': 'Format email admin tidak valid. Periksa alamat email akun admin.',
+          'auth/operation-not-allowed': 'Metode login Email/Password belum aktif. Aktifkan penyedia Email/Password di Firebase Authentication.',
+          'auth/invalid-api-key': 'API key Firebase tidak valid. Periksa konfigurasi Firebase pada aplikasi.',
+          'auth/network-request-failed': 'Tidak dapat terhubung ke Firebase Authentication. Periksa koneksi internet lalu coba lagi.',
+          'auth/admin-claim-missing': 'Email dan password benar, tetapi akun belum memiliki hak akses administrator (custom claim admin). Jalankan set-admin-claim.js untuk akun tersebut.',
+          'auth/too-many-requests': 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.',
+        };
+        const message = messages[code] || (code
+          ? `Login administrator gagal (${code}). Periksa konfigurasi akun Firebase Authentication.`
+          : error?.message || 'Login administrator gagal.');
         setLoginError(message);
       }
       return;
