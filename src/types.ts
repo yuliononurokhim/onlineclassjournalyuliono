@@ -103,12 +103,13 @@ export interface ClassJournalEntry {
 }
 
 export type WeeklyScheduleDay = 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat';
-export type WeeklyScheduleScope = 'all' | 'pai';
+export type WeeklyScheduleScope = 'all' | 'pai' | 'bk';
 
 export interface WeeklyScheduleEntry {
   id: string;
   day: WeeklyScheduleDay;
   scope: WeeklyScheduleScope;
+  classGrade?: string;
   period: number;
   subjectId: string;
   subjectName: string;

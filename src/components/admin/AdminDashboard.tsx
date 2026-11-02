@@ -1525,14 +1525,16 @@ Terima kasih.`;
       {/* Tab: Jadwal Mingguan */}
       {activeTab === 'jadwal' && (
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-          <h3 className="text-base font-bold text-slate-900">Jadwal Mingguan Guru</h3>
-          <p className="text-xs text-slate-500 mt-1 mb-5">Ringkasan jadwal Senin-Jumat yang telah dibuat pada akun guru.</p>
+          <h3 className="text-base font-bold text-slate-900">Jadwal Mingguan · {schoolProfile.classGrade}</h3>
+          <p className="text-xs text-slate-500 mt-1 mb-5">Ringkasan jadwal kelas Senin-Jumat dari Guru Kelas, PAI, dan BK.</p>
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             {(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const).map((day) => (
               <div key={day} className="rounded-xl border border-slate-200 p-3">
                 <p className="text-xs font-bold text-slate-900">{day}</p>
                 <p className="text-xs text-slate-500 mt-2">
-                  {weeklySchedule.filter((entry) => entry.day === day).length} jam terjadwal
+                  {weeklySchedule.filter((entry) =>
+                    entry.day === day && (entry.classGrade || schoolProfile.classGrade) === schoolProfile.classGrade
+                  ).length} jam terjadwal
                 </p>
               </div>
             ))}

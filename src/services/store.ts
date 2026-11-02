@@ -684,16 +684,25 @@ export function useEduStore() {
   const replaceWeeklyScheduleDay = useCallback((
     scope: WeeklyScheduleScope,
     day: WeeklyScheduleDay,
-    entries: Omit<WeeklyScheduleEntry, 'id' | 'scope' | 'day'>[]
+    entries: Omit<WeeklyScheduleEntry, 'id' | 'scope' | 'day' | 'classGrade'>[],
+    classGrade = INITIAL_SCHOOL_PROFILE.classGrade
   ) => {
     const current = getStoredItem<WeeklyScheduleEntry[]>('weekly_schedules', INITIAL_WEEKLY_SCHEDULE);
-    const entriesToRemove = current.filter((entry) => entry.scope === scope && entry.day === day);
-    const remaining = current.filter((entry) => entry.scope !== scope || entry.day !== day);
+    const normalizedClassGrade = classGrade.trim() || INITIAL_SCHOOL_PROFILE.classGrade;
+    const belongsToClass = (entry: WeeklyScheduleEntry) =>
+      (entry.classGrade || INITIAL_SCHOOL_PROFILE.classGrade) === normalizedClassGrade;
+    const entriesToRemove = current.filter(
+      (entry) => entry.scope === scope && entry.day === day && belongsToClass(entry)
+    );
+    const remaining = current.filter(
+      (entry) => entry.scope !== scope || entry.day !== day || !belongsToClass(entry)
+    );
     const newEntries = entries.map((entry) => ({
       ...entry,
       id: createRecordId('schedule'),
       scope,
       day,
+      classGrade: normalizedClassGrade,
     }));
 
     setStoredItem('weekly_schedules', [...remaining, ...newEntries]);

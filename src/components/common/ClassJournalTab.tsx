@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useEduStore } from '../../services/store';
-import { ClassJournalEntry, WeeklyScheduleDay } from '../../types';
+import { ClassJournalEntry, WeeklyScheduleDay, WeeklyScheduleScope } from '../../types';
 import { getLocalDateString } from '../../services/date';
 import { BookOpen, CalendarDays, ChevronDown, Plus, Save, Trash2 } from 'lucide-react';
 
 type AttendanceStatus = NonNullable<ClassJournalEntry['attendanceByStudent']>[string];
 
 interface ClassJournalTabProps {
-  subjectScope?: 'all' | 'pai';
+  subjectScope?: WeeklyScheduleScope;
+  showJournalForm?: boolean;
 }
 
 interface JournalRow {
@@ -50,8 +51,9 @@ function formatJournalDate(date: string): string {
   }).format(new Date(`${date}T12:00:00`));
 }
 
-export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope = 'all' }) => {
+export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope = 'all', showJournalForm = true }) => {
   const {
+    schoolProfile,
     subjects,
     learningObjectives,
     students,
@@ -83,14 +85,25 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
+  const classGrade = schoolProfile.classGrade;
+  const scheduleId = `${subjectScope}-${classGrade.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   const savedRowsForSelectedDay = weeklySchedule
-    .filter((entry) => entry.scope === subjectScope && entry.day === selectedScheduleDay)
+    .filter((entry) =>
+      entry.scope === subjectScope &&
+      entry.day === selectedScheduleDay &&
+      (entry.classGrade || schoolProfile.classGrade) === classGrade
+    )
     .map(({ subjectId, objectiveId, activity }) => ({ subjectId, objectiveId, activity }));
-  const scheduleEditorSyncKey = `${subjectScope}:${selectedScheduleDay}:${JSON.stringify(savedRowsForSelectedDay)}`;
+  const scheduleEditorSyncKey = `${subjectScope}:${classGrade}:${selectedScheduleDay}:${JSON.stringify(savedRowsForSelectedDay)}:${availableSubjects.map((subject) => subject.id).join(',')}`;
 
   useEffect(() => {
-    setScheduleRows(savedRowsForSelectedDay.length > 0 ? savedRowsForSelectedDay : [createJournalRow()]);
+    const defaultRows = availableSubjects.map((subject) => ({
+      subjectId: subject.id,
+      objectiveId: '',
+      activity: '',
+    }));
+    setScheduleRows(savedRowsForSelectedDay.length > 0 ? savedRowsForSelectedDay : defaultRows);
   }, [scheduleEditorSyncKey]);
 
   const updateScheduleRow = (index: number, patch: Partial<JournalRow>) => {
@@ -138,15 +151,20 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
         subjectName: subjects.find((subject) => subject.id === row.subjectId)?.name || '',
         objectiveId: row.objectiveId,
         activity: row.activity.trim(),
-      }))
+      })),
+      classGrade
     );
     setScheduleMessage(`Jadwal hari ${selectedScheduleDay} berhasil disimpan.`);
   };
 
   const handleClearWeeklySchedule = () => {
     if (!window.confirm(`Hapus semua jadwal pembelajaran hari ${selectedScheduleDay}?`)) return;
-    replaceWeeklyScheduleDay(subjectScope, selectedScheduleDay, []);
-    setScheduleRows([createJournalRow()]);
+    replaceWeeklyScheduleDay(subjectScope, selectedScheduleDay, [], classGrade);
+    setScheduleRows(availableSubjects.map((subject) => ({
+      subjectId: subject.id,
+      objectiveId: '',
+      activity: '',
+    })));
     setScheduleMessage(`Jadwal hari ${selectedScheduleDay} berhasil dikosongkan.`);
   };
 
@@ -157,7 +175,11 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
       return;
     }
     const savedRows = weeklySchedule
-      .filter((entry) => entry.scope === subjectScope && entry.day === weekday)
+      .filter((entry) =>
+        entry.scope === subjectScope &&
+        entry.day === weekday &&
+        (entry.classGrade || schoolProfile.classGrade) === classGrade
+      )
       .map(({ subjectId, objectiveId, activity }) => ({ subjectId, objectiveId, activity }));
     if (savedRows.length === 0) {
       setFormError(`Belum ada jadwal tersimpan untuk hari ${weekday}.`);
@@ -263,47 +285,50 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
   return (
     <div className="space-y-6">
       <section className="overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
-              <BookOpen className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-100">Jurnal Pembelajaran</p>
-              <h3 className="text-lg font-extrabold tracking-tight">Input Jurnal Harian</h3>
-              <p className="mt-1 text-xs text-indigo-100">
-                Tambahkan baris sesuai jumlah jam mengajar. CP dan TP terhubung ke kurikulum Admin.
-              </p>
+        {showJournalForm && (
+          <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 px-5 py-5 sm:px-6 text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-100">Jurnal Pembelajaran</p>
+                <h3 className="text-lg font-extrabold tracking-tight">Input Jurnal Harian</h3>
+                <p className="mt-1 text-xs text-indigo-100">
+                  Jadwal untuk {classGrade}. Mapel dan CP/TP mengikuti data Admin.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <section className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-6">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h4 className="text-sm font-bold text-slate-900">Jadwal Pembelajaran Mingguan</h4>
+                <h4 className="text-sm font-bold text-slate-900">Jadwal Pembelajaran Mingguan · {classGrade}</h4>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Pilih tab hari, atur jam pelajaran, lalu simpan sebagai jadwal rutin mingguan.
+                  Pilih hari; mapel dari Admin terisi otomatis. Hapus mapel yang tidak dijadwalkan, lalu lengkapi TP dan kegiatan.
                 </p>
               </div>
-              <span className="text-[10px] font-medium text-slate-500">Jadwal ini terpisah dari jurnal harian bertanggal.</span>
+              <span className="text-[10px] font-medium text-slate-500">Tersimpan khusus untuk kelas ini.</span>
             </div>
 
-            <div role="tablist" aria-label="Hari jadwal pembelajaran" className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+            <div role="tablist" aria-label={`Hari jadwal ${classGrade}`} className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
               {WEEKDAYS.map((day) => {
                 const dayCount = weeklySchedule.filter(
-                  (entry) => entry.scope === subjectScope && entry.day === day
+                  (entry) => entry.scope === subjectScope && entry.day === day &&
+                    (entry.classGrade || schoolProfile.classGrade) === classGrade
                 ).length;
                 const isSelected = selectedScheduleDay === day;
                 return (
                   <button
                     key={day}
-                    id={`schedule-tab-${subjectScope}-${day}`}
+                    id={`schedule-tab-${scheduleId}-${day}`}
                     type="button"
                     role="tab"
                     aria-selected={isSelected}
-                    aria-controls={`schedule-panel-${subjectScope}`}
+                    aria-controls={`schedule-panel-${scheduleId}`}
                     onClick={() => {
                       setSelectedScheduleDay(day);
                       setScheduleMessage('');
@@ -326,15 +351,20 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             </div>
 
             <form
-              id={`schedule-panel-${subjectScope}`}
+              id={`schedule-panel-${scheduleId}`}
               role="tabpanel"
-              aria-labelledby={`schedule-tab-${subjectScope}-${selectedScheduleDay}`}
+              aria-labelledby={`schedule-tab-${scheduleId}-${selectedScheduleDay}`}
               onSubmit={handleSaveWeeklySchedule}
               className="space-y-3"
             >
               {scheduleMessage && (
                 <p role="status" className={`rounded-lg border p-3 text-xs ${scheduleMessage.includes('berhasil') || scheduleMessage.includes('dimuat') ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
                   {scheduleMessage}
+                </p>
+              )}
+              {availableSubjects.length === 0 && (
+                <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  Belum ada mata pelajaran aktif dari Admin untuk kelas ini.
                 </p>
               )}
               {scheduleRows.map((row, index) => {
@@ -426,6 +456,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
           </div>
         </section>
 
+        {showJournalForm && (
         <form onSubmit={handleSave} className="space-y-5 p-4 sm:p-6">
           {formError && (
             <p role="alert" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
@@ -637,8 +668,10 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             </button>
           </div>
         </form>
+        )}
       </section>
 
+      {showJournalForm && (
       <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 transition hover:bg-slate-50 sm:px-5 [&::-webkit-details-marker]:hidden">
           <div>
@@ -693,6 +726,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
         )}
         </section>
       </details>
+      )}
     </div>
   );
 };

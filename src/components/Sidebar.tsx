@@ -260,6 +260,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <HeartHandshake className="w-4 h-4 text-rose-600 shrink-0" />,
       subItems: [
         {
+          id: 'jadwal',
+          label: 'Jadwal Mingguan Kelas',
+          icon: <CalendarDays className="w-4 h-4 shrink-0" />,
+        },
+        {
           id: 'kasus',
           label: 'Jurnal Kasus & Konseling',
           icon: <HeartHandshake className="w-4 h-4 shrink-0" />,
