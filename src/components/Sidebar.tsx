@@ -28,7 +28,8 @@ import {
   CheckSquare,
   MessageCircle,
   Award,
-  Eye
+  Eye,
+  CalendarDays
 } from 'lucide-react';
 
 interface SubMenuItem {
@@ -160,9 +161,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: announcements.length,
         },
         {
-          id: 'kurikulum',
-          label: 'Kurikulum (CP & TP)',
+          id: 'mata-pelajaran',
+          label: 'Mata Pelajaran',
           icon: <BookOpen className="w-4 h-4 shrink-0" />,
+        },
+        {
+          id: 'jadwal',
+          label: 'Jadwal Mingguan',
+          icon: <CalendarDays className="w-4 h-4 shrink-0" />,
+        },
+        {
+          id: 'kurikulum',
+          label: 'Capaian & Tujuan (CP/TP)',
+          icon: <FileText className="w-4 h-4 shrink-0" />,
         },
         {
           id: 'guru',

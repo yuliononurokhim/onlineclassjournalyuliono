@@ -63,12 +63,15 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
     currentUser,
   } = useEduStore();
   const availableSubjects = useMemo(() => {
-    if (subjectScope !== 'pai') return subjects;
-    const paiSubjects = subjects.filter((subject) =>
+    const activeSubjects = currentUser?.subjectIds?.length
+      ? subjects.filter((subject) => currentUser.subjectIds?.includes(subject.id))
+      : subjects;
+    if (subjectScope !== 'pai') return activeSubjects;
+    const paiSubjects = activeSubjects.filter((subject) =>
       /pai|islam|literasi|literacy|keislaman/i.test(`${subject.name} ${subject.code}`)
     );
     return paiSubjects;
-  }, [subjectScope, subjects]);
+  }, [subjectScope, subjects, currentUser?.subjectIds]);
   const [date, setDate] = useState(getLocalDateString());
   const [rows, setRows] = useState<JournalRow[]>(
     () => [createJournalRow()]
@@ -137,8 +140,10 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
     replaceWeeklyScheduleDay(
       subjectScope,
       selectedScheduleDay,
-      populatedRows.map(({ row }) => ({
+      populatedRows.map(({ row }, index) => ({
+        period: index + 1,
         subjectId: row.subjectId,
+        subjectName: subjects.find((subject) => subject.id === row.subjectId)?.name || '',
         objectiveId: row.objectiveId,
         activity: row.activity.trim(),
       }))

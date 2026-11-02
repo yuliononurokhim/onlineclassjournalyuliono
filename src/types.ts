@@ -18,6 +18,7 @@ export interface UserAccount {
   avatar?: string;
   status?: 'aktif' | 'nonaktif';
   subjectAssignment?: string;
+  subjectIds?: string[];
 }
 
 export interface SubjectItem {
@@ -108,7 +109,9 @@ export interface WeeklyScheduleEntry {
   id: string;
   day: WeeklyScheduleDay;
   scope: WeeklyScheduleScope;
+  period: number;
   subjectId: string;
+  subjectName: string;
   objectiveId: string;
   activity: string;
 }

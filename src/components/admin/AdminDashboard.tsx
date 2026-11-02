@@ -115,6 +115,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     updateSubject,
     deleteSubject,
     learningObjectives,
+    weeklySchedule,
     addLearningObjective,
     updateLearningObjective,
     deleteLearningObjective,
@@ -138,7 +139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   } = useEduStore();
 
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
-  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'pengumuman' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
+  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
     (currentTab as any) || 'profil'
   );
 
@@ -146,7 +147,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   const [teacherSubTab, setTeacherSubTab] = useState<'guru' | 'password'>('guru');
 
   useEffect(() => {
-    if (currentTab && ['profil', 'landing', 'pengumuman', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
+    if (currentTab && ['profil', 'landing', 'pengumuman', 'mata-pelajaran', 'jadwal', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
         setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
@@ -156,7 +157,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'profil' | 'landing' | 'pengumuman' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
+  const setActiveTab = (tab: 'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -253,6 +254,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     role: 'guru_kelas' as UserRole,
     title: '',
     subjectAssignment: '',
+    subjectIds: [] as string[],
     username: '',
     password: '',
     phone: '',
@@ -470,6 +472,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       role: 'guru_kelas',
       title: 'Wali Kelas 4-A',
       subjectAssignment: 'Tematik & Mapel Umum',
+      subjectIds: [],
       username: '',
       password: `GURU-${Math.floor(1000 + Math.random() * 9000)}`,
       phone: '',
@@ -488,6 +491,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       role: teacher.role,
       title: teacher.title,
       subjectAssignment: teacher.subjectAssignment || '',
+      subjectIds: teacher.subjectIds || [],
       username: teacher.username,
       password: teacher.password,
       phone: teacher.phone || '',
@@ -520,6 +524,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       role: teacherFormData.role,
       title: teacherFormData.title.trim() || 'Tenaga Pendidik',
       subjectAssignment: teacherFormData.subjectAssignment.trim() || undefined,
+      subjectIds: teacherFormData.subjectIds,
       username: teacherFormData.username.trim(),
       password: teacherFormData.password.trim(),
       phone: teacherFormData.phone.trim() || undefined,
@@ -557,6 +562,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       role: teacherFormData.role,
       title: teacherFormData.title.trim() || 'Tenaga Pendidik',
       subjectAssignment: teacherFormData.subjectAssignment.trim() || undefined,
+      subjectIds: teacherFormData.subjectIds,
       username: teacherFormData.username.trim(),
       password: teacherFormData.password.trim(),
       phone: teacherFormData.phone.trim() || undefined,
@@ -1487,6 +1493,53 @@ Terima kasih.`;
         </div>
       )}
 
+      {/* Tab: Master Mata Pelajaran */}
+      {activeTab === 'mata-pelajaran' && (
+        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Mata Pelajaran Sekolah</h3>
+              <p className="text-xs text-slate-500">Admin mengisi master mata pelajaran, kemudian mengaktifkannya pada akun guru.</p>
+            </div>
+            <button onClick={() => setShowAddSubjectModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">
+              <Plus className="w-4 h-4" /> Tambah Mata Pelajaran
+            </button>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {subjects.map((subject) => (
+              <div key={subject.id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-mono font-bold text-indigo-700">{subject.code}</span>
+                  <p className="text-sm font-bold text-slate-900">{subject.name}</p>
+                  <p className="text-xs text-slate-500">Guru utama: {subject.teacherName}</p>
+                </div>
+                <button onClick={() => handleOpenEditSubject(subject)} className="p-2 text-slate-400 hover:text-indigo-600" title="Edit mata pelajaran">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Jadwal Mingguan */}
+      {activeTab === 'jadwal' && (
+        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+          <h3 className="text-base font-bold text-slate-900">Jadwal Mingguan Guru</h3>
+          <p className="text-xs text-slate-500 mt-1 mb-5">Ringkasan jadwal Senin-Jumat yang telah dibuat pada akun guru.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            {(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const).map((day) => (
+              <div key={day} className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs font-bold text-slate-900">{day}</p>
+                <p className="text-xs text-slate-500 mt-2">
+                  {weeklySchedule.filter((entry) => entry.day === day).length} jam terjadwal
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tab 3: MANAJEMEN GURU SECARA NYATA & PUSAT RESET KATA SANDI */}
       {(activeTab === 'guru' || activeTab === 'password') && (
         <div className="space-y-6">
@@ -2413,13 +2466,24 @@ Terima kasih.`;
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Mata Pelajaran yang Diampu
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: IPAS, Matematika atau PJOK"
-                    value={teacherFormData.subjectAssignment}
-                    onChange={(e) => setTeacherFormData({ ...teacherFormData, subjectAssignment: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto rounded-xl border border-slate-200 p-3">
+                    {subjects.map((subject) => (
+                      <label key={subject.id} className="flex items-center gap-2 text-xs text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={teacherFormData.subjectIds.includes(subject.id)}
+                          onChange={(event) => setTeacherFormData((current) => ({
+                            ...current,
+                            subjectIds: event.target.checked
+                              ? [...current.subjectIds, subject.id]
+                              : current.subjectIds.filter((subjectId) => subjectId !== subject.id),
+                          }))}
+                          className="rounded border-slate-300 text-indigo-600"
+                        />
+                        <span>{subject.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

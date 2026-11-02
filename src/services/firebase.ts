@@ -1,13 +1,19 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  getAuth,
+  getIdTokenResult,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  User,
+} from 'firebase/auth';
+import {
   getFirestore,
   collection,
   doc,
   setDoc,
   onSnapshot,
-  getDocs,
   getDoc,
-  enableIndexedDbPersistence,
   writeBatch,
 } from 'firebase/firestore';
 import {
@@ -41,21 +47,26 @@ import {
   INITIAL_WEEKLY_SCHEDULE,
 } from './mockData';
 
-// User's exact Firebase Project Configuration
+const isBrowser = typeof window !== 'undefined';
+const safeWindow = isBrowser ? window : undefined;
+const safeLocalStorage = isBrowser ? window.localStorage : undefined;
+
+// User's exact Firebase Project Configuration.
+// Kept here only for this demo project; production apps should use env vars.
 export const firebaseConfig = {
-  apiKey: "AIzaSyDv6DTgcc2xVteqMq-D4k7sQ7KLCFzrp8Q",
-  authDomain: "onlineclassjournalyuliono.firebaseapp.com",
-  databaseURL: "https://onlineclassjournalyuliono-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "onlineclassjournalyuliono",
-  storageBucket: "onlineclassjournalyuliono.firebasestorage.app",
-  messagingSenderId: "989086411927",
-  appId: "1:989086411927:web:f33933aa059c7c2122cdd2",
-  measurementId: "G-B2QVVJ6ZCN"
+  apiKey: 'AIzaSyDv6DTgcc2xVteqMq-D4k7sQ7KLCFzrp8Q',
+  authDomain: 'onlineclassjournalyuliono.firebaseapp.com',
+  databaseURL: 'https://onlineclassjournalyuliono-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'onlineclassjournalyuliono',
+  storageBucket: 'onlineclassjournalyuliono.firebasestorage.app',
+  messagingSenderId: '989086411927',
+  appId: '1:989086411927:web:f33933aa059c7c2122cdd2',
+  measurementId: 'G-B2QVVJ6ZCN',
 };
 
-// Initialize Firebase App instance
 export const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(firebaseApp);
+export const auth = getAuth(firebaseApp);
 
 export interface FirebaseSyncState {
   isConnected: boolean;
@@ -74,6 +85,7 @@ let syncState: FirebaseSyncState = {
 };
 
 const listeners: ((state: FirebaseSyncState) => void)[] = [];
+const syncedCollectionNames = new Set<string>();
 
 export function subscribeFirebaseStatus(listener: (state: FirebaseSyncState) => void) {
   listeners.push(listener);
@@ -87,35 +99,40 @@ export function subscribeFirebaseStatus(listener: (state: FirebaseSyncState) => 
 let syncStateTimeout: ReturnType<typeof setTimeout> | null = null;
 function updateSyncStatus(partial: Partial<FirebaseSyncState>) {
   syncState = { ...syncState, ...partial };
+  if (partial.syncedCollectionsCount === undefined) {
+    syncState.syncedCollectionsCount = syncedCollectionNames.size;
+  }
+
   if (!syncStateTimeout) {
     syncStateTimeout = setTimeout(() => {
       syncStateTimeout = null;
-      listeners.forEach((l) => l(syncState));
+      listeners.forEach((listener) => listener(syncState));
     }, 60);
   }
 }
 
-// LocalStorage helpers to coordinate with store.ts
 const STORAGE_PREFIX = 'edujournal_sd_v1_';
 
 let storageDispatchTimeout: ReturnType<typeof setTimeout> | null = null;
 function scheduleStorageDispatch() {
+  if (!safeWindow || !safeWindow.dispatchEvent) return;
   if (storageDispatchTimeout) return;
+
   storageDispatchTimeout = setTimeout(() => {
     storageDispatchTimeout = null;
-    window.dispatchEvent(new Event('edujournal_storage_change'));
+    safeWindow.dispatchEvent(new Event('edujournal_storage_change'));
   }, 40);
 }
 
 function saveLocal<T>(key: string, data: T) {
+  if (!safeLocalStorage) return;
+
   try {
     const serialized = JSON.stringify(data);
-    const existing = localStorage.getItem(STORAGE_PREFIX + key);
-    if (existing === serialized) {
-      // Data is unchanged; skip writing and dispatching to avoid redundant re-renders
-      return;
-    }
-    localStorage.setItem(STORAGE_PREFIX + key, serialized);
+    const existing = safeLocalStorage.getItem(STORAGE_PREFIX + key);
+    if (existing === serialized) return;
+
+    safeLocalStorage.setItem(STORAGE_PREFIX + key, serialized);
     scheduleStorageDispatch();
   } catch (err) {
     console.error('Failed saving to localStorage', key, err);
@@ -124,7 +141,7 @@ function saveLocal<T>(key: string, data: T) {
 
 function removeUndefinedFields<T>(value: T): T {
   if (Array.isArray(value)) {
-    return value.map((item) => item === undefined ? null : removeUndefinedFields(item)) as T;
+    return value.map((item) => (item === undefined ? null : removeUndefinedFields(item))) as T;
   }
 
   if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
@@ -137,24 +154,24 @@ function removeUndefinedFields<T>(value: T): T {
   return value;
 }
 
-// Flag to prevent echo loops when remote snapshot updates local storage
 let isRemoteUpdating = false;
-
-/**
- * Real-time Two-Way Synchronizer:
- * Sets up Firestore real-time onSnapshot listeners on all collections.
- * Automatically seeds Firestore if collections are newly initialized.
- */
 let isInitialized = false;
 
 export function initFirebaseSync() {
+  if (!isBrowser) {
+    updateSyncStatus({
+      isConnected: false,
+      error: 'Firebase sync can only run in a browser environment.',
+    });
+    return;
+  }
+
   if (isInitialized) return;
   isInitialized = true;
 
   try {
     updateSyncStatus({ isConnected: false, lastSyncTime: null, error: null });
 
-    // 1. School Profile
     const profileDocRef = doc(db, 'settings', 'school_profile');
     const isExistingInstallation = getDoc(profileDocRef)
       .then(async (snapshot) => {
@@ -187,29 +204,29 @@ export function initFirebaseSync() {
       }
     );
 
-    // Helper for syncing array collections
-    function syncCollection<T extends { id: string }>(
-      collectionName: string,
-      storageKey: string,
-      initialData: T[]
-    ) {
+    function syncCollection<T extends { id: string }>(collectionName: string, storageKey: string, initialData: T[]) {
       const colRef = collection(db, collectionName);
       const initializationRef = doc(db, 'settings', `${collectionName}_initialized`);
       let hasAttemptedSeed = false;
       let hasSyncedItems = false;
+
       onSnapshot(
         colRef,
         (snapshot) => {
           if (!snapshot.empty) {
             hasSyncedItems = true;
             hasAttemptedSeed = true;
+            syncedCollectionNames.add(collectionName);
+
             const items: T[] = [];
             snapshot.forEach((docSnap) => {
               items.push({ ...(docSnap.data() as T), id: docSnap.id });
             });
+
             isRemoteUpdating = true;
             saveLocal(storageKey, items);
             isRemoteUpdating = false;
+
             setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
               console.warn(`Failed marking ${collectionName} as initialized:`, error);
               updateSyncStatus({
@@ -217,27 +234,30 @@ export function initFirebaseSync() {
                 error: error instanceof Error ? error.message : String(error),
               });
             });
+
             updateSyncStatus({
               lastSyncTime: new Date(),
               isConnected: true,
-              syncedCollectionsCount: syncState.syncedCollectionsCount + 1,
+              syncedCollectionsCount: syncedCollectionNames.size,
             });
           } else if (hasSyncedItems) {
+            syncedCollectionNames.add(collectionName);
             isRemoteUpdating = true;
             saveLocal(storageKey, []);
             isRemoteUpdating = false;
-            updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+            updateSyncStatus({
+              lastSyncTime: new Date(),
+              isConnected: true,
+              syncedCollectionsCount: syncedCollectionNames.size,
+            });
           } else if (!hasAttemptedSeed) {
             hasAttemptedSeed = true;
+
             const seedCollection = () => {
               try {
                 const batch = writeBatch(db);
                 initialData.forEach((item) => {
-                  batch.set(
-                    doc(db, collectionName, item.id),
-                    removeUndefinedFields(item),
-                    { merge: true }
-                  );
+                  batch.set(doc(db, collectionName, item.id), removeUndefinedFields(item), { merge: true });
                 });
                 batch.set(initializationRef, { initialized: true }, { merge: true });
                 batch.commit().catch((error) => {
@@ -259,6 +279,7 @@ export function initFirebaseSync() {
             Promise.all([getDoc(initializationRef), isExistingInstallation])
               .then(([marker, existingInstallation]) => {
                 if (marker.exists() || existingInstallation) {
+                  syncedCollectionNames.add(collectionName);
                   setDoc(initializationRef, { initialized: true }, { merge: true }).catch((error) => {
                     console.warn(`Failed marking empty ${collectionName} as initialized:`, error);
                     updateSyncStatus({
@@ -266,10 +287,16 @@ export function initFirebaseSync() {
                       error: error instanceof Error ? error.message : String(error),
                     });
                   });
+
                   isRemoteUpdating = true;
                   saveLocal(storageKey, []);
                   isRemoteUpdating = false;
-                  updateSyncStatus({ lastSyncTime: new Date(), isConnected: true });
+
+                  updateSyncStatus({
+                    lastSyncTime: new Date(),
+                    isConnected: true,
+                    syncedCollectionsCount: syncedCollectionNames.size,
+                  });
                 } else {
                   seedCollection();
                 }
@@ -290,7 +317,6 @@ export function initFirebaseSync() {
       );
     }
 
-    // Sync all key educational collections
     syncCollection<Student>('students', 'students', INITIAL_STUDENTS);
     syncCollection<ClassJournalEntry>('journal_entries', 'journal_entries', INITIAL_JOURNAL_ENTRIES);
     syncCollection<InternalGradeRecord>('internal_grades', 'internal_grades', INITIAL_INTERNAL_GRADES);
@@ -303,18 +329,15 @@ export function initFirebaseSync() {
     syncCollection<LearningObjective>('learning_objectives', 'learning_objectives', INITIAL_LEARNING_OBJECTIVES);
     syncCollection<SchoolAnnouncement>('announcements', 'announcements', INITIAL_ANNOUNCEMENTS);
     syncCollection<WeeklyScheduleEntry>('weekly_schedules', 'weekly_schedules', INITIAL_WEEKLY_SCHEDULE);
-
   } catch (error: any) {
     console.error('Firebase initialization error:', error);
     updateSyncStatus({ isConnected: false, error: error?.message || 'Gagal tersambung ke Firebase' });
   }
 }
 
-/**
- * Direct write helper to persist any document change directly to Firestore
- */
 export async function writeFirestoreDoc(collectionName: string, id: string, data: any) {
-  if (isRemoteUpdating) return;
+  if (!isBrowser || isRemoteUpdating) return;
+
   try {
     await setDoc(doc(db, collectionName, id), removeUndefinedFields(data), { merge: true });
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
@@ -326,21 +349,17 @@ export async function writeFirestoreDoc(collectionName: string, id: string, data
   }
 }
 
-/**
- * Direct delete helper to remove a document in Firestore
- */
 export async function deleteFirestoreDoc(collectionName: string, id: string) {
-  if (isRemoteUpdating) return;
+  if (!isBrowser || isRemoteUpdating) return;
+
   try {
     const batch = writeBatch(db);
     batch.delete(doc(db, collectionName, id));
+
     if (collectionName !== 'settings') {
-      batch.set(
-        doc(db, 'settings', `${collectionName}_initialized`),
-        { initialized: true },
-        { merge: true }
-      );
+      batch.set(doc(db, 'settings', `${collectionName}_initialized`), { initialized: true }, { merge: true });
     }
+
     await batch.commit();
     updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
   } catch (err: any) {
@@ -351,7 +370,49 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
   }
 }
 
+export async function signInAdmin(email: string, password: string): Promise<User> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new Error('Email administrator belum dikonfigurasi pada akun pengguna.');
+  }
+
+  try {
+    const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    const token = await getIdTokenResult(credential.user, true);
+    if (token.claims.admin !== true) {
+      await signOut(auth);
+      const error = new Error('Akun ini belum memiliki hak akses administrator. Jalankan set-admin-claim.js untuk akun tersebut.');
+      (error as Error & { code?: string }).code = 'auth/admin-claim-missing';
+      throw error;
+    }
+    return credential.user;
+  } catch (error: unknown) {
+    throw error;
+  }
+}
+
+export function subscribeAdminAuth(listener: (isAdmin: boolean) => void) {
+  return onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      listener(false);
+      return;
+    }
+    try {
+      const token = await getIdTokenResult(user);
+      listener(token.claims.admin === true);
+    } catch {
+      listener(false);
+    }
+  });
+}
+
+export async function signOutAdmin() {
+  await signOut(auth);
+}
+
 export async function deleteStudentFirestoreRecords(studentId: string, parentUserIds: string[]) {
+  if (!isBrowser) return;
+
   try {
     const batch = writeBatch(db);
     batch.set(doc(db, 'settings', 'students_initialized'), { initialized: true }, { merge: true });
