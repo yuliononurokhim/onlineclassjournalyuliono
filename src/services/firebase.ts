@@ -1,9 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getAuth,
-  getIdTokenResult,
-  signOut,
-} from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   collection,
@@ -365,22 +361,6 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
       error: err.message || 'Gagal menghapus data di Firebase',
     });
   }
-}
-
-export async function clearAdminAuthSession() {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  try {
-    const token = await getIdTokenResult(user);
-    if (token.claims.admin === true) await signOut(auth);
-  } catch {
-    await signOut(auth);
-  }
-}
-
-export async function signOutAdmin() {
-  await signOut(auth);
 }
 
 export async function deleteStudentFirestoreRecords(studentId: string, parentUserIds: string[]) {

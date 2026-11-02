@@ -34,7 +34,6 @@ import {
 } from './mockData';
 import {
   initFirebaseSync,
-  clearAdminAuthSession,
   writeFirestoreDoc,
   deleteFirestoreDoc,
   deleteStudentFirestoreRecords,
@@ -138,9 +137,6 @@ export function useEduStore() {
       setStoredItem('current_user', null);
     }
     sessionStorage.removeItem('edujournal_original_admin');
-    void clearAdminAuthSession().catch((error) => {
-      console.warn('Failed clearing previous Firebase admin session:', error);
-    });
 
     // Start two-way real-time Firestore sync
     initFirebaseSync();
