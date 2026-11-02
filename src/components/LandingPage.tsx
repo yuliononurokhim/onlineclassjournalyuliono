@@ -141,6 +141,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const totalNetStarsThisWeek = Math.max(0, totalRewardsThisWeek - totalPenaltiesThisWeek);
 
   const studentsWithStars = new Set(starAwards.map((s) => s.studentId)).size;
+  const publishedOrganizationStudents = students
+    .filter((student) => student.showClassRoleOnLanding && student.classRole?.trim())
+    .sort((left, right) => left.classRole!.localeCompare(right.classRole!));
 
   const categoryTally = {
     keaktifan: { label: 'Keaktifan & Partisipasi Belajar', count: 0, color: 'bg-indigo-600', textColor: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
@@ -448,6 +451,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </section>
+
+      {publishedOrganizationStudents.length > 0 && (
+        <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">{schoolProfile.classGrade}</p>
+                <h3 className="mt-1 text-xl font-extrabold text-slate-900">Struktur Organisasi Kelas</h3>
+              </div>
+              <p className="text-xs text-slate-500">Pengurus dan perwakilan kelas</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {publishedOrganizationStudents.map((student) => (
+                <article key={student.id} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                  {student.classRolePhotoUrl ? (
+                    <img src={student.classRolePhotoUrl} alt={`Foto ${student.name}`} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-xl font-bold text-indigo-700">{student.name.charAt(0)}</span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase text-indigo-600">{student.classRole}</p>
+                    <h4 className="mt-0.5 truncate text-sm font-bold text-slate-900">{student.name}</h4>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Parent access steps */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">

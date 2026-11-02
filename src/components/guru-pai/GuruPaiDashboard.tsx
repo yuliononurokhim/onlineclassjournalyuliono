@@ -28,7 +28,8 @@ import {
   MinusCircle,
   AlertCircle,
   Lock,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 
 interface GuruPaiDashboardProps {
@@ -54,17 +55,17 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
     currentUser,
   } = useEduStore();
 
-  const [activeTab, setActiveTabState] = useState<'penilaian' | 'jurnal' | 'nilai_internal' | 'bintang' | 'rekap' | 'leger' | 'chat'>(
-    (currentTab as any) || 'penilaian'
+  const [activeTab, setActiveTabState] = useState<'ringkasan' | 'penilaian' | 'jurnal' | 'nilai_internal' | 'bintang' | 'rekap' | 'leger' | 'chat'>(
+    (currentTab as any) || 'ringkasan'
   );
 
   useEffect(() => {
-    if (currentTab && ['penilaian', 'jurnal', 'nilai_internal', 'bintang', 'rekap', 'leger', 'chat'].includes(currentTab)) {
+    if (currentTab && ['ringkasan', 'penilaian', 'jurnal', 'nilai_internal', 'bintang', 'rekap', 'leger', 'chat'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'penilaian' | 'jurnal' | 'nilai_internal' | 'bintang' | 'rekap' | 'leger' | 'chat') => {
+  const setActiveTab = (tab: 'ringkasan' | 'penilaian' | 'jurnal' | 'nilai_internal' | 'bintang' | 'rekap' | 'leger' | 'chat') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -301,6 +302,64 @@ export const GuruPaiDashboard: React.FC<GuruPaiDashboardProps> = ({ currentTab, 
           </div>
         </div>
       </div>
+
+      {activeTab === 'ringkasan' && (
+        <div className="space-y-5">
+          <section className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-teal-700 to-cyan-600 p-5 text-white shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-6">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-teal-100">Dashboard Guru PAI</p>
+              <h3 className="mt-1 text-xl font-extrabold">Selamat datang, {currentUser?.name || 'Guru PAI'}</h3>
+              <p className="mt-1 text-xs text-teal-100">Ringkasan pembelajaran agama, asesmen, dan pembiasaan ibadah.</p>
+            </div>
+            <button onClick={() => setActiveTab('penilaian')} className="rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-teal-700 hover:bg-teal-50">Buka penilaian</button>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Siswa kelas', value: students.length, detail: 'Kelas aktif', icon: Users, tone: 'text-indigo-700' },
+              { label: 'Instrumen asesmen', value: paiAssessments.length, detail: 'Tersimpan', icon: CheckSquare, tone: 'text-teal-700' },
+              { label: 'Catatan bintang PAI', value: starAwards.filter((award) => award.awarderRole === 'guru_pai').length, detail: 'Apresiasi & pembiasaan', icon: Star, tone: 'text-amber-700' },
+              { label: 'Pesan belum dibaca', value: messages.filter((message) => !message.isRead && message.recipientId === currentUser?.id).length, detail: 'Dari orang tua', icon: MessageCircle, tone: 'text-rose-700' },
+            ].map((item) => (
+              <article key={item.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between"><p className="text-xs font-semibold text-slate-500">{item.label}</p><item.icon className={`h-4 w-4 ${item.tone}`} /></div>
+                <p className="mt-3 text-2xl font-extrabold text-slate-900">{item.value}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3"><h4 className="text-sm font-bold text-slate-900">Instrumen terbaru</h4><p className="mt-0.5 text-[11px] text-slate-500">Asesmen dan pembiasaan PAI</p></div>
+              <div className="divide-y divide-slate-100">
+                {paiAssessments.slice(0, 4).map((assessment) => (
+                  <div key={assessment.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                    <div><p className="text-xs font-semibold text-slate-800">{assessment.title}</p><p className="mt-0.5 text-[11px] text-slate-500">{assessment.aspectCategory}</p></div>
+                    <span className="text-[10px] text-slate-500">{assessment.date}</span>
+                  </div>
+                ))}
+                {paiAssessments.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Belum ada instrumen asesmen.</p>}
+              </div>
+            </section>
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h4 className="text-sm font-bold text-slate-900">Akses cepat</h4>
+              <div className="mt-3 grid gap-2">
+                {[
+                  { label: 'Penilaian harian PAI', tab: 'penilaian', icon: CheckSquare },
+                  { label: 'Jurnal mengajar', tab: 'jurnal', icon: BookOpen },
+                  { label: 'Nilai internal PAI', tab: 'nilai_internal', icon: Lock },
+                  { label: 'Chat orang tua', tab: 'chat', icon: MessageCircle },
+                ].map((item) => (
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'penilaian' | 'jurnal' | 'nilai_internal' | 'chat')} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-left text-xs font-semibold text-slate-800 hover:border-teal-200 hover:bg-teal-50/50">
+                    <item.icon className="h-4 w-4 text-teal-600" /> {item.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'leger' && <GradeLedgerTab teacherRole="guru_pai" />}
       {activeTab === 'jurnal' && <ClassJournalTab subjectScope="pai" />}

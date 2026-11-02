@@ -45,15 +45,20 @@ import {
   Upload
 } from 'lucide-react';
 
-const LANDING_FEATURES: {
-  key: keyof NonNullable<SchoolProfile['landingFeatures']>;
-  label: string;
-}[] = [
-  { key: 'dailyReports', label: 'Laporan harian/mingguan' },
-  { key: 'gallery', label: 'Galeri foto & video' },
-  { key: 'agenda', label: 'Agenda & tugas' },
+const CLASS_ROLE_OPTIONS = [
+  'Ketua Kelas',
+  'Wakil Ketua Kelas',
+  'Sekretaris 1',
+  'Sekretaris 2',
+  'Bendahara 1',
+  'Bendahara 2',
+  'Koordinator Seksi Kebersihan & Keindahan',
+  'Koordinator Seksi Keagamaan & Adab',
+  'Koordinator Seksi Keamanan & Ketertiban',
+  'Koordinator Seksi Upacara & Olahraga',
+  'Koordinator Seksi Mading & Pojok Baca',
+  'Anggota Kelas',
 ];
-type LandingFeatureSettings = NonNullable<SchoolProfile['landingFeatures']>;
 
 type AnnouncementForm = Omit<SchoolAnnouncement, 'id'>;
 
@@ -125,6 +130,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     deleteUser,
     currentUser,
     students,
+    updateStudent,
     resetUserPassword,
     journalEntries,
     internalGrades,
@@ -139,15 +145,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
   } = useEduStore();
 
   const [showImpersonateModal, setShowImpersonateModal] = useState(false);
-  const [activeTab, setActiveTabState] = useState<'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
-    (currentTab as any) || 'profil'
+  const [activeTab, setActiveTabState] = useState<'ringkasan' | 'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger'>(
+    (currentTab as any) || 'ringkasan'
   );
 
   // Sub-view toggle inside Teacher Management & Credential Center
   const [teacherSubTab, setTeacherSubTab] = useState<'guru' | 'password'>('guru');
 
   useEffect(() => {
-    if (currentTab && ['profil', 'landing', 'pengumuman', 'mata-pelajaran', 'jadwal', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
+    if (currentTab && ['ringkasan', 'profil', 'landing', 'pengumuman', 'mata-pelajaran', 'jadwal', 'kurikulum', 'guru', 'password', 'laporan', 'leger'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
       if (currentTab === 'password') {
         setTeacherSubTab((prev) => (prev !== 'password' ? 'password' : prev));
@@ -157,17 +163,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
+  const setActiveTab = (tab: 'ringkasan' | 'profil' | 'landing' | 'pengumuman' | 'mata-pelajaran' | 'jadwal' | 'kurikulum' | 'guru' | 'password' | 'laporan' | 'leger') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
 
   const [profileForm, setProfileForm] = useState<SchoolProfile>(() => ({ ...schoolProfile }));
-  const [landingFeatureSettings, setLandingFeatureSettings] = useState<LandingFeatureSettings>(() => ({
-    dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
-    gallery: schoolProfile.landingFeatures?.gallery ?? true,
-    agenda: schoolProfile.landingFeatures?.agenda ?? true,
-  }));
+  const [organizationForm, setOrganizationForm] = useState({
+    studentId: '',
+    role: '',
+    photoUrl: '',
+    visibleOnLanding: false,
+  });
+  const [isCompressingClassPhoto, setIsCompressingClassPhoto] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [announcementForm, setAnnouncementForm] = useState<AnnouncementForm>({
     title: '',
@@ -193,18 +201,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     }
   }, [schoolProfile]);
 
-  useEffect(() => {
-    setLandingFeatureSettings({
-      dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
-      gallery: schoolProfile.landingFeatures?.gallery ?? true,
-      agenda: schoolProfile.landingFeatures?.agenda ?? true,
-    });
-  }, [schoolProfile.landingFeatures]);
+  const selectedOrganizationStudent = students.find((student) => student.id === organizationForm.studentId);
+  const publishedOrganizationStudents = students.filter(
+    (student) => student.showClassRoleOnLanding && student.classRole?.trim()
+  );
 
-  const handleSaveLandingFeatures = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateSchoolProfile({ ...schoolProfile, landingFeatures: landingFeatureSettings });
-    showToast('Pengaturan tampilan fitur landing page berhasil disimpan.');
+  const handleOrganizationStudentChange = (studentId: string) => {
+    const student = students.find((item) => item.id === studentId);
+    setOrganizationForm({
+      studentId,
+      role: student?.classRole || '',
+      photoUrl: student?.classRolePhotoUrl || '',
+      visibleOnLanding: student?.showClassRoleOnLanding ?? false,
+    });
+  };
+
+  const handleClassRolePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsCompressingClassPhoto(true);
+    try {
+      const photoUrl = await compressAnnouncementImage(file);
+      setOrganizationForm((current) => ({ ...current, photoUrl }));
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Foto siswa gagal diproses.');
+    } finally {
+      setIsCompressingClassPhoto(false);
+    }
+  };
+
+  const handleSaveClassOrganization = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedOrganizationStudent || !organizationForm.role) {
+      showToast('Pilih jabatan dan siswa terlebih dahulu.');
+      return;
+    }
+    updateStudent(selectedOrganizationStudent.id, {
+      classRole: organizationForm.role,
+      classRolePhotoUrl: organizationForm.photoUrl,
+      showClassRoleOnLanding: organizationForm.visibleOnLanding,
+    });
+    showToast(`Jabatan ${selectedOrganizationStudent.name} berhasil disimpan.`);
   };
 
   // Subject Modal / Form
@@ -380,11 +419,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
 
   const handleCreateLo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loCp.trim() || !loTp.trim()) return;
+    if (!loSubjectId || !loCp.trim() || !loTp.trim()) return;
     const subj = subjects.find((s) => s.id === loSubjectId);
+    if (!subj) return;
     addLearningObjective({
       subjectId: loSubjectId,
-      subjectName: subj ? subj.name : 'Mata Pelajaran',
+      subjectName: subj.name,
       capaianPembelajaran: loCp.trim(),
       tujuanPembelajaran: loTp.trim(),
       semester: loSemester,
@@ -394,6 +434,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     setLoTp('');
     setShowAddLoModal(false);
     showToast('Capaian (CP) & Tujuan Pembelajaran (TP) berhasil ditambahkan!');
+  };
+
+  const handleOpenCreateLo = (subjectId: string) => {
+    setLoSubjectId(subjectId);
+    setLoCp('');
+    setLoTp('');
+    setLoSemester('Ganjil');
+    setShowAddLoModal(true);
   };
 
   // Open Edit Subject Modal
@@ -751,6 +799,80 @@ Terima kasih.`;
         </div>
       </div>
 
+      {activeTab === 'ringkasan' && (
+        <div className="space-y-5">
+          <section className="flex flex-col gap-4 rounded-2xl bg-slate-900 p-5 text-white shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-6">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Ringkasan Administrasi</p>
+              <h3 className="mt-1 text-xl font-extrabold">Selamat datang, {currentUser?.name || 'Administrator'}</h3>
+              <p className="mt-1 text-xs text-slate-300">{schoolProfile.name} · {schoolProfile.classGrade} · TA {schoolProfile.academicYear}</p>
+            </div>
+            <button onClick={() => setActiveTab('laporan')} className="rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-slate-900 hover:bg-indigo-50">
+              Buka rekap sekolah
+            </button>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Siswa terdaftar', value: students.length, detail: schoolProfile.classGrade, color: 'text-indigo-700', icon: Users },
+              { label: 'Guru aktif', value: users.filter((user) => user.role !== 'orangtua' && user.role !== 'admin' && user.status !== 'nonaktif').length, detail: 'Akun pengajar', color: 'text-teal-700', icon: BookOpen },
+              { label: 'Mata pelajaran', value: subjects.length, detail: 'Master kurikulum', color: 'text-amber-700', icon: School },
+              { label: 'Jurnal tersimpan', value: journalEntries.length, detail: 'Catatan pembelajaran', color: 'text-rose-700', icon: FileText },
+            ].map((item) => (
+              <article key={item.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-500">{item.label}</p>
+                  <item.icon className={`h-4 w-4 ${item.color}`} />
+                </div>
+                <p className="mt-3 text-2xl font-extrabold text-slate-900">{item.value}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Jurnal terbaru</h4>
+                  <p className="mt-0.5 text-[11px] text-slate-500">Aktivitas pembelajaran kelas</p>
+                </div>
+                <button onClick={() => setActiveTab('laporan')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Lihat rekap</button>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {journalEntries.slice(0, 4).map((entry) => (
+                  <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-slate-800">{entry.subjectName}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-slate-500">{entry.teacherName} · {entry.timeSlot}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-500">{entry.date}</span>
+                  </div>
+                ))}
+                {journalEntries.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Belum ada jurnal yang tersimpan.</p>}
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h4 className="text-sm font-bold text-slate-900">Akses cepat</h4>
+              <div className="mt-3 grid gap-2">
+                {[
+                  { label: 'Mata pelajaran & CP/TP', tab: 'mata-pelajaran', detail: `${subjects.length} mapel` },
+                  { label: 'Manajemen guru & akun', tab: 'guru', detail: 'Akun dan hak akses' },
+                  { label: 'Jadwal mingguan', tab: 'jadwal', detail: 'Jadwal kelas aktif' },
+                  { label: 'Pengumuman sekolah', tab: 'pengumuman', detail: `${announcements.length} pengumuman` },
+                ].map((item) => (
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'mata-pelajaran' | 'guru' | 'jadwal' | 'pengumuman')} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-3 text-left hover:border-indigo-200 hover:bg-indigo-50/50">
+                    <span className="text-xs font-semibold text-slate-800">{item.label}</span>
+                    <span className="text-[10px] text-slate-500">{item.detail}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'leger' && <GradeLedgerTab />}
 
       {/* Tab 1: Profil & Kop Surat */}
@@ -1071,49 +1193,108 @@ Terima kasih.`;
       )}
 
       {activeTab === 'landing' && (
-        <div className="max-w-3xl bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-          <div className="mb-6">
-            <h3 className="text-base font-bold text-slate-900">Pengaturan Konten Landing Page</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Pilih kartu informasi yang akan ditampilkan pada bagian utama halaman depan. Perubahan berlaku untuk semua pengunjung setelah disimpan.
-            </p>
+        <div className="max-w-4xl space-y-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Struktur Organisasi Kelas · {schoolProfile.classGrade}</h3>
+            <p className="mt-1 text-xs text-slate-500">Pilih jabatan dan siswa dari data kelas, unggah foto, lalu tentukan apakah profil ditampilkan pada landing page.</p>
           </div>
 
-          <form onSubmit={handleSaveLandingFeatures} className="space-y-3">
-            {LANDING_FEATURES.map((feature) => (
-              <label
-                key={feature.key}
-                className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-800"
-              >
+          {students.length === 0 ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Belum ada data siswa di kelas. Tambahkan siswa terlebih dahulu.</p>
+          ) : (
+            <form onSubmit={handleSaveClassOrganization} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Jabatan
+                  <select
+                    value={organizationForm.role}
+                    onChange={(event) => setOrganizationForm((current) => ({ ...current, role: event.target.value }))}
+                    required
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs font-normal focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">Pilih jabatan</option>
+                    {CLASS_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+                  </select>
+                </label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  Nama siswa
+                  <select
+                    value={organizationForm.studentId}
+                    onChange={(event) => handleOrganizationStudentChange(event.target.value)}
+                    required
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs font-normal focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">Pilih siswa dari {schoolProfile.classGrade}</option>
+                    {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Foto siswa
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleClassRolePhotoChange}
+                    disabled={isCompressingClassPhoto}
+                    className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-normal file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-indigo-700"
+                  />
+                  <span className="mt-1 block text-[10px] font-normal text-slate-500">JPG/PNG, maksimal 10 MB sebelum kompresi.</span>
+                </label>
+                {organizationForm.photoUrl && (
+                  <div className="flex items-center gap-3">
+                    <img src={organizationForm.photoUrl} alt="Pratinjau foto siswa" className="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
+                    <button type="button" onClick={() => setOrganizationForm((current) => ({ ...current, photoUrl: '' }))} className="text-xs font-semibold text-rose-600 hover:text-rose-700">Hapus foto</button>
+                  </div>
+                )}
+              </div>
+
+              <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4">
                 <span>
-                  <span className="block font-semibold">{feature.label}</span>
-                  <span className="block text-xs text-slate-500 mt-0.5">
-                    {landingFeatureSettings[feature.key] ? 'Ditampilkan pada halaman depan' : 'Disembunyikan dari halaman depan'}
-                  </span>
+                  <span className="block text-sm font-semibold text-slate-800">Tampilkan di Landing Page</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Jika tidak dicentang, profil jabatan tetap tersimpan tetapi tidak tampil ke pengunjung.</span>
                 </span>
                 <input
                   type="checkbox"
-                  checked={landingFeatureSettings[feature.key]}
-                  onChange={(event) =>
-                    setLandingFeatureSettings((current) => ({
-                      ...current,
-                      [feature.key]: event.target.checked,
-                    }))
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  checked={organizationForm.visibleOnLanding}
+                  onChange={(event) => setOrganizationForm((current) => ({ ...current, visibleOnLanding: event.target.checked }))}
+                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
               </label>
-            ))}
-            <div className="pt-3 flex justify-end">
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                Simpan Pengaturan Landing Page
-              </button>
-            </div>
-          </form>
+
+              <div className="flex justify-end">
+                <button type="submit" disabled={isCompressingClassPhoto} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+                  <Save className="h-4 w-4" /> Simpan Struktur Kelas
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="border-t border-slate-100 pt-4">
+            <h4 className="mb-3 text-sm font-bold text-slate-900">Anggota yang tampil di landing page ({publishedOrganizationStudents.length})</h4>
+            {publishedOrganizationStudents.length === 0 ? (
+              <p className="text-xs text-slate-500">Belum ada anggota yang dipublikasikan.</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {publishedOrganizationStudents.map((student) => (
+                  <div key={student.id} className="flex items-center gap-3 py-2.5">
+                    {student.classRolePhotoUrl ? (
+                      <img src={student.classRolePhotoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">{student.name.charAt(0)}</span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-slate-800">{student.name}</p>
+                      <p className="text-[11px] text-slate-500">{student.classRole}</p>
+                    </div>
+                    <button type="button" onClick={() => handleOrganizationStudentChange(student.id)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Ubah</button>
+                    <button type="button" onClick={() => updateStudent(student.id, { showClassRoleOnLanding: false })} className="text-xs font-semibold text-rose-600 hover:text-rose-700">Sembunyikan</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1347,142 +1528,50 @@ Terima kasih.`;
         </div>
       )}
 
-      {/* Tab 2: Master Kurikulum (CP & TP) */}
+      {/* Tab 2: Rekap Kurikulum (CP & TP) */}
       {activeTab === 'kurikulum' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* List Mata Pelajaran */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Mata Pelajaran</h3>
-                  <p className="text-xs text-slate-500">Daftar mapel yang diajarkan pada kurikulum</p>
-                </div>
-                <button
-                  onClick={() => setShowAddSubjectModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Mapel</span>
-                </button>
-              </div>
-
-              <div className="divide-y divide-slate-100">
-                {subjects.map((sub) => (
-                  <div key={sub.id} className="py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          {sub.code}
-                        </span>
-                        <h4 className="text-xs font-bold text-slate-900">{sub.name}</h4>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEditSubject(sub)}
-                        className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
-                        title="Edit Mata Pelajaran"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Hapus mata pelajaran "${sub.name}"?`)) {
-                            deleteSubject(sub.id);
-                            showToast(`Mapel ${sub.name} berhasil dihapus.`);
-                          }
-                        }}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                        title="Hapus Mapel"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+            <h3 className="text-base font-bold text-slate-900">Rekap Mata Pelajaran, CP & TP</h3>
+            <p className="mt-1 text-xs text-slate-500">Ringkasan kurikulum tersimpan per mata pelajaran.</p>
           </div>
 
-          {/* List Capaian & Tujuan Pembelajaran */}
-          <div className="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Master Capaian (CP) & Tujuan Pembelajaran (TP)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Kurikulum Merdeka: Data ini ditarik langsung oleh Guru Kelas saat membuat Jurnal Harian
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAddLoModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah CP / TP Baru</span>
-              </button>
+          {subjects.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+              Belum ada mata pelajaran. Tambahkan dari halaman Mata Pelajaran.
             </div>
-
-            <div className="space-y-4">
-              {learningObjectives.map((lo) => (
-                <div
-                  key={lo.id}
-                  className="p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-200 transition-colors space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                        {lo.subjectName}
-                      </span>
-                      <span className="text-[11px] text-slate-500">Semester {lo.semester} · {lo.grade}</span>
+          ) : (
+            subjects.map((subject) => {
+              const objectives = learningObjectives.filter((item) => item.subjectId === subject.id);
+              return (
+                <section key={subject.id} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="rounded border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-mono font-bold text-indigo-700">{subject.code}</span>
+                    <h4 className="text-sm font-bold text-slate-900">{subject.name}</h4>
+                  </div>
+                  {objectives.length === 0 ? (
+                    <p className="pt-3 text-xs text-slate-500">Belum ada CP/TP untuk mata pelajaran ini.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {objectives.map((objective) => (
+                        <article key={objective.id} className="grid gap-3 py-4 md:grid-cols-2">
+                          <div>
+                            <p className="mb-1 text-[10px] font-bold uppercase text-slate-500">Capaian Pembelajaran (CP)</p>
+                            <p className="text-xs leading-relaxed text-slate-800">{objective.capaianPembelajaran}</p>
+                          </div>
+                          <div>
+                            <p className="mb-1 text-[10px] font-bold uppercase text-indigo-600">Tujuan Pembelajaran (TP)</p>
+                            <p className="text-xs leading-relaxed text-slate-700">{objective.tujuanPembelajaran}</p>
+                            <p className="mt-2 text-[10px] text-slate-500">Semester {objective.semester} · {objective.grade}</p>
+                          </div>
+                        </article>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEditLo(lo)}
-                        className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
-                        title="Edit CP / TP"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('Hapus butir CP/TP ini?')) {
-                            deleteLearningObjective(lo.id);
-                            showToast('Butir CP/TP berhasil dihapus.');
-                          }
-                        }}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                      CAPAIAN PEMBELAJARAN (CP):
-                    </span>
-                    <p className="text-xs text-slate-800 leading-relaxed font-medium">
-                      {lo.capaianPembelajaran}
-                    </p>
-                  </div>
-
-                  <div className="pt-1 border-t border-slate-100">
-                    <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">
-                      TUJUAN PEMBELAJARAN (TP):
-                    </span>
-                    <p className="text-xs text-slate-700 leading-relaxed">
-                      {lo.tujuanPembelajaran}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                  )}
+                </section>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -1498,18 +1587,84 @@ Terima kasih.`;
               <Plus className="w-4 h-4" /> Tambah Mata Pelajaran
             </button>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="space-y-3">
             {subjects.map((subject) => (
-              <div key={subject.id} className="py-3 flex items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-mono font-bold text-indigo-700">{subject.code}</span>
-                  <p className="text-sm font-bold text-slate-900">{subject.name}</p>
+              <article key={subject.id} className="rounded-xl border border-slate-200 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-mono font-bold text-indigo-700">{subject.code}</span>
+                    <p className="text-sm font-bold text-slate-900">{subject.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenCreateLo(subject.id)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Tambah CP/TP
+                    </button>
+                    <button onClick={() => handleOpenEditSubject(subject)} className="p-2 text-slate-400 hover:text-indigo-600" title="Edit mata pelajaran">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Hapus mata pelajaran "${subject.name}"?`)) {
+                          deleteSubject(subject.id);
+                          showToast(`Mapel ${subject.name} berhasil dihapus.`);
+                        }
+                      }}
+                      className="p-2 text-slate-400 hover:text-rose-600"
+                      title="Hapus mata pelajaran"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => handleOpenEditSubject(subject)} className="p-2 text-slate-400 hover:text-indigo-600" title="Edit mata pelajaran">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  {learningObjectives.filter((item) => item.subjectId === subject.id).length === 0 ? (
+                    <p className="text-xs text-slate-500">Belum ada CP/TP untuk mapel ini.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {learningObjectives.filter((item) => item.subjectId === subject.id).map((objective) => (
+                        <div key={objective.id} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 p-3">
+                          <div className="grid flex-1 gap-2 sm:grid-cols-2">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase text-slate-500">CP · Semester {objective.semester}</p>
+                              <p className="mt-1 text-xs text-slate-700">{objective.capaianPembelajaran}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase text-indigo-600">TP · {objective.grade}</p>
+                              <p className="mt-1 text-xs text-slate-700">{objective.tujuanPembelajaran}</p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button onClick={() => handleOpenEditLo(objective)} className="p-1.5 text-slate-400 hover:text-indigo-600" title="Edit CP/TP">
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Hapus CP/TP untuk ${subject.name}?`)) {
+                                  deleteLearningObjective(objective.id);
+                                  showToast('Butir CP/TP berhasil dihapus.');
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600"
+                              title="Hapus CP/TP"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </article>
             ))}
+            {subjects.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                Belum ada mata pelajaran. Tambahkan mata pelajaran terlebih dahulu.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3228,7 +3383,7 @@ Terima kasih.`;
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900">
-                Tambah Capaian (CP) & Tujuan Pembelajaran (TP)
+                Tambah CP/TP · {subjects.find((subject) => subject.id === loSubjectId)?.name || 'Mata Pelajaran'}
               </h3>
               <button
                 onClick={() => setShowAddLoModal(false)}
@@ -3240,21 +3395,11 @@ Terima kasih.`;
 
             <form onSubmit={handleCreateLo} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mata Pelajaran
-                  </label>
-                  <select
-                    value={loSubjectId}
-                    onChange={(e) => setLoSubjectId(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
-                  >
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.code})
-                      </option>
-                    ))}
-                  </select>
+                <div className="min-w-0">
+                  <span className="block text-xs font-semibold text-slate-700 mb-1">Mata Pelajaran</span>
+                  <p className="truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    {subjects.find((subject) => subject.id === loSubjectId)?.name || 'Pilih dari halaman Mata Pelajaran'}
+                  </p>
                 </div>
 
                 <div>

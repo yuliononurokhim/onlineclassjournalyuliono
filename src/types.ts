@@ -80,6 +80,8 @@ export interface Student {
   avatarBgColor?: string;
   classRole?: string;
   classRoleDuty?: string;
+  classRolePhotoUrl?: string;
+  showClassRoleOnLanding?: boolean;
 }
 
 export interface ClassJournalEntry {

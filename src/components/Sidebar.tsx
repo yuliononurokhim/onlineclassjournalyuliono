@@ -26,6 +26,7 @@ import {
   FileText,
   KeyRound,
   CheckSquare,
+  LayoutDashboard,
   MessageCircle,
   Award,
   Eye,
@@ -145,6 +146,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Shield className="w-4 h-4 text-slate-800 shrink-0" />,
       subItems: [
         {
+          id: 'ringkasan',
+          label: 'Ringkasan Admin',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+        },
+        {
           id: 'profil',
           label: 'Profil & Kop Sekolah',
           icon: <School className="w-4 h-4 shrink-0" />,
@@ -201,6 +207,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-indigo-900 bg-indigo-50 border-indigo-200',
       icon: <BookOpen className="w-4 h-4 text-indigo-700 shrink-0" />,
       subItems: [
+        {
+          id: 'ringkasan',
+          label: 'Ringkasan Kelas',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+        },
         {
           id: 'murid',
           label: 'Daftar Murid Kelas',
@@ -260,6 +271,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <HeartHandshake className="w-4 h-4 text-rose-600 shrink-0" />,
       subItems: [
         {
+          id: 'ringkasan',
+          label: 'Ringkasan BK',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+        },
+        {
           id: 'jadwal',
           label: 'Jadwal Mingguan Kelas',
           icon: <CalendarDays className="w-4 h-4 shrink-0" />,
@@ -311,6 +327,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-teal-900 bg-teal-50 border-teal-200',
       icon: <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />,
       subItems: [
+        {
+          id: 'ringkasan',
+          label: 'Ringkasan PAI',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+        },
         {
           id: 'jurnal',
           label: 'Jurnal Harian Mengajar',
@@ -364,6 +385,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-amber-900 bg-amber-50 border-amber-200',
       icon: <Users className="w-4 h-4 text-amber-600 shrink-0" />,
       subItems: [
+        {
+          id: 'ringkasan',
+          label: 'Ringkasan Anak',
+          icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+        },
         {
           id: 'bintang',
           label: 'Bintang & Prestasi Anak',

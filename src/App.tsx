@@ -13,7 +13,7 @@ import { School } from 'lucide-react';
 export default function App() {
   const { currentUser, schoolProfile } = useEduStore();
   const [activeView, setActiveView] = useState<string>('landing');
-  const [activeSubTab, setActiveSubTab] = useState<string>('murid');
+  const [activeSubTab, setActiveSubTab] = useState<string>('ringkasan');
 
   // Responsive Sidebar States
   const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
@@ -23,11 +23,11 @@ export default function App() {
   useEffect(() => {
     if (currentUser?.role) {
       const defaultTabs: Record<string, string> = {
-        admin: 'profil',
-        guru_kelas: 'murid',
-        guru_bk: 'kasus',
-        guru_pai: 'penilaian',
-        orangtua: 'bintang',
+        admin: 'ringkasan',
+        guru_kelas: 'ringkasan',
+        guru_bk: 'ringkasan',
+        guru_pai: 'ringkasan',
+        orangtua: 'ringkasan',
       };
       const target = defaultTabs[currentUser.role];
       if (target) {

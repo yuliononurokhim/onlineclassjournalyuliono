@@ -46,15 +46,15 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
     markMessagesAsRead,
   } = useEduStore();
 
-  const [activeTab, setActiveTabState] = useState<'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat'>((currentTab as any) || 'bintang');
+  const [activeTab, setActiveTabState] = useState<'ringkasan' | 'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat'>((currentTab as any) || 'ringkasan');
 
   useEffect(() => {
-    if (currentTab && ['bintang', 'jurnal', 'bk', 'pai', 'chat'].includes(currentTab)) {
+    if (currentTab && ['ringkasan', 'bintang', 'jurnal', 'bk', 'pai', 'chat'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat') => {
+  const setActiveTab = (tab: 'ringkasan' | 'bintang' | 'jurnal' | 'bk' | 'pai' | 'chat') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -277,6 +277,66 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       </div>
 
 
+
+      {activeTab === 'ringkasan' && (
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Bintang bersih', value: netStars, detail: `+${totalRewards} apresiasi · -${totalPenalties} sanksi`, icon: Star, tone: 'text-amber-600' },
+              { label: 'Catatan BK', value: myReportedCases.length, detail: 'Dibagikan kepada keluarga', icon: HeartHandshake, tone: 'text-rose-600' },
+              { label: 'Asesmen PAI', value: paiAssessments.filter((assessment) => Boolean(assessment.results[student.id])).length, detail: 'Memuat hasil untuk anak', icon: BookOpen, tone: 'text-teal-700' },
+              { label: 'Pesan belum dibaca', value: messages.filter((message) => message.recipientId === currentUser?.id && !message.isRead).length, detail: 'Dari guru pendamping', icon: MessageCircle, tone: 'text-indigo-600' },
+            ].map((item) => (
+              <article key={item.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between"><p className="text-xs font-semibold text-slate-500">{item.label}</p><item.icon className={`h-4 w-4 ${item.tone}`} /></div>
+                <p className="mt-3 text-2xl font-extrabold text-slate-900">{item.value}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div><h4 className="text-sm font-bold text-slate-900">Aktivitas terbaru</h4><p className="mt-0.5 text-[11px] text-slate-500">Apresiasi dan pendampingan untuk {student.name}</p></div>
+                <button onClick={() => setActiveTab('bintang')} className="text-xs font-bold text-indigo-600">Lihat semua</button>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {myStars.slice(0, 3).map((award) => (
+                  <div key={award.id} className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0"><p className="text-xs font-semibold text-slate-800">{award.category}</p><p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">{award.note}</p></div>
+                    <span className="shrink-0 text-[10px] text-slate-500">{award.date}</span>
+                  </div>
+                ))}
+                {myReportedCases.slice(0, 2).map((record) => (
+                  <div key={record.id} className="flex items-start justify-between gap-3 py-3">
+                    <div className="min-w-0"><p className="text-xs font-semibold text-slate-800">Pendampingan BK · {record.category}</p><p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">{record.followUpAction}</p></div>
+                    <span className="shrink-0 text-[10px] text-slate-500">{record.date}</span>
+                  </div>
+                ))}
+                {myStars.length === 0 && myReportedCases.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Belum ada aktivitas yang dibagikan.</p>}
+              </div>
+            </section>
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h4 className="text-sm font-bold text-slate-900">Akses portal anak</h4>
+              <p className="mt-1 text-[11px] text-slate-500">Informasi khusus untuk {student.name}.</p>
+              <div className="mt-3 grid gap-2">
+                {[
+                  { label: 'Jurnal harian kelas', tab: 'jurnal', icon: BookOpen },
+                  { label: 'Bintang & prestasi', tab: 'bintang', icon: Star },
+                  { label: 'Laporan konseling', tab: 'bk', icon: HeartHandshake },
+                  { label: 'Capaian ibadah PAI', tab: 'pai', icon: Sparkles },
+                  { label: 'Chat guru pendamping', tab: 'chat', icon: MessageCircle },
+                ].map((item) => (
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'jurnal' | 'bintang' | 'bk' | 'pai' | 'chat')} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-left text-xs font-semibold text-slate-800 hover:border-amber-200 hover:bg-amber-50/50">
+                    <item.icon className="h-4 w-4 text-amber-600" /> {item.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Apresiasi & Pengurangan Bintang Murid */}
       {activeTab === 'bintang' && (

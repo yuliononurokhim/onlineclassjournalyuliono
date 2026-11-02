@@ -27,7 +27,8 @@ import {
   MinusCircle,
   AlertTriangle,
   Lock,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 
 interface GuruBkDashboardProps {
@@ -52,17 +53,17 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
     currentUser,
   } = useEduStore();
 
-  const [activeTab, setActiveTabState] = useState<'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat' | 'jadwal'>(
-    (currentTab as any) || 'kasus'
+  const [activeTab, setActiveTabState] = useState<'ringkasan' | 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat' | 'jadwal'>(
+    (currentTab as any) || 'ringkasan'
   );
 
   useEffect(() => {
-    if (currentTab && ['kasus', 'bintang', 'penilaian', 'rekap', 'leger', 'chat', 'jadwal'].includes(currentTab)) {
+    if (currentTab && ['ringkasan', 'kasus', 'bintang', 'penilaian', 'rekap', 'leger', 'chat', 'jadwal'].includes(currentTab)) {
       setActiveTabState((prev) => (prev !== currentTab ? (currentTab as any) : prev));
     }
   }, [currentTab]);
 
-  const setActiveTab = (tab: 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat' | 'jadwal') => {
+  const setActiveTab = (tab: 'ringkasan' | 'kasus' | 'bintang' | 'penilaian' | 'rekap' | 'leger' | 'chat' | 'jadwal') => {
     setActiveTabState(tab);
     if (onTabChange) onTabChange(tab);
   };
@@ -266,6 +267,64 @@ export const GuruBkDashboard: React.FC<GuruBkDashboardProps> = ({ currentTab, on
           </div>
         </div>
       </div>
+
+      {activeTab === 'ringkasan' && (
+        <div className="space-y-5">
+          <section className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-rose-700 to-pink-600 p-5 text-white shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-6">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-rose-100">Dashboard Layanan BK</p>
+              <h3 className="mt-1 text-xl font-extrabold">Selamat datang, {currentUser?.name || 'Guru BK'}</h3>
+              <p className="mt-1 text-xs text-rose-100">Pantau pendampingan, tindak lanjut, dan komunikasi keluarga.</p>
+            </div>
+            <button onClick={() => setActiveTab('kasus')} className="rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-50">Catat layanan BK</button>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Siswa terdata', value: students.length, detail: 'Kelas aktif', icon: Users, tone: 'text-indigo-700' },
+              { label: 'Kasus berjalan', value: caseRecords.filter((record) => record.status !== 'Selesai').length, detail: 'Perlu pemantauan', icon: AlertCircle, tone: 'text-rose-700' },
+              { label: 'Apresiasi & sanksi', value: starAwards.filter((award) => award.awarderRole === 'guru_bk').length, detail: 'Catatan karakter', icon: Sparkles, tone: 'text-amber-700' },
+              { label: 'Pesan belum dibaca', value: messages.filter((message) => !message.isRead && message.recipientId === currentUser?.id).length, detail: 'Dari orang tua', icon: MessageCircle, tone: 'text-teal-700' },
+            ].map((item) => (
+              <article key={item.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between"><p className="text-xs font-semibold text-slate-500">{item.label}</p><item.icon className={`h-4 w-4 ${item.tone}`} /></div>
+                <p className="mt-3 text-2xl font-extrabold text-slate-900">{item.value}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3"><h4 className="text-sm font-bold text-slate-900">Kasus terbaru</h4><p className="mt-0.5 text-[11px] text-slate-500">Riwayat pemantauan siswa</p></div>
+              <div className="divide-y divide-slate-100">
+                {caseRecords.slice(0, 4).map((record) => (
+                  <div key={record.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                    <div><p className="text-xs font-semibold text-slate-800">{record.studentName}</p><p className="mt-0.5 text-[11px] text-slate-500">{record.category} · {record.date}</p></div>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${record.status === 'Selesai' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{record.status}</span>
+                  </div>
+                ))}
+                {caseRecords.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Belum ada catatan kasus.</p>}
+              </div>
+            </section>
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h4 className="text-sm font-bold text-slate-900">Akses layanan</h4>
+              <div className="mt-3 grid gap-2">
+                {[
+                  { label: 'Jurnal kasus & konseling', tab: 'kasus', icon: HeartHandshake },
+                  { label: 'Jadwal mingguan kelas', tab: 'jadwal', icon: FileText },
+                  { label: 'Nilai sikap & minat bakat', tab: 'penilaian', icon: Lock },
+                  { label: 'Konseling chat orang tua', tab: 'chat', icon: MessageCircle },
+                ].map((item) => (
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'kasus' | 'jadwal' | 'penilaian' | 'chat')} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-left text-xs font-semibold text-slate-800 hover:border-rose-200 hover:bg-rose-50/50">
+                    <item.icon className="h-4 w-4 text-rose-600" /> {item.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'leger' && <GradeLedgerTab teacherRole="guru_bk" />}
       {activeTab === 'jadwal' && <ClassJournalTab subjectScope="bk" showJournalForm={false} />}
