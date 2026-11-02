@@ -216,6 +216,19 @@ export function initFirebaseSync() {
               items.push({ ...(docSnap.data() as T), id: docSnap.id });
             });
 
+            if (storageKey === 'users') {
+              const userItems = items as unknown as UserAccount[];
+              const initialAdmin = INITIAL_USERS.find((user) => user.role === 'admin');
+              const hasInitialAdmin = initialAdmin && userItems.some((user) => {
+                return user.role === 'admin' && (
+                  user.id === initialAdmin.id ||
+                  user.username?.trim().toLowerCase() === initialAdmin.username.trim().toLowerCase() ||
+                  user.email?.trim().toLowerCase() === initialAdmin.email?.trim().toLowerCase()
+                );
+              });
+              if (initialAdmin && !hasInitialAdmin) userItems.unshift(initialAdmin);
+            }
+
             isRemoteUpdating = true;
             saveLocal(storageKey, items);
             isRemoteUpdating = false;

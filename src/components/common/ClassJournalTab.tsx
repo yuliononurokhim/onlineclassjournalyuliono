@@ -97,14 +97,6 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
     setScheduleRows((current) => current.map((row, rowIndex) =>
       rowIndex === index ? { ...row, ...patch } : row
     ));
-  // Limit to 4 rows as requested
-  if (scheduleRows.length < 4) {
-    setScheduleRows((current) => [...current, createJournalRow()]);
-  }
-
-// Limit to 4 rows as requested
-    if (scheduleRows.length < 4) {
-      
   };
 
   const handleSaveWeeklySchedule = (event: React.FormEvent) => {
@@ -159,100 +151,6 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
   };
 
   const handleLoadScheduleToJournal = () => {
-
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Render up to 4 schedule rows for the selected day */ }
-          {scheduleRows.slice(0, 4).map((row, index) => (
-            <div key={index} className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-slate-800">Jam ke-{index + 1}</h4>
-                {scheduleRows.length > 1 && ( // Only show delete if more than one row exists
-                  <button
-                    type="button"
-                    onClick={() => deleteScheduleRow(index)}
-                    className="text-red-500 hover:text-red-700 text-xs font-medium"
-                  >
-                    <Trash2 className="inline w-4 h-4 mr-1" /> Hapus
-                  </button>
-                )}
-              </div>
-              
-              {/* Dropdown Mata Pelajaran */ }
-              <div className="mb-3">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Mata Pelajaran
-                </label>
-                <select
-                  value={row.subjectId}
-                  onChange={(e) => updateScheduleRow(index, { subjectId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium transition-all duration-200 appearance-none"
-                >
-                  <option value="">Pilih Mata Pelajaran</option>
-                  {availableSubjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Input Tujuan Pembelajaran / Materi */ }
-              <div className="mb-3">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tujuan Pembelajaran / Materi
-                </label>
-                <input
-                  type="text"
-                  value={row.objectiveId} // Using objectiveId field for this, adjust if structure differs
-                  onChange={(e) => updateScheduleRow(index, { objectiveId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium transition-all duration-200"
-                  placeholder="Masukkan tujuan atau materi"
-                />
-              </div>
-
-              {/* Input Kegiatan Pembelajaran */ }
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kegiatan Pembelajaran
-                </label>
-                <textarea
-                  value={row.activity}
-                  onChange={(e) => updateScheduleRow(index, { activity: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium transition-all duration-200 h-24 resize-none"
-                  placeholder="Tuliskan kegiatan yang direncanakan pada jam ini..."
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Button to add more schedule rows, up to 4 */ }
-        {scheduleRows.length < 4 && (
-          <button
-            type="button"
-            onClick={addScheduleRow}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" /> Tambah Jam Pelajaran
-          </button>
-        )}
-
-        <div className="mt-6 flex justify-end gap-4">
-          {scheduleMessage && (
-            <p className={`text-xs font-medium ${scheduleMessage.includes('berhasil') ? 'text-emerald-600' : 'text-red-600'}`}>{scheduleMessage}</p>
-          )}
-          {savedMessage && (
-            <p className="text-xs font-medium text-emerald-600">{savedMessage}</p>
-          )}
-          <button
-            type="button"
-            onClick={handleSaveSchedule}
-            className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            <Save className="inline w-4 h-4 mr-1" /> Simpan Jadwal
-          </button>
-        </div>
-      </section>
     const weekday = getWeekday(date);
     if (!weekday) {
       setFormError('Jadwal hanya tersedia untuk hari sekolah Senin–Jumat.');
