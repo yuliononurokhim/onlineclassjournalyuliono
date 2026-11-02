@@ -34,6 +34,7 @@ import {
 } from './mockData';
 import {
   initFirebaseSync,
+  clearAdminAuthSession,
   writeFirestoreDoc,
   deleteFirestoreDoc,
   deleteStudentFirestoreRecords,
@@ -131,6 +132,16 @@ export function useEduStore() {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
+    const savedUser = getStoredItem<UserAccount | null>('current_user', null);
+    const hadAdminSession = hasOriginalAdminSession();
+    if (savedUser?.role === 'admin' || hadAdminSession) {
+      setStoredItem('current_user', null);
+    }
+    sessionStorage.removeItem('edujournal_original_admin');
+    void clearAdminAuthSession().catch((error) => {
+      console.warn('Failed clearing previous Firebase admin session:', error);
+    });
+
     // Start two-way real-time Firestore sync
     initFirebaseSync();
 
@@ -154,7 +165,10 @@ export function useEduStore() {
   const learningObjectives = useMemo(() => getStoredItem<LearningObjective[]>('learning_objectives', INITIAL_LEARNING_OBJECTIVES), [version]);
   const students = useMemo(() => getStoredItem<Student[]>('students', INITIAL_STUDENTS), [version]);
   const users = useMemo(() => getStoredItem<UserAccount[]>('users', INITIAL_USERS), [version]);
-  const currentUser = useMemo(() => getStoredItem<UserAccount | null>('current_user', null), [version]);
+  const currentUser = useMemo(() => {
+    const user = getStoredItem<UserAccount | null>('current_user', null);
+    return user?.role === 'admin' ? null : user;
+  }, [version]);
   const journalEntries = useMemo(() => getStoredItem<ClassJournalEntry[]>('journal_entries', INITIAL_JOURNAL_ENTRIES), [version]);
   const starAwards = useMemo(() => getStoredItem<StarAward[]>('star_awards', INITIAL_STAR_AWARDS), [version]);
   const caseRecords = useMemo(() => getStoredItem<CaseRecord[]>('case_records', INITIAL_CASE_RECORDS), [version]);
@@ -213,23 +227,6 @@ export function useEduStore() {
       writeFirestoreDoc('users', matchedUser.id, matchedUser);
     }
     setStoredItem('current_user', matchedUser);
-    return true;
-  }, []);
-
-  const setAuthenticatedAdmin = useCallback((): boolean => {
-    const allUsers = getStoredItem<UserAccount[]>('users', INITIAL_USERS);
-    const adminUser = allUsers.find((user) => user.role === 'admin')
-      || INITIAL_USERS.find((user) => user.role === 'admin');
-    if (!adminUser) return false;
-
-    const sanitizedUsers = allUsers.map((user) =>
-      user.role === 'admin' ? { ...user, password: '' } : user
-    );
-    const sanitizedAdmin = { ...adminUser, password: '' };
-    setStoredItem('users', sanitizedUsers);
-    setStoredItem('current_user', sanitizedAdmin);
-    sessionStorage.removeItem('edujournal_original_admin');
-    writeFirestoreDoc('users', sanitizedAdmin.id, sanitizedAdmin);
     return true;
   }, []);
 
@@ -992,7 +989,6 @@ export function useEduStore() {
     deleteUser,
     currentUser,
     login,
-    setAuthenticatedAdmin,
     switchRole,
     impersonateUser,
     stopImpersonating,

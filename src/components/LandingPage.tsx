@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useEduStore } from '../services/store';
-import { signInAdmin } from '../services/firebase';
 import { UserRole } from '../types';
 import {
   School,
@@ -40,7 +39,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
   onLoginSuccess,
 }) => {
-  const { schoolProfile, announcements, login, logout, setAuthenticatedAdmin, currentUser, starAwards, students, users } = useEduStore();
+  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students, users } = useEduStore();
   const landingFeatures = {
     dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
     gallery: schoolProfile.landingFeatures?.gallery ?? true,
@@ -182,34 +181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       || cleanInput.includes('@');
 
     if (isAdminAttempt) {
-      try {
-        const email = cleanInput.includes('@') ? cleanInput : (adminUser?.email || cleanInput);
-        await signInAdmin(email, password);
-        if (!setAuthenticatedAdmin()) {
-          throw new Error('Data akun administrator belum tersedia.');
-        }
-        onLoginSuccess();
-      } catch (error: any) {
-        const code = error?.code;
-        const messages: Record<string, string> = {
-          'auth/user-not-found': 'Email admin belum terdaftar di Firebase Authentication. Buat akun dengan email tersebut atau sesuaikan email admin di data pengguna.',
-          'auth/invalid-credential': 'Firebase menolak email atau password. Pastikan akun admin sudah dibuat di Firebase Authentication dan password yang digunakan benar.',
-          'auth/invalid-login-credentials': 'Firebase menolak email atau password. Pastikan akun admin sudah dibuat di Firebase Authentication dan password yang digunakan benar.',
-          'auth/wrong-password': 'Password tidak sesuai dengan akun Firebase Authentication.',
-          'auth/invalid-password': 'Password tidak sesuai dengan akun Firebase Authentication.',
-          'auth/user-disabled': 'Akun admin dinonaktifkan di Firebase Authentication. Aktifkan kembali akun tersebut.',
-          'auth/invalid-email': 'Format email admin tidak valid. Periksa alamat email akun admin.',
-          'auth/operation-not-allowed': 'Metode login Email/Password belum aktif. Aktifkan penyedia Email/Password di Firebase Authentication.',
-          'auth/invalid-api-key': 'API key Firebase tidak valid. Periksa konfigurasi Firebase pada aplikasi.',
-          'auth/network-request-failed': 'Tidak dapat terhubung ke Firebase Authentication. Periksa koneksi internet lalu coba lagi.',
-          'auth/admin-claim-missing': 'Email dan password benar, tetapi akun belum memiliki hak akses administrator (custom claim admin). Jalankan set-admin-claim.js untuk akun tersebut.',
-          'auth/too-many-requests': 'Login terlalu sering. Tunggu beberapa saat lalu coba kembali.',
-        };
-        const message = messages[code] || (code
-          ? `Login administrator gagal (${code}). Periksa konfigurasi akun Firebase Authentication.`
-          : error?.message || 'Login administrator gagal.');
-        setLoginError(message);
-      }
+      setLoginError('Login administrator dinonaktifkan sementara. Akun non-admin tetap dapat masuk seperti biasa.');
       return;
     }
 
@@ -394,7 +366,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <span>Masuk ke Akun Anak</span>
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Orang tua dapat masuk dengan username dan password. Guru dan admin juga dapat menggunakan akun resmi.
+                        Orang tua dan guru dapat masuk dengan username dan password akun masing-masing.
                       </p>
                     </div>
                   </div>
@@ -424,7 +396,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                       </div>
                       <p className="text-[10px] text-slate-400 mt-1">
-                        Contoh: Username Guru/Admin, NISN Murid (10 digit), atau username orang tua.
+                        Contoh: username guru, NISN murid (10 digit), atau username orang tua.
                       </p>
                     </div>
 

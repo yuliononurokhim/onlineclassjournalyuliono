@@ -2,10 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getAuth,
   getIdTokenResult,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
   signOut,
-  User,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -370,40 +367,16 @@ export async function deleteFirestoreDoc(collectionName: string, id: string) {
   }
 }
 
-export async function signInAdmin(email: string, password: string): Promise<User> {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) {
-    throw new Error('Email administrator belum dikonfigurasi pada akun pengguna.');
-  }
+export async function clearAdminAuthSession() {
+  const user = auth.currentUser;
+  if (!user) return;
 
   try {
-    const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
-    const token = await getIdTokenResult(credential.user, true);
-    if (token.claims.admin !== true) {
-      await signOut(auth);
-      const error = new Error('Akun ini belum memiliki hak akses administrator. Jalankan set-admin-claim.js untuk akun tersebut.');
-      (error as Error & { code?: string }).code = 'auth/admin-claim-missing';
-      throw error;
-    }
-    return credential.user;
-  } catch (error: unknown) {
-    throw error;
+    const token = await getIdTokenResult(user);
+    if (token.claims.admin === true) await signOut(auth);
+  } catch {
+    await signOut(auth);
   }
-}
-
-export function subscribeAdminAuth(listener: (isAdmin: boolean) => void) {
-  return onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      listener(false);
-      return;
-    }
-    try {
-      const token = await getIdTokenResult(user);
-      listener(token.claims.admin === true);
-    } catch {
-      listener(false);
-    }
-  });
 }
 
 export async function signOutAdmin() {
