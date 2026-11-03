@@ -3,6 +3,7 @@ import { useEduStore } from '../services/store';
 import { subscribeFirebaseStatus, FirebaseSyncState } from '../services/firebase';
 import { getLinkedStudentsForParent } from '../services/relationships';
 import { ImpersonateModal } from './common/ImpersonateModal';
+import { SchoolLogo } from './common/SchoolLogo';
 import { UserRole } from '../types';
 import {
   School,
@@ -481,8 +482,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => handleGeneralViewClick('landing')}
           className="flex items-center gap-3 cursor-pointer min-w-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-700 to-indigo-950 flex items-center justify-center text-white shadow-md shadow-indigo-100 shrink-0">
-            <School className="w-5 h-5 text-indigo-100" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-700 to-indigo-950 flex items-center justify-center text-white shadow-md shadow-indigo-100 shrink-0 overflow-hidden p-1">
+            <SchoolLogo logoUrl={schoolProfile.logoUrl} fallbackClassName="w-5 h-5 text-indigo-100" />
           </div>
           {!isCollapsedDesktop && (
             <div className="min-w-0 flex-1">

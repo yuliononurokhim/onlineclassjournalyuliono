@@ -35,6 +35,7 @@ import {
 import {
   initFirebaseSync,
   writeFirestoreDoc,
+  deleteFirestoreFields,
   deleteFirestoreDoc,
   deleteStudentFirestoreRecords,
 } from './firebase';
@@ -503,6 +504,30 @@ export function useEduStore() {
       });
       setStoredItem('users', updatedUsers);
     }
+  }, []);
+
+  const removeStudentClassRole = useCallback((id: string) => {
+    const currentStudents = getStoredItem<Student[]>('students', INITIAL_STUDENTS);
+    const targetStudent = currentStudents.find((student) => student.id === id);
+    if (!targetStudent) return;
+
+    const {
+      classRole: _classRole,
+      classRoleDuty: _classRoleDuty,
+      classRolePhotoUrl: _classRolePhotoUrl,
+      showClassRoleOnLanding: _showClassRoleOnLanding,
+      ...studentWithoutClassRole
+    } = targetStudent;
+    setStoredItem(
+      'students',
+      currentStudents.map((student) => student.id === id ? studentWithoutClassRole : student)
+    );
+    void deleteFirestoreFields('students', id, [
+      'classRole',
+      'classRoleDuty',
+      'classRolePhotoUrl',
+      'showClassRoleOnLanding',
+    ]);
   }, []);
 
   const deleteStudent = useCallback((id: string) => {
@@ -986,6 +1011,7 @@ export function useEduStore() {
     addStudent,
     importStudents,
     updateStudent,
+    removeStudentClassRole,
     deleteStudent,
     users,
     addUser,

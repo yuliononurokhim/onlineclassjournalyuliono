@@ -3,6 +3,7 @@ import { useEduStore } from '../../services/store';
 import { getLocalDateString } from '../../services/date';
 import { ImpersonateModal } from '../common/ImpersonateModal';
 import { GradeLedgerTab } from '../common/GradeLedgerTab';
+import { SchoolLogo } from '../common/SchoolLogo';
 import { SchoolAnnouncement, SchoolProfile, SubjectItem, LearningObjective, UserAccount, UserRole, Student } from '../../types';
 import {
   School,
@@ -131,6 +132,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
     currentUser,
     students,
     updateStudent,
+    removeStudentClassRole,
     resetUserPassword,
     journalEntries,
     internalGrades,
@@ -244,6 +246,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab, onTa
       showClassRoleOnLanding: organizationForm.visibleOnLanding,
     });
     showToast(`Jabatan ${selectedOrganizationStudent.name} berhasil disimpan.`);
+  };
+
+  const handleRemoveClassOrganization = (student: Student) => {
+    if (!window.confirm(`Hapus jabatan ${student.classRole} untuk ${student.name}? Data siswa tetap tersimpan.`)) return;
+    removeStudentClassRole(student.id);
+    if (organizationForm.studentId === student.id) {
+      setOrganizationForm((current) => ({ ...current, role: '', photoUrl: '', visibleOnLanding: false }));
+    }
+    showToast(`Jabatan ${student.classRole} untuk ${student.name} berhasil dihapus.`);
   };
 
   // Subject Modal / Form
@@ -786,8 +797,8 @@ Terima kasih.`;
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md shadow-slate-200">
-            <School className="w-6 h-6 text-slate-200" />
+          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md shadow-slate-200 overflow-hidden p-1">
+            <SchoolLogo logoUrl={schoolProfile.logoUrl} fallbackClassName="w-6 h-6 text-slate-200" />
           </div>
           <div>
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -1294,6 +1305,14 @@ Terima kasih.`;
                     </div>
                     <button type="button" onClick={() => handleOrganizationStudentChange(student.id)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Ubah</button>
                     <button type="button" onClick={() => updateStudent(student.id, { showClassRoleOnLanding: false })} className="text-xs font-semibold text-rose-600 hover:text-rose-700">Sembunyikan</button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveClassOrganization(student)}
+                      aria-label={`Hapus jabatan ${student.classRole} untuk ${student.name}`}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 hover:text-rose-800"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Hapus
+                    </button>
                   </div>
                 ))}
               </div>

@@ -179,72 +179,74 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
   }
 
   return (
-    <div className="dashboard-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="dashboard-page mx-auto max-w-7xl space-y-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl border border-white/10 bg-slate-950 px-5 py-3.5 text-xs text-white shadow-2xl shadow-slate-900/20 animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Child Identity & Star Honor Strip Banner */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-indigo-800">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-indigo-800 bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 p-5 text-white shadow-xl shadow-indigo-950/15 sm:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           {/* Child Identity */}
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+            <div className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-amber-400 to-orange-400 text-3xl font-black text-slate-950 shadow-lg shadow-amber-500/20 ring-4 ring-white/10">
               {student.name.charAt(0)}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wider font-semibold text-amber-300">
-                  DASHBOARD ORANG TUA SISWA
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-300">
+                  Portal Orang Tua
                 </span>
-                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full text-indigo-100 font-mono">
+                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-mono text-indigo-100">
                   NISN: {student.nisn}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight mt-0.5">
+              <h2 className="mt-1 text-xl font-extrabold leading-tight tracking-tight text-white sm:text-2xl">
                 {student.name}
               </h2>
-              <p className="text-xs text-indigo-200 mt-1">
+              <p className="mt-1.5 text-xs leading-relaxed text-indigo-200">
                 {schoolProfile.name} · {schoolProfile.classGrade} · Wali: {student.parentName}
               </p>
             </div>
           </div>
 
           {/* Star Honor Box */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-            <div className="text-center sm:text-left pr-4 sm:border-r sm:border-white/15">
-              <div className="flex items-center gap-2 justify-center sm:justify-start">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-amber-300">
+          <div className="flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.08] p-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-5">
+            <div className="text-center sm:border-r sm:border-white/15 sm:pr-5 sm:text-left">
+              <div className="flex items-center justify-center gap-2 sm:justify-start">
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
                   TOTAL BINTANG BERSIH
                 </span>
-                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[9px] text-emerald-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   Live Sync
                 </span>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2.5 mt-0.5">
-                <Star className="w-8 h-8 fill-amber-400 text-amber-300" />
-                <span className="text-3xl sm:text-4xl font-black text-white font-mono tabular-nums">
+              <div className="mt-1 flex items-center justify-center gap-2.5 sm:justify-start">
+                <Star className="h-8 w-8 fill-amber-400 text-amber-300 drop-shadow sm:h-9 sm:w-9" />
+                <span className="font-mono text-4xl font-black tabular-nums text-white">
                   {netStars}
                 </span>
                 <span className="text-xs text-amber-200 font-semibold self-end pb-1">Bintang</span>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-[11px] font-mono font-semibold">
-                <span className="text-emerald-300 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">
+              <div className="mt-1 flex items-center justify-center gap-2 font-mono text-[11px] font-semibold sm:justify-start">
+                <span className="rounded-md border border-emerald-500/30 bg-emerald-950/40 px-2 py-1 text-emerald-300">
                   +{totalRewards} Apresiasi
                 </span>
-                <span className="text-rose-300 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-500/30">
+                <span className="rounded-md border border-rose-500/30 bg-rose-950/40 px-2 py-1 text-rose-300">
                   -{totalPenalties} Sanksi
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
-              <div className="bg-white/5 rounded-xl p-2.5 border border-white/10">
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded-xl border border-white/10 bg-white/[0.06] p-2.5">
                 <span className="text-[10px] text-indigo-200 block font-medium">Guru Kelas</span>
                 <span className="font-bold text-white font-mono tabular-nums block text-sm mt-0.5">
                   {gkStats.net} ★
@@ -253,7 +255,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   +{gkStats.rewards} / -{gkStats.penalties}
                 </span>
               </div>
-              <div className="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div className="rounded-xl border border-white/10 bg-white/[0.06] p-2.5">
                 <span className="text-[10px] text-rose-200 block font-medium">Guru BK</span>
                 <span className="font-bold text-white font-mono tabular-nums block text-sm mt-0.5">
                   {bkStats.net} ★
@@ -262,7 +264,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   +{bkStats.rewards} / -{bkStats.penalties}
                 </span>
               </div>
-              <div className="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div className="rounded-xl border border-white/10 bg-white/[0.06] p-2.5">
                 <span className="text-[10px] text-teal-200 block font-medium">Guru PAI</span>
                 <span className="font-bold text-white font-mono tabular-nums block text-sm mt-0.5">
                   {paiStats.net} ★
@@ -280,24 +282,29 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
       {activeTab === 'ringkasan' && (
         <div className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: 'Bintang bersih', value: netStars, detail: `+${totalRewards} apresiasi · -${totalPenalties} sanksi`, icon: Star, tone: 'text-amber-600' },
               { label: 'Catatan BK', value: myReportedCases.length, detail: 'Dibagikan kepada keluarga', icon: HeartHandshake, tone: 'text-rose-600' },
               { label: 'Asesmen PAI', value: paiAssessments.filter((assessment) => Boolean(assessment.results[student.id])).length, detail: 'Memuat hasil untuk anak', icon: BookOpen, tone: 'text-teal-700' },
               { label: 'Pesan belum dibaca', value: messages.filter((message) => message.recipientId === currentUser?.id && !message.isRead).length, detail: 'Dari guru pendamping', icon: MessageCircle, tone: 'text-indigo-600' },
             ].map((item) => (
-              <article key={item.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between"><p className="text-xs font-semibold text-slate-500">{item.label}</p><item.icon className={`h-4 w-4 ${item.tone}`} /></div>
-                <p className="mt-3 text-2xl font-extrabold text-slate-900">{item.value}</p>
-                <p className="mt-1 text-[11px] text-slate-500">{item.detail}</p>
+              <article key={item.label} className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-950/5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-500">{item.label}</p>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 ${item.tone}`}>
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                </div>
+                <p className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">{item.value}</p>
+                <p className="mt-1.5 text-[11px] text-slate-500">{item.detail}</p>
               </article>
             ))}
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div><h4 className="text-sm font-bold text-slate-900">Aktivitas terbaru</h4><p className="mt-0.5 text-[11px] text-slate-500">Apresiasi dan pendampingan untuk {student.name}</p></div>
                 <button onClick={() => setActiveTab('bintang')} className="text-xs font-bold text-indigo-600">Lihat semua</button>
               </div>
@@ -317,7 +324,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                 {myStars.length === 0 && myReportedCases.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Belum ada aktivitas yang dibagikan.</p>}
               </div>
             </section>
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
               <h4 className="text-sm font-bold text-slate-900">Akses portal anak</h4>
               <p className="mt-1 text-[11px] text-slate-500">Informasi khusus untuk {student.name}.</p>
               <div className="mt-3 grid gap-2">
@@ -328,8 +335,11 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   { label: 'Capaian ibadah PAI', tab: 'pai', icon: Sparkles },
                   { label: 'Chat guru pendamping', tab: 'chat', icon: MessageCircle },
                 ].map((item) => (
-                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'jurnal' | 'bintang' | 'bk' | 'pai' | 'chat')} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-left text-xs font-semibold text-slate-800 hover:border-amber-200 hover:bg-amber-50/50">
-                    <item.icon className="h-4 w-4 text-amber-600" /> {item.label}
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab as 'jurnal' | 'bintang' | 'bk' | 'pai' | 'chat')} className="group flex items-center gap-3 rounded-xl border border-slate-200/80 p-3.5 text-left text-xs font-semibold text-slate-800 transition hover:border-indigo-200 hover:bg-indigo-50/60">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition group-hover:bg-white">
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    {item.label}
                   </button>
                 ))}
               </div>
@@ -341,23 +351,23 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       {/* Tab 1: Apresiasi & Pengurangan Bintang Murid */}
       {activeTab === 'bintang' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+            <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold mb-1">
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-indigo-700">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>SISTEM EVALUASI PERILAKU & PRESTASI ADIL</span>
                 </div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-lg font-bold tracking-tight text-slate-900">
                   Rekapitulasi Bintang Karakter, Prestasi & Penegakan Disiplin
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-500">
                   Bintang diberikan oleh Guru Kelas, Guru BK, dan Guru PAI sebagai bentuk apresiasi prestasi (+), serta pengurangan edukatif (-) jika terdapat pelanggaran tata tertib agar anak belajar bertanggung jawab.
                 </p>
               </div>
 
               {/* Filter Pills */}
-              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto shrink-0">
+              <div className="flex shrink-0 self-start rounded-xl bg-slate-100 p-1 text-xs font-semibold sm:self-auto">
                 <button
                   onClick={() => setStarFilter('all')}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
@@ -416,7 +426,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                     return (
                       <div
                         key={st.id}
-                        className={`p-5 rounded-2xl border transition-all space-y-3 ${
+                        className={`space-y-3 rounded-2xl border p-5 transition-all hover:-translate-y-0.5 hover:shadow-md ${
                           isPenalty
                             ? 'border-rose-200 bg-rose-50/40 hover:border-rose-300'
                             : 'border-slate-200 bg-amber-50/20 hover:border-amber-300'
@@ -493,25 +503,37 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       {/* Tab 2: Jurnal Harian Kelas */}
       {activeTab === 'jurnal' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="space-y-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-indigo-700">
+                <BookOpen className="h-3.5 w-3.5" /> JURNAL PEMBELAJARAN
+              </div>
+              <h3 className="text-lg font-bold tracking-tight text-slate-900">
                 Jurnal Pembelajaran Kelas {schoolProfile.classGrade}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
                 Informasi materi yang diajarkan, kegiatan praktikum, serta instruksi belajar harian dari guru kelas.
               </p>
             </div>
 
             <div className="space-y-4">
+              {journalEntries.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-10 text-center">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-500 shadow-sm">
+                    <BookOpen className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">Jurnal belum tersedia</p>
+                  <p className="mt-1 text-xs text-slate-500">Catatan pembelajaran kelas akan tampil di sini setelah dibagikan oleh guru.</p>
+                </div>
+              )}
               {journalEntries.map((j) => (
                 <div
                   key={j.id}
-                  className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-200 transition-all space-y-3"
+                  className="space-y-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50/80 to-white p-4 transition-all hover:border-indigo-200 hover:shadow-md sm:p-5"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                  <div className="flex flex-col justify-between gap-2 border-b border-slate-200/70 pb-3 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                      <span className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
                         {j.subjectName}
                       </span>
                       <span className="text-xs text-slate-500 font-mono flex items-center gap-1">
@@ -521,8 +543,8 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                     <span className="text-xs text-slate-400 font-mono">{j.date}</span>
                   </div>
 
-                  <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">
+                  <div className="space-y-1.5 rounded-xl border border-indigo-100 bg-white p-4 shadow-sm shadow-indigo-950/[0.02]">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-500">
                       TUJUAN PEMBELAJARAN (TP):
                     </span>
                     <p className="text-xs font-semibold text-slate-900 leading-snug">
@@ -530,8 +552,8 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                     </p>
                   </div>
 
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                  <div className="px-1">
+                    <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       KEGIATAN SISWA DI KELAS:
                     </span>
                     <p className="text-xs text-slate-700 leading-relaxed">
@@ -540,13 +562,13 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   </div>
 
                   {j.notes && (
-                    <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-900">
                       <strong className="block mb-0.5">Catatan Khusus Wali Kelas:</strong>
                       <span>{j.notes}</span>
                     </div>
                   )}
 
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1">
+                  <div className="flex flex-col justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-500 sm:flex-row sm:items-center">
                     <span>Guru Pengampu: {j.teacherName}</span>
                     <span className="text-emerald-700 font-semibold">Kehadiran Kelas: {j.attendancePresent} Murid Hadir</span>
                   </div>
@@ -560,23 +582,23 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       {/* Tab 3: Laporan Khusus BK (Realtime) */}
       {activeTab === 'bk' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="space-y-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
+              <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
                 <HeartHandshake className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-lg font-bold tracking-tight text-slate-900">
                   Laporan Khusus & Catatan Bimbingan Konseling (BK)
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
                   Catatan pendampingan karakter yang dikirimkan secara real-time oleh Guru BK khusus untuk orang tua {student.name}.
                 </p>
               </div>
             </div>
 
             {myReportedCases.length === 0 ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center text-emerald-800 text-xs">
+              <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8 text-center text-xs text-emerald-800">
                 <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
                 <p className="font-bold text-sm">Alhamdulillah, Tidak Ada Kasus Pelanggaran</p>
                 <p className="mt-1 text-emerald-700">
@@ -588,21 +610,21 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                 {myReportedCases.map((cs) => (
                   <div
                     key={cs.id}
-                    className="p-5 rounded-2xl border border-rose-200 bg-rose-50/20 space-y-3"
+                    className="space-y-4 rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/60 to-white p-4 shadow-sm sm:p-5"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-100 pb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                        <span className="rounded-full border border-rose-200 bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
                           {cs.category === 'Konseling Khusus' ? 'Konseling Individu' : cs.category}
                         </span>
                         <span className="text-xs text-slate-500 font-mono">Tanggal: {cs.date}</span>
                       </div>
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-white">
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-[10px] font-bold text-white">
                         Status: {cs.status === 'Dalam Pantauan' ? 'Dalam Bimbingan/Pendampingan' : cs.status}
                       </span>
                     </div>
 
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                    <div className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-4">
                       <span className="text-[10px] font-bold text-rose-800 uppercase block">
                         URAIAN CATATAN GURU BK:
                       </span>
@@ -611,7 +633,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                       </p>
                     </div>
 
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
+                    <div className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-4">
                       <span className="text-[10px] font-bold text-emerald-800 uppercase block">
                         SARAN TINDAK LANJUT BERSAMA ORANG TUA:
                       </span>
@@ -648,17 +670,29 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
       {/* Tab 4: Penilaian Ibadah PAI (Checklist Ketuntasan) */}
       {activeTab === 'pai' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="space-y-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-teal-700">
+                <Sparkles className="h-3.5 w-3.5" /> IBADAH & PAI
+              </div>
+              <h3 className="text-lg font-bold tracking-tight text-slate-900">
                 Progres Penilaian Harian PAI & Praktik Ibadah
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
                 Rekap ketuntasan indikator thaharah, hafalan surat pendek, sholat fardhu, dan adab islami.
               </p>
             </div>
 
             <div className="space-y-4">
+              {paiAssessments.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-10 text-center">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-teal-600 shadow-sm">
+                    <Sparkles className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">Belum ada penilaian PAI</p>
+                  <p className="mt-1 text-xs text-slate-500">Progres ibadah dan pembelajaran PAI akan tampil setelah guru membagikan penilaian.</p>
+                </div>
+              )}
               {paiAssessments.map((ass) => {
                 const studentResult = ass.results[student.id] || { completedIndicators: {} };
                 const completedCount = ass.subIndicators.filter(
@@ -669,11 +703,11 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                 return (
                   <div
                     key={ass.id}
-                    className="p-5 rounded-2xl border border-slate-200 bg-slate-50/40 hover:border-teal-300 transition-colors space-y-4"
+                    className="space-y-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50/80 to-white p-4 transition-all hover:border-teal-300 hover:shadow-md sm:p-5"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
                       <div>
-                        <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200">
+                        <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[10px] font-bold text-teal-700">
                           {ass.aspectCategory}
                         </span>
                         <h4 className="text-sm font-bold text-slate-900 mt-1">
@@ -682,7 +716,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                       </div>
 
                       <div className="text-right">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${
+                        <span className={`inline-block rounded-full px-3 py-1 text-[10px] font-bold ${
                           isAllDone
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-amber-100 text-amber-800'
@@ -700,7 +734,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                         return (
                           <div
                             key={ind.id}
-                            className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
+                            className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 text-xs ${
                               isDone
                                 ? 'bg-emerald-50/50 border-emerald-200 text-slate-800'
                                 : 'bg-white border-slate-200 text-slate-500'
@@ -725,7 +759,7 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                     </div>
 
                     {studentResult.notes && (
-                      <div className="bg-teal-50 border border-teal-200 text-teal-900 p-3 rounded-xl text-xs">
+                      <div className="rounded-xl border border-teal-200 bg-teal-50/80 p-3.5 text-xs leading-relaxed text-teal-900">
                         <strong>Catatan Guru PAI: </strong>
                         <span>{studentResult.notes}</span>
                       </div>
@@ -740,15 +774,20 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
 
       {/* Tab 5: Chat Privat Dua Arah dengan Guru Pilihan */}
       {activeTab === 'chat' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[540px]">
+        <div className="grid min-h-[620px] grid-cols-1 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm md:grid-cols-12">
           {/* Left: Choose Teacher */}
-          <div className="md:col-span-4 border-r border-slate-200 bg-slate-50/50 p-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <div className="space-y-3 border-b border-slate-200 bg-slate-50/70 p-4 sm:p-5 md:col-span-4 md:border-b-0 md:border-r">
+            <div className="mb-4">
+            <span className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white px-2.5 py-1 text-[10px] font-bold tracking-wide text-indigo-700">
+              <MessageCircle className="h-3.5 w-3.5" /> PESAN PRIVAT
+            </span>
+            <h4 className="text-sm font-bold tracking-tight text-slate-900">
               Pilih Guru Pendamping
             </h4>
-            <p className="text-[11px] text-slate-500 leading-snug">
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
               Pilih guru yang ingin Anda hubungi untuk komunikasi dua arah yang aman dan terjaga privasinya:
             </p>
+            </div>
 
             <div className="space-y-2 pt-1">
               {teachers.length === 0 && (
@@ -762,14 +801,14 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                   <button
                     key={tch.id}
                     onClick={() => setSelectedTeacherId(tch.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all border ${
+                    className={`w-full rounded-xl border p-3.5 text-left transition-all ${
                       isSelected
-                        ? 'bg-white border-indigo-500 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 bg-white/70'
+                        ? 'border-indigo-300 bg-white shadow-md shadow-indigo-950/5 ring-2 ring-indigo-100'
+                        : 'border-slate-200 bg-white/80 hover:border-indigo-200 hover:bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 text-sm font-bold text-indigo-700">
                         {tch.avatar}
                       </div>
                       <div className="flex-1">
@@ -791,10 +830,10 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
           </div>
 
           {/* Right: Chat Window */}
-          <div className="md:col-span-8 flex flex-col justify-between p-4 bg-white">
-            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex flex-col justify-between bg-white p-4 sm:p-5 md:col-span-8">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-sm shadow-indigo-600/20">
                   {currentTeacherObj?.avatar || '?'}
                 </div>
                 <div>
@@ -807,21 +846,21 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                 </div>
               </div>
 
-              <span className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded font-semibold hidden sm:inline">
+              <span className="hidden rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-semibold text-indigo-700 sm:inline">
                 Saluran Privat Dua Arah
               </span>
             </div>
 
             {/* Messages Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+            <div className="my-4 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50/80 p-4 sm:min-h-[340px]">
               {!currentTeacherObj ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
-                  <MessageCircle className="w-8 h-8 mb-2 text-slate-300" />
+                <div className="flex h-full flex-col items-center justify-center py-10 text-xs text-slate-400">
+                <MessageCircle className="mb-2 h-9 w-9 text-slate-300" />
                   <p>Chat belum tersedia karena belum ada akun guru yang aktif.</p>
                 </div>
               ) : currentChatMessages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
-                  <MessageCircle className="w-8 h-8 mb-2 text-slate-300" />
+                <div className="flex h-full flex-col items-center justify-center py-10 text-xs text-slate-400">
+                  <MessageCircle className="mb-2 h-9 w-9 text-slate-300" />
                   <p>Belum ada percakapan dengan {currentTeacherObj.name}.</p>
                   <p className="text-[11px]">Silakan ketik sapaan atau pilih template di bawah untuk memulai obrolan.</p>
                 </div>
@@ -837,10 +876,10 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
                         {msg.senderName}
                       </span>
                       <div
-                        className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed shadow-2xs ${
+                        className={`max-w-[85%] rounded-2xl px-4 py-3.5 text-xs leading-relaxed shadow-sm sm:max-w-md ${
                           isMe
-                            ? 'bg-indigo-600 text-white rounded-br-xs'
-                            : 'bg-slate-100 text-slate-900 rounded-bl-xs border border-slate-200'
+                            ? 'rounded-br-md bg-indigo-600 text-white'
+                            : 'rounded-bl-md border border-slate-200 bg-white text-slate-900'
                         }`}
                       >
                         {msg.content}
@@ -855,42 +894,42 @@ export const OrangTuaDashboard: React.FC<OrangTuaDashboardProps> = ({ currentTab
             </div>
 
             {/* Fast Quick Templates */}
-            <div className="py-2 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+            <div className="flex items-center gap-2 overflow-x-auto border-t border-slate-100 py-3 text-[11px]">
               <span className="text-slate-400 shrink-0 font-medium">Template Cepat:</span>
               <button
                 onClick={() => currentTeacherObj && handleQuickTemplate(`Selamat pagi/siang ${currentTeacherObj.name.split(',')[0]}, mohon izin menanyakan perkembangan ananda ${student.name} di kelas...`)}
-                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-700 whitespace-nowrap transition-colors"
+                className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50"
               >
                 Tanya Perkembangan
               </button>
               <button
                 onClick={() => handleQuickTemplate(`Terima kasih banyak atas bimbingan dan kesabarannya mendampingi ${student.name}.`)}
-                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-700 whitespace-nowrap transition-colors"
+                className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50"
               >
                 Ucapkan Terima Kasih
               </button>
               <button
                 onClick={() => handleQuickTemplate(`Mohon izin menginfokan bahwa ananda ${student.name} sedang kurang enak badan hari ini...`)}
-                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-700 whitespace-nowrap transition-colors"
+                className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50"
               >
                 Izin Sakit
               </button>
             </div>
 
             {/* Chat Input */}
-            <form onSubmit={handleSendChat} className="pt-2 flex items-center gap-2">
+            <form onSubmit={handleSendChat} className="flex items-center gap-2 border-t border-slate-100 pt-3">
               <input
                 type="text"
                 value={chatInputText}
                 onChange={(e) => setChatInputText(e.target.value)}
                 placeholder={`Tulis pesan untuk ${currentTeacherObj?.name || 'guru pendamping'}...`}
                 disabled={!currentTeacherObj}
-                className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
               />
               <button
                 type="submit"
                 disabled={!currentTeacherObj || !chatInputText.trim()}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-3 text-xs font-bold text-white shadow-sm shadow-indigo-600/20 transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Kirim</span>

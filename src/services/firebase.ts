@@ -5,6 +5,8 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
+  deleteField,
   onSnapshot,
   getDoc,
   writeBatch,
@@ -351,6 +353,23 @@ export async function writeFirestoreDoc(collectionName: string, id: string, data
     console.warn(`Write to Firestore [${collectionName}/${id}] failed:`, err);
     updateSyncStatus({
       error: err.message || 'Gagal menyimpan perubahan ke Firebase',
+    });
+  }
+}
+
+export async function deleteFirestoreFields(collectionName: string, id: string, fields: string[]) {
+  if (!isBrowser || isRemoteUpdating) return;
+
+  try {
+    await updateDoc(
+      doc(db, collectionName, id),
+      Object.fromEntries(fields.map((field) => [field, deleteField()]))
+    );
+    updateSyncStatus({ lastSyncTime: new Date(), isConnected: true, error: null });
+  } catch (err: any) {
+    console.warn(`Delete fields from Firestore [${collectionName}/${id}] failed:`, err);
+    updateSyncStatus({
+      error: err.message || 'Gagal menghapus data di Firebase',
     });
   }
 }

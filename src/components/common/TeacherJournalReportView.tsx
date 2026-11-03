@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEduStore } from '../../services/store';
+import { SchoolLogo } from './SchoolLogo';
 import { getLocalDateString, getLocalMonthString } from '../../services/date';
 import { SchoolProfile, UserRole } from '../../types';
 import {
@@ -9,7 +10,6 @@ import {
   Calendar,
   CheckCircle2,
   FileText,
-  School,
   UserCheck,
   Award,
   Filter
@@ -212,8 +212,8 @@ export const TeacherJournalReportView: React.FC<TeacherJournalReportViewProps> =
         {/* Official Indonesian School Letterhead (KOP SURAT) */}
         <div className="border-b-4 border-double border-slate-900 pb-4 text-center space-y-1">
           <div className="flex items-center justify-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
-              <School className="w-9 h-9 text-amber-400" />
+            <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 overflow-hidden p-1">
+              <SchoolLogo logoUrl={schoolProfile.logoUrl} fallbackClassName="w-9 h-9 text-amber-400" />
             </div>
             <div>
               <p className="text-xs uppercase font-extrabold tracking-widest text-slate-700">

@@ -8,7 +8,9 @@ import { GradeLedgerTab } from '../common/GradeLedgerTab';
 import { TeacherJournalReportView } from '../common/TeacherJournalReportView';
 import { ClassJournalTab } from '../common/ClassJournalTab';
 import { StarAwardBatchFields } from '../common/StarAwardBatchFields';
+import { SchoolLogo } from '../common/SchoolLogo';
 import {
+  School,
   Users,
   CreditCard,
   BookOpen,
@@ -29,7 +31,6 @@ import {
   Copy,
   FileSpreadsheet,
   QrCode,
-  School,
   Send,
   UserCheck,
   MinusCircle,
@@ -791,8 +792,8 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
                     >
                       <div>
                         <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-3">
-                          <div className="w-9 h-9 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                            <School className="w-5 h-5 text-indigo-300" />
+                          <div className="w-9 h-9 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden p-1">
+                            <SchoolLogo logoUrl={schoolProfile.logoUrl} fallbackClassName="w-5 h-5 text-indigo-300" />
                           </div>
                           <div>
                             <h5 className="text-[11px] font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
@@ -872,7 +873,7 @@ export const GuruKelasDashboard: React.FC<GuruKelasDashboardProps> = ({ currentT
       )}
 
       {/* Tab 3: Jurnal Harian Kelas (Data from Admin CP/TP) */}
-      {activeTab === 'jurnal' && <ClassJournalTab />}
+      {activeTab === 'jurnal' && <ClassJournalTab showLessonDetails={false} />}
       {false && activeTab === 'jurnal' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Form Jurnal Baru */}

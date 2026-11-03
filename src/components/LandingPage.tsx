@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useEduStore } from '../services/store';
+import { compressSchoolLogo } from '../services/schoolLogo';
+import { SchoolLogo } from './common/SchoolLogo';
 import { UserRole } from '../types';
 import {
-  School,
   Calendar,
   Sparkles,
   BookOpen,
@@ -27,7 +28,9 @@ import {
   BarChart3,
   Award,
   LogOut,
-  UserCheck
+  UserCheck,
+  Upload,
+  Trash2
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -39,7 +42,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   activeView,
   onLoginSuccess,
 }) => {
-  const { schoolProfile, announcements, login, logout, currentUser, starAwards, students, users } = useEduStore();
+  const { schoolProfile, updateSchoolProfile, announcements, login, logout, currentUser, starAwards, students, users } = useEduStore();
   const landingFeatures = {
     dailyReports: schoolProfile.landingFeatures?.dailyReports ?? true,
     gallery: schoolProfile.landingFeatures?.gallery ?? true,
@@ -53,6 +56,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoError, setLogoError] = useState('');
+  const isSchoolAdmin = currentUser?.role === 'admin';
 
   // Synchronize scrolling when activeView changes from navigation buttons
   useEffect(() => {
@@ -152,6 +159,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   };
 
+  const handleSchoolLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    setLogoError('');
+    try {
+      const logoUrl = await compressSchoolLogo(file);
+      updateSchoolProfile({ ...schoolProfile, logoUrl });
+    } catch (error) {
+      setLogoError(error instanceof Error ? error.message : 'Logo gagal diproses.');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleSchoolLogoDelete = () => {
+    if (!schoolProfile.logoUrl || !window.confirm('Hapus logo sekolah dari seluruh tampilan aplikasi?')) return;
+    updateSchoolProfile({ ...schoolProfile, logoUrl: '' });
+    setLogoError('');
+  };
+
   return (
     <div className="landing-page min-h-screen bg-slate-50 text-slate-900 pb-16">
       {/* Hero Section with Official School Header */}
@@ -160,8 +190,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Official Letterhead / Kop Surat Mockup */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-100 mb-10 shadow-sm">
             <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-              <div className="w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center p-3 text-indigo-900 shadow-sm shrink-0">
-                <School className="w-12 h-12 text-indigo-700" />
+              <div className="flex shrink-0 flex-col items-center gap-1.5">
+                <div className="w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center p-3 text-indigo-900 shadow-sm overflow-hidden">
+                  <SchoolLogo
+                    logoUrl={schoolProfile.logoUrl}
+                    className="h-full w-full object-contain"
+                    fallbackClassName="w-12 h-12 text-indigo-700"
+                  />
+                </div>
+                {isSchoolAdmin && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSchoolLogoUpload}
+                      className="sr-only"
+                      aria-label="Pilih logo sekolah"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 hover:text-indigo-900 disabled:opacity-50"
+                    >
+                      <Upload className="h-3 w-3" />
+                      {isUploadingLogo ? 'Memproses...' : schoolProfile.logoUrl ? 'Ubah logo' : 'Upload logo'}
+                    </button>
+                    {schoolProfile.logoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleSchoolLogoDelete}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 hover:text-rose-800"
+                      >
+                        <Trash2 className="h-3 w-3" /> Hapus
+                      </button>
+                    )}
+                  </div>
+                )}
+                {logoError && <p role="alert" className="max-w-40 text-center text-[10px] text-rose-600">{logoError}</p>}
               </div>
               <div className="flex-1">
                 <p className="text-xs uppercase tracking-widest text-indigo-600 font-semibold mb-1">
@@ -194,10 +261,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Col: Portal Highlights & Values */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>{schoolProfile.heroTagline || 'Portal Jurnal Belajar & Karakter Siswa Real-Time'}</span>
-              </div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight text-balance">
                 {schoolProfile.heroTitle || 'Pantau Tumbuh Kembang dan Aktivitas Belajar Si Kecil Setiap Hari'}
               </h2>
@@ -207,10 +270,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   {schoolProfile.heroDescription ||
                     'Jurnal digital interaktif dari guru untuk menghubungkan sekolah dan rumah dengan mudah. Lihat laporan belajar, perkembangan anak, dan agenda sekolah melalui satu portal.'}
                 </p>
-                <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>Teks sambutan resmi dikelola oleh Admin SIM (dapat diubah di panel admin)</span>
-                </div>
               </div>
 
               {/* Parent portal feature overview */}

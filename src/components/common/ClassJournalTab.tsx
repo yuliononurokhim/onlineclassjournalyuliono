@@ -29,6 +29,7 @@ function resolveObjectiveSelection(
 interface ClassJournalTabProps {
   subjectScope?: WeeklyScheduleScope;
   showJournalForm?: boolean;
+  showLessonDetails?: boolean;
 }
 
 interface JournalRow {
@@ -71,7 +72,11 @@ function formatJournalDate(date: string): string {
   }).format(new Date(`${date}T12:00:00`));
 }
 
-export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope = 'all', showJournalForm = true }) => {
+export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({
+  subjectScope = 'all',
+  showJournalForm = true,
+  showLessonDetails = true,
+}) => {
   const {
     schoolProfile,
     subjects,
@@ -235,11 +240,28 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
       return;
     }
 
-    const populatedRows = rows
+    const weekday = getWeekday(date);
+    if (!showLessonDetails && !weekday) {
+      setFormError('Presensi hanya dapat disimpan pada hari sekolah Senin–Jumat.');
+      return;
+    }
+
+    const rowsToSave = showLessonDetails
+      ? rows
+      : weeklySchedule
+        .filter((entry) =>
+          entry.scope === subjectScope &&
+          entry.day === weekday &&
+          (entry.classGrade || schoolProfile.classGrade) === classGrade
+        )
+        .map(({ subjectId, objectiveId, activity }) => ({ subjectId, objectiveId, activity }));
+    const populatedRows = rowsToSave
       .map((row, index) => ({ row, index }))
       .filter(({ row }) => row.subjectId || row.objectiveId || row.activity.trim());
     if (populatedRows.length === 0) {
-      setFormError('Isi minimal satu baris jurnal.');
+      setFormError(showLessonDetails
+        ? 'Isi minimal satu baris jurnal.'
+        : `Belum ada jadwal tersimpan untuk hari ${weekday}.`);
       return;
     }
 
@@ -309,9 +331,13 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-100">Jurnal Pembelajaran</p>
-                <h3 className="text-lg font-extrabold tracking-tight">Input Jurnal Harian</h3>
+                <h3 className="text-lg font-extrabold tracking-tight">
+                  {showLessonDetails ? 'Input Jurnal Harian' : 'Presensi Harian'}
+                </h3>
                 <p className="mt-1 text-xs text-indigo-100">
-                  Jadwal untuk {classGrade}. Mapel dan CP/TP mengikuti data Admin.
+                  {showLessonDetails
+                    ? `Jadwal untuk ${classGrade}. Mapel dan CP/TP mengikuti data Admin.`
+                    : `Presensi hari ini menggunakan jadwal mingguan kelas ${classGrade}.`}
                 </p>
               </div>
             </div>
@@ -487,6 +513,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
             </p>
           )}
 
+          {showLessonDetails && (
+          <>
           <div className="flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <label htmlFor="class-journal-date" className="block text-xs font-bold text-slate-800">Hari efektif / tanggal</label>
@@ -611,6 +639,8 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
               <Plus className="h-4 w-4" /> Tambah jam pelajaran
             </button>
           </div>
+          </>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="flex items-center justify-between gap-3 mb-3">
@@ -618,7 +648,11 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
                 <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
                   Presensi murid ({students.length})
                 </h4>
-                <p className="text-[10px] text-slate-500 mt-1">Pilih satu status pada setiap murid. Default: Hadir.</p>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  {showLessonDetails
+                    ? 'Pilih satu status pada setiap murid. Default: Hadir.'
+                    : 'Jadwal hari ini digunakan otomatis. Pilih status pada setiap murid.'}
+                </p>
               </div>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100">
                 <input
@@ -684,7 +718,7 @@ export const ClassJournalTab: React.FC<ClassJournalTabProps> = ({ subjectScope =
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700 sm:min-w-56"
             >
               <BookOpen className="h-4 w-4" />
-              Simpan Jurnal Terisi
+              {showLessonDetails ? 'Simpan Jurnal Terisi' : 'Simpan Presensi Hari Ini'}
             </button>
           </div>
         </form>
